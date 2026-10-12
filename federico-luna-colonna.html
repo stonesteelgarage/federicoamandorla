@@ -231,6 +231,7 @@ body.desk .key{height:44px;font-size:1.6rem;box-shadow:0 3px 0 var(--ink)}
     <p class="howto" id="howto"></p>
     <button class="btn" id="go">Gioca con la musica</button>
     <p id="iosnote" style="margin:0;font-size:.85rem;color:var(--soft)">Su iPad e iPhone alza il volume e togli il silenzioso.</p>
+    <a class="btn ghost" href="index.html" style="text-decoration:none">🏠 Torna ai giochi</a>
   </div>
 </div>
 
@@ -342,8 +343,8 @@ function draw(){
   cells.push(`<div class="cell carry"></div><div class="cell carry">${tc}</div><div class="cell carry"></div>`);
   const aTtxt = p.showBorrow ? `<span class="struck">${p.aT}</span><span class="over pop">${p.aT-1}</span>` : p.aT;
   const aUtxt = p.showBorrow ? `<span class="lend pop">1</span>${p.aU}` : p.aU;
-  cells.push(`<div class="cell">${aTtxt}</div><div class="cell">${aUtxt}</div><div class="cell"></div>`);
-  cells.push(`<div class="cell">${p.bT||''}</div><div class="cell">${p.bU}</div><div class="cell sign">${p.op==='+'?'+':'−'}</div>`);
+  cells.push(`<div class="cell">${aTtxt}</div><div class="cell">${aUtxt}</div><div class="cell sign">${p.op==='+'?'+':'−'}</div>`);
+  cells.push(`<div class="cell">${p.bT||''}</div><div class="cell">${p.bU}</div><div class="cell"></div>`);
   cells.push('<div class="rule"></div>');
   const slot=(i,val,show)=>`<div class="cell"><div class="cell slot ${step===i?'active':''} ${show?'done':''}" id="s${i}">${show?val:''}</div></div>`;
   const tShow = step>1 ? (p.rT===0?'':p.rT) : '';
