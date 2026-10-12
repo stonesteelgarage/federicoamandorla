@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>I Giochi di Federico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cielo1:#7fd3ff; --cielo2:#c9f0ff; --testo:#1f2a44; --bianco:#ffffff;
+    --ombra:0 10px 0 rgba(31,42,68,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Baloo 2',system-ui,sans-serif; color:var(--testo);
+    min-height:100vh; overflow-x:hidden;
+    background:linear-gradient(180deg,var(--cielo1) 0%,var(--cielo2) 70%,#e8fbd9 100%);
+  }
+  /* nuvole */
+  .nuvola{position:fixed;background:#fff;border-radius:50px;opacity:.85;z-index:0;animation:vola linear infinite}
+  .nuvola::before,.nuvola::after{content:"";position:absolute;background:#fff;border-radius:50%}
+  .nuvola::before{width:55%;height:160%;top:-70%;left:12%}
+  .nuvola::after{width:40%;height:120%;top:-45%;right:12%}
+  .n1{width:140px;height:42px;top:8%;animation-duration:48s}
+  .n2{width:100px;height:30px;top:24%;animation-duration:36s;animation-delay:-18s}
+  .n3{width:170px;height:50px;top:55%;animation-duration:60s;animation-delay:-30s;opacity:.6}
+  @keyframes vola{from{transform:translateX(-220px)}to{transform:translateX(110vw)}}
+
+  main{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:28px 16px 60px}
+
+  header{text-align:center;margin-bottom:28px}
+  .gatto{font-size:64px;display:inline-block;animation:salta 2.2s ease-in-out infinite}
+  @keyframes salta{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-12px) rotate(4deg)}}
+  h1{font-size:clamp(34px,7vw,58px);font-weight:800;line-height:1.05;
+     color:#fff;text-shadow:0 4px 0 #ff7a59,0 8px 0 rgba(31,42,68,.2)}
+  .sotto{font-size:clamp(17px,3.2vw,22px);margin-top:10px;font-weight:600}
+
+  .griglia{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px}
+
+  .gioco{
+    display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;
+    background:var(--bianco);border-radius:28px;padding:24px 18px 20px;
+    text-decoration:none;color:var(--testo);box-shadow:var(--ombra);
+    border:5px solid var(--colore);position:relative;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .gioco:hover{transform:translateY(-6px) rotate(-1deg)}
+  .gioco:active{transform:translateY(4px);box-shadow:0 4px 0 rgba(31,42,68,.18)}
+  .icona{
+    width:110px;height:110px;border-radius:50%;display:grid;place-items:center;
+    font-size:58px;background:var(--colore);margin-bottom:6px;
+  }
+  .gioco h2{font-size:26px;line-height:1.1;font-weight:800}
+  .gioco p{font-size:16px;opacity:.8;line-height:1.3}
+  .gioca{
+    margin-top:10px;background:var(--colore);color:#fff;font-weight:800;font-size:20px;
+    padding:8px 26px;border-radius:999px;text-shadow:0 2px 0 rgba(0,0,0,.18);
+  }
+  .nuovo{position:absolute;top:-14px;right:-8px;background:#ff4d6d;color:#fff;
+    font-weight:800;font-size:14px;padding:4px 12px;border-radius:999px;transform:rotate(8deg)}
+
+  .presto{border-style:dashed;opacity:.75;cursor:default}
+  .presto:hover{transform:none}
+  .presto .icona{background:#e3e8f0}
+  .presto .gioca{background:#b9c2d0}
+
+  footer{text-align:center;margin-top:40px;font-size:16px;opacity:.7}
+</style>
+</head>
+<body>
+  <div class="nuvola n1"></div><div class="nuvola n2"></div><div class="nuvola n3"></div>
+
+  <main>
+    <header>
+      <div class="gatto">🐱</div>
+      <h1>I Giochi di Federico</h1>
+      <p class="sotto">Scegli un gioco e divertiti insieme a Luna!</p>
+    </header>
+
+    <section class="griglia" id="griglia"></section>
+
+    <footer>Fatto con ❤️ da papà</footer>
+  </main>
+
+<script>
+/* =========================================================
+   ELENCO GIOCHI — per aggiungerne uno basta una nuova riga.
+   file:  nome del file HTML caricato nella stessa cartella
+   nuovo: true per mostrare l'etichetta "NUOVO!"
+   ========================================================= */
+const GIOCHI = [
+  { titolo: "Corsa delle Macchinine", file: "corsa-macchinine.html", emoji: "🏎️", colore: "#e23b2e",
+    descrizione: "Guida la rossa n. 7, schiva coni e olio e arriva primo!" },
+  { titolo: "Federico & Luna in Colonna", file: "federico-luna-colonna.html", emoji: "🐟", colore: "#3a78cc",
+    descrizione: "Somme e sottrazioni in colonna: aiuta Luna a prendere 10 pesciolini." },
+];
+
+const griglia = document.getElementById("griglia");
+
+GIOCHI.forEach(g => {
+  const a = document.createElement("a");
+  a.className = "gioco";
+  a.href = g.file;
+  a.style.setProperty("--colore", g.colore);
+  a.innerHTML = `
+    ${g.nuovo ? '<span class="nuovo">NUOVO!</span>' : ''}
+    <div class="icona">${g.emoji}</div>
+    <h2>${g.titolo}</h2>
+    <p>${g.descrizione}</p>
+    <span class="gioca">Gioca ▶</span>`;
+  griglia.appendChild(a);
+});
+
+/* Card segnaposto per i prossimi giochi */
+const presto = document.createElement("div");
+presto.className = "gioco presto";
+presto.style.setProperty("--colore", "#b9c2d0");
+presto.innerHTML = `
+  <div class="icona">🎁</div>
+  <h2>Nuovo gioco in arrivo</h2>
+  <p>Papà ci sta lavorando…</p>
+  <span class="gioca">Presto!</span>`;
+griglia.appendChild(presto);
+</script>
+</body>
+</html>

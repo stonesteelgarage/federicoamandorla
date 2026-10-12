@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}body{margin:0}</style>
+<title>Federico e Luna in Colonna</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: una pagina di quaderno a quadretti; in alto Federico e Luna, al centro l'operazione in colonna, sotto i tasti grandi. */
+:root{
+  --bg:#e6f0f5; --paper:#fdfefe; --grid:#cfe1ee; --ink:#2a3146; --soft:#66708a;
+  --red:#e0462e; --blue:#3a78cc; --hair:#e2b25e; --luna:#8a909b; --ok:#2f9e5b; --fish:#f29a38;
+  --display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --hand:"Patrick Hand","Comic Sans MS","Chalkboard SE",cursive;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--display);padding-inline:16px;padding-block:12px 24px;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+h1{font-size:1.5rem;line-height:1;margin:0;font-weight:800;text-wrap:balance}
+h1 span{color:var(--red)}
+.fishbar{display:flex;gap:2px;align-items:center}
+.fishbar svg{width:22px;height:14px}
+.fishbar .off path{fill:#c9d3dc}
+.modes{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--display);font-weight:700;font-size:.95rem;border:2px solid var(--ink);background:var(--paper);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.chip:focus-visible,.key:focus-visible,.btn:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+.scene{display:grid;grid-template-columns:96px 1fr 96px;align-items:end;gap:6px}
+.scene svg{width:100%;height:auto;display:block}
+.bubble{position:relative;background:var(--paper);border:2.5px solid var(--ink);border-radius:18px;padding:10px 12px;font-size:1.05rem;font-weight:700;line-height:1.25;min-height:64px;display:flex;align-items:center;justify-content:center;text-align:center;margin-bottom:20px;min-width:0}
+.bubble::after{content:"";position:absolute;right:-12px;bottom:14px;border:10px solid transparent;border-left:14px solid var(--ink)}
+.bubble::before{content:"";position:absolute;right:-7px;bottom:16px;border:8px solid transparent;border-left:11px solid var(--paper);z-index:1}
+
+.sheet{background-color:var(--paper);background-image:linear-gradient(var(--grid) 1.5px,transparent 1.5px),linear-gradient(90deg,var(--grid) 1.5px,transparent 1.5px);background-size:32px 32px;border-radius:6px;box-shadow:0 2px 0 #c3d3de,0 10px 24px -14px #2a314655;padding:18px 0;display:flex;justify-content:center;position:relative;overflow:hidden}
+.sheet::before{content:"";position:absolute;left:28px;top:0;bottom:0;width:2px;background:#f0a7a0}
+.col{display:grid;grid-template-columns:repeat(3,64px);row-gap:2px;font-family:var(--hand);font-size:3.2rem;line-height:1;text-align:center}
+.cell{height:64px;display:flex;align-items:center;justify-content:center;position:relative}
+.head{height:30px;font-size:1.5rem;font-weight:700}
+.head.da{color:var(--red)} .head.u{color:var(--blue)}
+.carry{height:34px;font-size:1.7rem;color:var(--red)}
+.sign{font-size:2.6rem}
+.rule{grid-column:1/-1;height:4px;background:var(--ink);border-radius:2px;margin:2px 4px}
+.slot{border:3px dashed #9fb2c4;border-radius:10px;margin:4px;height:56px;width:56px;color:var(--ink)}
+.slot.active{border:3px solid var(--blue);background:#3a78cc14;animation:pulse 1.2s ease-in-out infinite}
+.slot.done{border-color:transparent;color:var(--ok)}
+.slot.bad{border-color:var(--red);color:var(--red);animation:shake .35s}
+.struck{position:relative;color:var(--soft)}
+.struck::after{content:"";position:absolute;left:-6px;right:-6px;top:50%;height:3px;background:var(--red);transform:rotate(-20deg)}
+.over{position:absolute;top:-14px;right:4px;font-size:1.6rem;color:var(--red)}
+.lend{font-size:1.6rem;color:var(--red);margin-right:1px;align-self:flex-start;margin-top:10px}
+.pop{animation:pop .45s ease-out}
+
+.keys{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.key{font-family:var(--hand);font-size:2.2rem;height:60px;border-radius:14px;border:2.5px solid var(--ink);background:var(--paper);color:var(--ink);box-shadow:0 4px 0 var(--ink);cursor:pointer;touch-action:manipulation}
+.key:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.tools{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.btn{font-family:var(--display);font-weight:700;font-size:1rem;border:2.5px solid var(--ink);border-radius:12px;padding:6px 14px;background:var(--hair);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.btn.ghost{background:var(--paper)}
+.stat{font-size:.95rem;color:var(--soft);align-self:center}
+
+.party{position:fixed;inset:0;background:#2a3146cc;display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
+.card{background:var(--paper);border:3px solid var(--ink);border-radius:20px;padding:20px;max-width:360px;width:100%;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.card h2{margin:0;font-size:1.6rem;color:var(--red)}
+.card .pair{display:flex;gap:8px;align-items:end;justify-content:center}
+.card .pair svg{width:110px}
+.jump{animation:jump .6s ease-in-out infinite alternate}
+.musicbtn{display:flex;align-items:center;gap:6px;font-family:var(--display);font-weight:800;font-size:1rem;border:2.5px solid var(--ink);border-radius:999px;padding:6px 14px;background:var(--paper);color:var(--ink);box-shadow:0 3px 0 var(--ink);cursor:pointer}
+.musicbtn[aria-pressed="true"]{background:var(--blue);color:#fff}
+.musicbtn[aria-pressed="true"] .x{display:none}
+.musicbtn[aria-pressed="true"] svg{animation:hop .9s ease-in-out infinite}
+.score{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:var(--paper);border:2.5px solid var(--ink);border-radius:14px;padding:6px}
+.sc{position:relative;display:flex;flex-direction:column;align-items:center;line-height:1;padding:4px 0;border-radius:8px;min-width:0}
+.sc b{font-family:var(--hand);font-size:1.9rem;font-weight:400;font-variant-numeric:tabular-nums}
+.sc span{font-size:.72rem;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.sc.pts{background:#e2b25e33}.sc.pts b{color:var(--ink)}
+.sc.ok b{color:var(--ok)}.sc.ko b{color:var(--red)}.sc.st b{color:var(--blue)}.sc.rec b{color:var(--fish)}
+.plus{position:absolute;top:-6px;right:4px;font-family:var(--display);font-weight:800;font-size:.85rem;color:var(--ok);animation:pop .45s ease-out}
+.devq{margin:0;font-weight:800;font-size:1.05rem}
+.devs{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.dev{font-family:var(--display);font-weight:800;font-size:1rem;line-height:1.1;border:2.5px solid var(--ink);background:var(--paper);color:var(--ink);border-radius:12px;padding:8px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.dev small{font-weight:500;font-size:.72rem;color:var(--soft)}
+.dev[aria-pressed="true"]{background:var(--blue);color:#fff}
+.dev[aria-pressed="true"] small{color:#ffffffcc}
+.dev:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.howto{margin:0;font-size:.95rem;font-weight:600;background:#3a78cc14;border-radius:12px;padding:8px 10px;width:100%;line-height:1.5}
+kbd{display:inline-block;min-width:1.7em;padding:0 6px;border:2px solid var(--ink);border-bottom-width:4px;border-radius:6px;background:var(--paper);color:var(--ink);font-family:var(--display);font-weight:800;line-height:1.3;text-align:center}
+.kbhint{display:none;margin:0;text-align:center;font-weight:700;font-size:.95rem;color:var(--soft);line-height:1.8}
+body.desk .kbhint{display:block}
+body.desk .key{height:44px;font-size:1.6rem;box-shadow:0 3px 0 var(--ink)}
+#start{overflow-y:auto;align-items:flex-start}
+#start .card{margin:auto}
+.start{position:fixed;inset:0;background:#2a3146d9;display:flex;align-items:center;justify-content:center;padding:16px;z-index:6}
+.start .btn{font-size:1.5rem;padding:10px 30px}
+
+#fede .mouth{transition:d .2s}
+.tail{transform-origin:22px 78px;animation:wag 1.6s ease-in-out infinite}
+.blink{animation:blink 4s infinite;transform-origin:center 50%;transform-box:fill-box}
+.happy{animation:hop .5s ease-out}
+.sad{animation:shake .4s}
+
+@keyframes pulse{50%{background:#3a78cc2a}}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.25)}100%{transform:scale(1);opacity:1}}
+@keyframes wag{50%{transform:rotate(14deg)}}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+@keyframes hop{40%{transform:translateY(-14px)}}
+@keyframes jump{to{transform:translateY(-16px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:420px){
+  .scene{grid-template-columns:78px 1fr 78px}
+  .col{grid-template-columns:repeat(3,56px);font-size:2.8rem}
+  .cell{height:56px}.slot{height:48px;width:48px}
+  .bubble{font-size:.95rem;padding:8px}
+  .key{height:54px;font-size:2rem}
+}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <a class="musicbtn" href="index.html" style="text-decoration:none" aria-label="Torna ai giochi">🏠 Giochi</a>
+    <h1>Federico <span>&amp;</span> Luna</h1>
+    <button class="musicbtn" id="music" aria-pressed="false" aria-label="Musica">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M9 18V5l11-2v13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="17" cy="16" r="3" fill="currentColor"/><path class="x" d="M3 3L21 21" stroke="var(--red)" stroke-width="2.6" stroke-linecap="round"/></svg>
+      <span id="musiclbl">Musica</span>
+    </button>
+  </header>
+  <div class="fishbar" id="fishbar" aria-label="Pesciolini raccolti"></div>
+  <div class="score" aria-label="Punteggio">
+    <div class="sc pts"><b id="sc-pts">0</b><span>Punti</span></div>
+    <div class="sc ok"><b id="sc-ok">0</b><span>Giuste</span></div>
+    <div class="sc ko"><b id="sc-ko">0</b><span>Errori</span></div>
+    <div class="sc st"><b id="sc-st">0</b><span>Di fila</span></div>
+    <div class="sc rec"><b id="sc-rec">0</b><span>Record</span></div>
+  </div>
+
+  <div class="modes" role="group" aria-label="Tipo di operazione">
+    <button class="chip" id="m-add" data-mode="add" aria-pressed="true">Somme +</button>
+    <button class="chip" id="m-sub" data-mode="sub" aria-pressed="false">Sottrazioni −</button>
+    <button class="chip" id="m-mix" data-mode="mix" aria-pressed="false">Tutte e due</button>
+  </div>
+  <div class="modes" role="group" aria-label="Livello">
+    <button class="chip" id="l-easy" data-level="easy" aria-pressed="true">Facile</button>
+    <button class="chip" id="l-hard" data-level="hard" aria-pressed="false">Con riporto e prestito</button>
+  </div>
+
+  <div class="scene">
+    <svg id="fede" viewBox="0 0 120 150" aria-label="Federico">
+      <!-- maglietta -->
+      <path d="M18 150 C18 118 34 106 60 106 C86 106 102 118 102 150 Z" fill="#fbfbf7" stroke="#2a3146" stroke-width="3"/>
+      <path d="M48 108 Q60 116 72 108" fill="none" stroke="#2a3146" stroke-width="2.5"/>
+      <path d="M50 126 q6 -8 12 0 q6 8 12 0 M48 136 q8 -6 16 0 q6 4 12 -2" fill="none" stroke="#e0462e" stroke-width="4" stroke-linecap="round"/>
+      <!-- collo e testa -->
+      <rect x="51" y="92" width="18" height="18" rx="6" fill="#f5cfb2"/>
+      <circle cx="25" cy="62" r="8" fill="#f5cfb2" stroke="#2a3146" stroke-width="2.5"/>
+      <circle cx="95" cy="62" r="8" fill="#f5cfb2" stroke="#2a3146" stroke-width="2.5"/>
+      <ellipse cx="60" cy="60" rx="34" ry="37" fill="#f8d6bb" stroke="#2a3146" stroke-width="3"/>
+      <!-- capelli biondi con frangia -->
+      <path d="M24 58 C20 26 40 14 62 15 C86 16 100 30 96 58 C92 46 88 40 84 38 L80 46 L74 36 L68 45 L62 34 L56 45 L50 35 L44 45 L38 36 L32 48 C28 46 26 50 24 58 Z" fill="#e2b25e" stroke="#2a3146" stroke-width="3" stroke-linejoin="round"/>
+      <!-- occhi azzurri -->
+      <g class="blink"><ellipse cx="46" cy="62" rx="8" ry="9" fill="#fff" stroke="#2a3146" stroke-width="2"/><circle cx="47" cy="63" r="5" fill="#4d86d4"/><circle cx="47" cy="63" r="2.4" fill="#1d2233"/><circle cx="45.5" cy="61" r="1.3" fill="#fff"/></g>
+      <g class="blink"><ellipse cx="74" cy="62" rx="8" ry="9" fill="#fff" stroke="#2a3146" stroke-width="2"/><circle cx="75" cy="63" r="5" fill="#4d86d4"/><circle cx="75" cy="63" r="2.4" fill="#1d2233"/><circle cx="73.5" cy="61" r="1.3" fill="#fff"/></g>
+      <ellipse cx="38" cy="78" rx="6" ry="3.5" fill="#f19c8f" opacity=".6"/>
+      <ellipse cx="82" cy="78" rx="6" ry="3.5" fill="#f19c8f" opacity=".6"/>
+      <circle cx="86" cy="72" r="1.4" fill="#8a5a44"/>
+      <path d="M58 70 q2 5 5 2" fill="none" stroke="#c98d72" stroke-width="2" stroke-linecap="round"/>
+      <path class="mouth" id="fmouth" d="M50 82 Q60 90 70 82" fill="none" stroke="#2a3146" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+
+    <div class="bubble" id="bubble" aria-live="polite">Ciao! Iniziamo dalle unità, a destra.</div>
+
+    <svg id="luna" viewBox="0 0 120 110" aria-label="Luna, la gattina">
+      <path class="tail" d="M22 78 C4 70 2 44 16 36 C24 32 26 42 20 46 C12 52 16 66 30 72" fill="#8a909b" stroke="#2a3146" stroke-width="3" stroke-linejoin="round"/>
+      <!-- corpo soffice -->
+      <path d="M26 104 C14 104 16 84 26 78 C24 66 38 62 46 64 C54 58 72 60 78 66 C90 64 100 76 96 88 C102 96 96 106 86 104 Z" fill="#8a909b" stroke="#2a3146" stroke-width="3" stroke-linejoin="round"/>
+      <ellipse cx="44" cy="102" rx="9" ry="5" fill="#9aa0aa" stroke="#2a3146" stroke-width="2.5"/>
+      <ellipse cx="74" cy="102" rx="9" ry="5" fill="#9aa0aa" stroke="#2a3146" stroke-width="2.5"/>
+      <!-- testa -->
+      <path d="M38 30 L42 6 L56 22 Z M82 30 L80 6 L66 22 Z" fill="#8a909b" stroke="#2a3146" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M43 22 L44 12 L51 20 Z M77 22 L78 12 L71 20 Z" fill="#e9a9b2"/>
+      <path d="M30 46 C26 30 40 16 60 16 C80 16 94 30 90 46 C96 52 90 66 80 68 C70 74 50 74 40 68 C30 66 24 52 30 46 Z" fill="#959ba6" stroke="#2a3146" stroke-width="3" stroke-linejoin="round"/>
+      <g class="blink"><ellipse cx="48" cy="42" rx="7" ry="8" fill="#d8c24a" stroke="#2a3146" stroke-width="2"/><ellipse cx="48" cy="43" rx="2.6" ry="6" fill="#1d2233"/><circle cx="46" cy="39" r="1.5" fill="#fff"/></g>
+      <g class="blink"><ellipse cx="72" cy="42" rx="7" ry="8" fill="#d8c24a" stroke="#2a3146" stroke-width="2"/><ellipse cx="72" cy="43" rx="2.6" ry="6" fill="#1d2233"/><circle cx="70" cy="39" r="1.5" fill="#fff"/></g>
+      <path d="M56 52 L64 52 L60 57 Z" fill="#e9a9b2" stroke="#2a3146" stroke-width="1.5" stroke-linejoin="round"/>
+      <path id="lmouth" d="M60 57 q-4 5 -8 2 M60 57 q4 5 8 2" fill="none" stroke="#2a3146" stroke-width="2" stroke-linecap="round"/>
+      <path d="M40 54 L22 50 M40 58 L22 60 M80 54 L98 50 M80 58 L98 60" stroke="#2a3146" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <div class="sheet"><div class="col" id="col"></div></div>
+
+  <p class="kbhint">Scrivi il numero con la tastiera <kbd>0</kbd> … <kbd>9</kbd> · <kbd>H</kbd> aiuto di Luna · <kbd>M</kbd> musica</p>
+  <div class="keys" id="keys"></div>
+
+  <div class="tools">
+    <button class="btn" id="hint">Aiuto di Luna</button>
+    <button class="btn ghost" id="skip">Nuova operazione</button>
+  </div>
+</div>
+
+<div class="party" id="party" hidden>
+  <div class="card">
+    <h2>Bravissimo!</h2>
+    <p style="margin:0;font-size:1.1rem;font-weight:700">10 pesciolini per Luna.<br>Federico è un campione delle colonne!</p>
+    <div class="pair" id="pair"></div>
+    <button class="btn" id="again">Gioca ancora</button>
+    <a class="btn ghost" href="index.html" style="text-decoration:none">🏠 Torna ai giochi</a>
+  </div>
+</div>
+
+<div class="start" id="start">
+  <div class="card">
+    <h2>Federico &amp; Luna</h2>
+    <p style="margin:0;font-size:1.1rem;font-weight:700">Somme e sottrazioni in colonna.<br>Aiuta Luna a raccogliere 10 pesciolini!</p>
+    <p class="devq">Con cosa giochi?</p>
+    <div class="devs" role="group" aria-label="Dispositivo">
+      <button class="dev" id="d-pc" data-dev="pc" aria-pressed="false">PC<small>Windows</small></button>
+      <button class="dev" id="d-mac" data-dev="mac" aria-pressed="false">Mac<small>computer Apple</small></button>
+      <button class="dev" id="d-ios" data-dev="ios" aria-pressed="false">iPad / iPhone<small>iOS</small></button>
+      <button class="dev" id="d-and" data-dev="android" aria-pressed="false">Android<small>telefono o tablet</small></button>
+    </div>
+    <p class="howto" id="howto"></p>
+    <button class="btn" id="go">Gioca con la musica</button>
+    <p id="iosnote" style="margin:0;font-size:.85rem;color:var(--soft)">Su iPad e iPhone alza il volume e togli il silenzioso.</p>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const GOAL = 10;
+let points=0, wrongs=0, streak=0, record=0, hadError=false;
+try{ record=+(localStorage.getItem('fl-rec')||0); }catch(e){}
+function renderScore(gain){
+  $('sc-pts').textContent=points; $('sc-ok').textContent=right; $('sc-ko').textContent=wrongs;
+  $('sc-st').textContent=streak; $('sc-rec').textContent=record;
+  if(gain){ const s=document.createElement('i'); s.className='plus'; s.textContent='+'+gain; $('sc-pts').parentNode.appendChild(s); setTimeout(()=>s.remove(),1200); }
+}
+let mode='add', level='easy', fish=0, right=0, p=null, step=0, errors=0, lock=false, actx=null;
+try{ const s=JSON.parse(localStorage.getItem('fl-col')||'{}'); if(s.mode)mode=s.mode; if(s.level)level=s.level; }catch(e){}
+
+const FISH = '<svg viewBox="0 0 22 14"><path d="M2 7 C6 1 14 1 18 7 C14 13 6 13 2 7 Z M18 7 L22 2 L22 12 Z" fill="var(--fish)"/><circle cx="7" cy="6" r="1.2" fill="#2a3146"/></svg>';
+
+function tone(f, d=0.12){
+  try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(), g=actx.createGain(); o.frequency.value=f; o.type='triangle';
+    g.gain.setValueAtTime(.15,actx.currentTime); g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+d);
+    o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime+d);
+  }catch(e){}
+}
+
+function ctx(){
+  try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(e){}
+  actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state!=='running') actx.resume();
+  return actx;
+}
+// Miao di Luna: voce che sale e scende, filtrata come una bocca che si apre "mi-a-o"
+function meow(){
+  try{
+    const c=ctx(), t=c.currentTime;
+    const o=c.createOscillator(), o2=c.createOscillator(), f=c.createBiquadFilter(), g=c.createGain();
+    o.type='sawtooth'; o2.type='triangle';
+    [o,o2].forEach((x,i)=>{ const m=i?2:1;
+      x.frequency.setValueAtTime(520*m,t);
+      x.frequency.linearRampToValueAtTime(820*m,t+0.18);
+      x.frequency.linearRampToValueAtTime(760*m,t+0.32);
+      x.frequency.exponentialRampToValueAtTime(430*m,t+0.6); });
+    f.type='bandpass'; f.Q.value=4;
+    f.frequency.setValueAtTime(900,t); f.frequency.linearRampToValueAtTime(2200,t+0.22); f.frequency.linearRampToValueAtTime(800,t+0.6);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.5,t+0.06);
+    g.gain.setValueAtTime(0.45,t+0.38); g.gain.exponentialRampToValueAtTime(0.001,t+0.65);
+    const g2=c.createGain(); g2.gain.value=0.25;
+    o.connect(f); o2.connect(g2).connect(f); f.connect(g).connect(c.destination);
+    o.start(t); o2.start(t); o.stop(t+0.7); o2.stop(t+0.7);
+  }catch(e){}
+}
+// Clacson: due "pe-pe" con due note stonate insieme
+function honk(){
+  try{
+    const c=ctx(), t0=c.currentTime;
+    [0,0.22].forEach(d=>{
+      const t=t0+d, f=c.createBiquadFilter(), g=c.createGain();
+      f.type='lowpass'; f.frequency.value=1800;
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.22,t+0.015);
+      g.gain.setValueAtTime(0.22,t+0.15); g.gain.linearRampToValueAtTime(0,t+0.19);
+      f.connect(g).connect(c.destination);
+      [370,466].forEach(fr=>{ const o=c.createOscillator(); o.type='square'; o.frequency.value=fr; o.connect(f); o.start(t); o.stop(t+0.2); });
+    });
+  }catch(e){}
+}
+
+function say(t){ const b=$('bubble'); b.textContent=t; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+function face(kind){
+  const m=$('fmouth'), f=$('fede'), l=$('luna');
+  m.setAttribute('d', kind==='happy' ? 'M48 80 Q60 94 72 80 Q60 86 48 80 Z' : kind==='sad' ? 'M50 86 Q60 80 70 86' : kind==='think' ? 'M52 84 L68 82' : 'M50 82 Q60 90 70 82');
+  m.setAttribute('fill', kind==='happy' ? '#b8443a' : 'none');
+  $('lmouth').setAttribute('d', kind==='happy' ? 'M60 57 q-4 7 -9 3 M60 57 q4 7 9 3' : 'M60 57 q-4 5 -8 2 M60 57 q4 5 8 2');
+  [f,l].forEach(el=>{ el.classList.remove('happy','sad'); void el.offsetWidth; if(kind==='happy'||kind==='sad') el.classList.add(kind); });
+}
+
+function gen(op, hard){
+  let aT,aU,bT,bU;
+  if(op==='+'){
+    if(hard){ aU=rnd(1,9); bU=rnd(10-aU,9); aT=rnd(1,7); bT=rnd(0,8-aT); }
+    else { aT=rnd(1,8); bT=rnd(0,9-aT); aU=rnd(0,8); bU=rnd(0,9-aU); }
+  } else {
+    if(hard){ aU=rnd(0,8); bU=rnd(aU+1,9); aT=rnd(2,9); bT=rnd(0,aT-1); }
+    else { aT=rnd(1,9); bT=rnd(0,aT); aU=rnd(1,9); bU=rnd(0,aU); if(aT===bT&&aU===bU) bU=Math.max(0,bU-1); }
+  }
+  const a=aT*10+aU, b=bT*10+bU;
+  let carry=false, borrow=false, rU, rT;
+  if(op==='+'){ carry=aU+bU>=10; rU=(aU+bU)%10; rT=aT+bT+(carry?1:0); }
+  else { borrow=aU<bU; rU=aU+(borrow?10:0)-bU; rT=aT-(borrow?1:0)-bT; }
+  return {op,a,b,aT,aU,bT,bU,carry,borrow,rU,rT,res: op==='+'?a+b:a-b};
+}
+
+function newProblem(){
+  const op = mode==='mix' ? (Math.random()<.5?'+':'-') : (mode==='add'?'+':'-');
+  const hard = level==='hard' && Math.random()<.75;
+  p = gen(op, hard); step=0; errors=0; lock=false; hadError=false;
+  draw(); face('neutral');
+  if(p.borrow){
+    say(`${p.aU} meno ${p.bU} non si può! Le unità chiedono in prestito 1 decina.`);
+    setTimeout(()=>{ p.showBorrow=true; draw(); }, 700);
+  } else say(op==='+' ? 'Partiamo dalle unità, a destra: somma i numeri blu!' : 'Partiamo dalle unità, a destra: togli il numero sotto!');
+}
+
+function draw(){
+  const c=$('col'), cells=[];
+  const tc = p.op==='+' && p.carry && step>=1 ? '<span class="pop">1</span>' : '';
+  cells.push('<div class="cell head"></div><div class="cell head da">da</div><div class="cell head u">u</div>');
+  cells.push(`<div class="cell carry"></div><div class="cell carry">${tc}</div><div class="cell carry"></div>`);
+  const aTtxt = p.showBorrow ? `<span class="struck">${p.aT}</span><span class="over pop">${p.aT-1}</span>` : p.aT;
+  const aUtxt = p.showBorrow ? `<span class="lend pop">1</span>${p.aU}` : p.aU;
+  cells.push(`<div class="cell"></div><div class="cell">${aTtxt}</div><div class="cell">${aUtxt}</div>`);
+  cells.push(`<div class="cell sign">${p.op==='+'?'+':'−'}</div><div class="cell">${p.bT||''}</div><div class="cell">${p.bU}</div>`);
+  cells.push('<div class="rule"></div>');
+  const slot=(i,val,show)=>`<div class="cell"><div class="cell slot ${step===i?'active':''} ${show?'done':''}" id="s${i}">${show?val:''}</div></div>`;
+  const tShow = step>1 ? (p.rT===0?'':p.rT) : '';
+  cells.push(`<div class="cell"></div>${slot(1,tShow,step>1)}${slot(0,p.rU,step>0)}`);
+  c.innerHTML=cells.join('');
+}
+
+function expected(){ return step===0 ? p.rU : p.rT; }
+
+function press(n){
+  if(lock || !p) return;
+  if(p.borrow && !p.showBorrow){ p.showBorrow=true; draw(); }
+  tone(520,.06);
+  const exp=expected(), s=$('s'+step);
+  if(n===exp){
+    errors=0; meow();
+    if(step===0){
+      step=1; draw(); face('happy');
+      if(p.op==='+' && p.carry){ say(`${p.aU} + ${p.bU} fa ${p.aU+p.bU}: scrivo ${p.rU} e porto 1 sopra le decine!`); }
+      else if(p.rT===0){ say('Le decine fanno 0: davanti non si scrive niente!'); return finish(); }
+      else say('Giusto! Ora le decine, a sinistra.');
+    } else { step=2; draw(); finish(); }
+  } else {
+    errors++; wrongs++; streak=0; hadError=true; renderScore(); honk(); face('sad');
+    s.textContent=n; s.classList.add('bad');
+    setTimeout(()=>{ if(s){ s.textContent=''; s.classList.remove('bad'); } }, 500);
+    say(errors>=2 ? `Quasi! La cifra giusta è ${exp}. Prova a toccarla.` : hintText());
+  }
+}
+
+function hintText(){
+  if(step===0){
+    if(p.op==='+') return `Unità: quanto fa ${p.aU} + ${p.bU}?` + (p.aU+p.bU>=10?' Scrivi solo l\'ultima cifra.':'');
+    return p.borrow ? `Unità: quanto fa ${p.aU+10} − ${p.bU}?` : `Unità: quanto fa ${p.aU} − ${p.bU}?`;
+  }
+  if(p.op==='+') return p.carry ? `Decine: ${p.aT} + ${p.bT} + 1 di riporto = ?` : `Decine: quanto fa ${p.aT} + ${p.bT}?`;
+  return p.borrow ? `Decine: il ${p.aT} è diventato ${p.aT-1}. ${p.aT-1} − ${p.bT} = ?` : `Decine: quanto fa ${p.aT} − ${p.bT}?`;
+}
+
+function finish(){
+  lock=true; fish++; right++; face('happy');
+  [880,1100,1320].forEach((f,i)=>setTimeout(()=>tone(f,.15),700+i*120));
+  say(`Evviva! ${p.a} ${p.op==='+'?'+':'−'} ${p.b} = ${p.res}. Un pesciolino per Luna!`);
+  streak = hadError ? 0 : streak+1;
+  const gain = (hadError ? 5 : 10) + (streak>=3 ? 5 : 0);
+  points += gain;
+  if(points>record){ record=points; try{ localStorage.setItem('fl-rec', record); }catch(e){} }
+  renderFish(); renderScore(gain);
+  setTimeout(()=>{ if(fish>=GOAL) party(); else newProblem(); }, 2200);
+}
+
+function renderFish(){
+  $('fishbar').innerHTML = Array.from({length:GOAL},(_,i)=>`<span class="${i<fish?'':'off'}">${FISH}</span>`).join('');
+}
+
+function party(){
+  $('pair').innerHTML = `<div class="jump">${$('fede').outerHTML.replace('id="fede"','')}</div><div class="jump" style="animation-delay:.3s">${$('luna').outerHTML.replace('id="luna"','')}</div>`;
+  $('party').hidden=false;
+}
+
+$('again').onclick=()=>{ $('party').hidden=true; fish=0; renderFish(); newProblem(); };
+$('hint').onclick=()=>{ if(!lock){ face('think'); say(hintText()); } };
+$('skip').onclick=()=>newProblem();
+
+function syncChips(){
+  document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.mode===mode));
+  document.querySelectorAll('[data-level]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.level===level));
+  try{ localStorage.setItem('fl-col', JSON.stringify({mode,level})); }catch(e){}
+}
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ mode=b.dataset.mode; syncChips(); newProblem(); });
+document.querySelectorAll('[data-level]').forEach(b=>b.onclick=()=>{ level=b.dataset.level; syncChips(); newProblem(); });
+
+$('keys').innerHTML = [1,2,3,4,5,6,7,8,9,0].map(n=>`<button class="key" id="k${n}" data-n="${n}" aria-label="${n}">${n}</button>`).join('');
+$('keys').addEventListener('click', e=>{ const k=e.target.closest('.key'); if(k) press(+k.dataset.n); });
+document.addEventListener('keydown', e=>{
+  const startOpen = !$('start').hidden;
+  if(startOpen){ if(e.key==='Enter'){ e.preventDefault(); goStart(); } return; }
+  if(!$('party').hidden){ if(e.key==='Enter'){ e.preventDefault(); $('again').click(); } return; }
+  if(/^[0-9]$/.test(e.key)) press(+e.key);           // funziona anche col tastierino numerico
+  else if(e.key==='h'||e.key==='H') $('hint').click();
+  else if(e.key==='m'||e.key==='M') $('music').click();
+});
+
+/* Dispositivo: tastiera (PC/Mac) o touch (iOS/Android) */
+const KEYS_TXT='Scrivi i numeri con la tastiera: <kbd>0</kbd> … <kbd>9</kbd>, anche col tastierino numerico. <kbd>H</kbd> chiede aiuto a Luna, <kbd>M</kbd> accende o spegne la musica.';
+const TOUCH_TXT='Tocca i tasti grandi con i numeri, sotto il quaderno. Il tasto Aiuto di Luna ti dà un suggerimento.';
+function detectDevice(){ const ua=navigator.userAgent||'';
+  if(/iPad|iPhone|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1)) return 'ios';
+  if(/Android/.test(ua)) return 'android';
+  if(/Macintosh|Mac OS X/.test(ua)) return 'mac';
+  return 'pc'; }
+function setDevice(d){
+  const desk=d==='pc'||d==='mac';
+  document.body.classList.toggle('desk',desk);
+  document.querySelectorAll('.dev').forEach(b=>b.setAttribute('aria-pressed',b.dataset.dev===d));
+  $('howto').innerHTML=desk?KEYS_TXT:TOUCH_TXT;
+  $('iosnote').hidden = d!=='ios';
+  try{ localStorage.setItem('fl-dev',d); }catch(e){}
+}
+let savedDev=null; try{ savedDev=localStorage.getItem('fl-dev'); }catch(e){}
+setDevice(savedDev||detectDevice());
+document.querySelectorAll('.dev').forEach(b=>b.addEventListener('click',()=>setDevice(b.dataset.dev)));
+
+/* Musichetta di sottofondo: melodia allegra in Do maggiore, suonata dal vivo con WebAudio */
+const N = {C4:261.6,D4:293.7,E4:329.6,F4:349.2,G4:392,A4:440,B4:493.9,C5:523.3,D5:587.3,E5:659.3,G3:196,C3:130.8,F3:174.6,A3:220};
+const MELODY = [
+  ['C5',1],['E5',1],['G4',1],['E5',1],['D5',1],['C5',1],['D5',2],
+  ['C5',1],['A4',1],['F4',1],['A4',1],['G4',1],['E4',1],['G4',2],
+  ['E4',1],['G4',1],['C5',1],['G4',1],['A4',1],['B4',1],['C5',1],['D5',1],
+  ['E5',1],['D5',1],['C5',1],['B4',1],['C5',2],[null,2]
+];
+const BASS = ['C3','C3','F3','F3','C3','A3','G3','C3'];
+let musicOn=false, master=null, loopBuf=null, src=null;
+const BEAT=0.26;
+// La musichetta viene "stampata" una volta in un buffer e poi suonata in loop: niente pause anche su telefono
+function buildLoop(ctx){
+  const sr=ctx.sampleRate, total=Math.round(32*BEAT*sr);
+  const buf=ctx.createBuffer(1,total,sr), d=buf.getChannelData(0);
+  const add=(freq,t0,dur,vol,wave)=>{
+    const s0=Math.round(t0*sr), n=Math.round(dur*sr);
+    for(let i=0;i<n && s0+i<total;i++){
+      const t=i/sr, ph=2*Math.PI*freq*t;
+      let v = wave==='sq' ? (Math.sin(ph)>0?0.5:-0.5)*0.6+Math.sin(ph)*0.4 : (2/Math.PI)*Math.asin(Math.sin(ph));
+      const env=Math.min(1,t/0.01)*Math.exp(-3.2*t/dur);
+      d[s0+i]+=v*env*vol;
+    }
+  };
+  let t=0, clock=0, bar=0;
+  for(const [n,len] of MELODY){
+    if(n) add(N[n], t, len*BEAT*0.95, 0.22, 'sq');
+    for(let k=0;k<len;k++){
+      const c=clock+k, b=Math.floor(c/4), root=N[BASS[b%BASS.length]], tb=t+k*BEAT;
+      if(c%2===0) add(root, tb, BEAT*1.8, 0.35, 'tri');
+      if(c%4===1||c%4===3) add(root*2, tb, BEAT*0.4, 0.12, 'tri');
+    }
+    clock+=len; t+=len*BEAT;
+  }
+  return buf;
+}
+function startMusic(){
+  try{
+    try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(e){}
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state!=='running') actx.resume();
+    if(!master){ master=actx.createGain(); master.connect(actx.destination); }
+    if(!loopBuf) loopBuf=buildLoop(actx);
+    if(src){ try{src.stop();}catch(e){} }
+    src=actx.createBufferSource(); src.buffer=loopBuf; src.loop=true; src.connect(master);
+    master.gain.cancelScheduledValues(actx.currentTime);
+    master.gain.setValueAtTime(0.55, actx.currentTime);
+    src.start(); musicOn=true;
+  }catch(e){ musicOn=false; }
+  syncMusic();
+}
+function stopMusic(){
+  musicOn=false;
+  if(src){ try{src.stop();}catch(e){} src=null; }
+  syncMusic();
+}
+function syncMusic(){
+  $('music').setAttribute('aria-pressed', musicOn);
+  $('musiclbl').textContent = musicOn ? 'Musica sì' : 'Musica no';
+  try{ localStorage.setItem('fl-music', musicOn?'1':'0'); }catch(e){}
+}
+$('music').onclick=()=> musicOn ? stopMusic() : startMusic();
+// Avvio robusto su iPad: prima si chiude la schermata, poi si prova la musica
+let goDone=false;
+const goStart=e=>{ if(e){ e.preventDefault(); } if(goDone) return; goDone=true;
+  const s=$('start'); s.hidden=true; s.style.display='none';
+  try{ startMusic(); }catch(err){} };
+$('go').addEventListener('click',goStart);
+$('go').addEventListener('touchend',goStart,{passive:false});
+document.addEventListener('visibilitychange',()=>{ if(!actx) return; if(document.hidden) actx.suspend(); else if(musicOn) actx.resume(); });
+syncMusic();
+
+syncChips(); renderFish(); renderScore(); newProblem();
+</script>
+
+</body>
+</html>
