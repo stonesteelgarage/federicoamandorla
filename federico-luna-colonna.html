@@ -338,16 +338,16 @@ function newProblem(){
 function draw(){
   const c=$('col'), cells=[];
   const tc = p.op==='+' && p.carry && step>=1 ? '<span class="pop">1</span>' : '';
-  cells.push('<div class="cell head"></div><div class="cell head da">da</div><div class="cell head u">u</div>');
+  cells.push('<div class="cell head da">da</div><div class="cell head u">u</div><div class="cell head"></div>');
   cells.push(`<div class="cell carry"></div><div class="cell carry">${tc}</div><div class="cell carry"></div>`);
   const aTtxt = p.showBorrow ? `<span class="struck">${p.aT}</span><span class="over pop">${p.aT-1}</span>` : p.aT;
   const aUtxt = p.showBorrow ? `<span class="lend pop">1</span>${p.aU}` : p.aU;
-  cells.push(`<div class="cell"></div><div class="cell">${aTtxt}</div><div class="cell">${aUtxt}</div>`);
-  cells.push(`<div class="cell sign">${p.op==='+'?'+':'−'}</div><div class="cell">${p.bT||''}</div><div class="cell">${p.bU}</div>`);
+  cells.push(`<div class="cell">${aTtxt}</div><div class="cell">${aUtxt}</div><div class="cell"></div>`);
+  cells.push(`<div class="cell">${p.bT||''}</div><div class="cell">${p.bU}</div><div class="cell sign">${p.op==='+'?'+':'−'}</div>`);
   cells.push('<div class="rule"></div>');
   const slot=(i,val,show)=>`<div class="cell"><div class="cell slot ${step===i?'active':''} ${show?'done':''}" id="s${i}">${show?val:''}</div></div>`;
   const tShow = step>1 ? (p.rT===0?'':p.rT) : '';
-  cells.push(`<div class="cell"></div>${slot(1,tShow,step>1)}${slot(0,p.rU,step>0)}`);
+  cells.push(`${slot(1,tShow,step>1)}${slot(0,p.rU,step>0)}<div class="cell"></div>`);
   c.innerHTML=cells.join('');
 }
 
