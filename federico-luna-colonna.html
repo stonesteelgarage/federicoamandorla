@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}body{margin:0}</style>
 <title>Federico e Luna in Colonna</title>
@@ -121,6 +121,17 @@ body.desk .key{height:44px;font-size:1.6rem;box-shadow:0 3px 0 var(--ink)}
   .key{height:54px;font-size:2rem}
 }
 </style>
+<!-- blocco-zoom: niente zoom con due dita o doppio tocco su tablet e telefono -->
+<style>html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+button,a,canvas,[data-k]{touch-action:manipulation;-webkit-touch-callout:none}</style>
+<script>(function(){var no=function(e){e.preventDefault()};
+["gesturestart","gesturechange","gestureend"].forEach(function(t){document.addEventListener(t,no,{passive:false})});
+document.addEventListener("touchmove",function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});
+document.addEventListener("touchstart",function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});
+document.addEventListener("dblclick",no,{passive:false});
+document.addEventListener("wheel",function(e){if(e.ctrlKey)e.preventDefault()},{passive:false});
+document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&["+","-","=","0"].indexOf(e.key)>=0)e.preventDefault()});
+})();</script>
 </head>
 <body>
 

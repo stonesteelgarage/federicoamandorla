@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Soldato Federico</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -55,6 +55,17 @@ input[type=text]:focus{border-color:#3c9a3c}
 .stat b{display:block;font-size:26px;color:#2e5d2e}
 .record{color:#e23b2e;font-weight:800;font-size:20px}
 </style>
+<!-- blocco-zoom: niente zoom con due dita o doppio tocco su tablet e telefono -->
+<style>html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+button,a,canvas,[data-k]{touch-action:manipulation;-webkit-touch-callout:none}</style>
+<script>(function(){var no=function(e){e.preventDefault()};
+["gesturestart","gesturechange","gestureend"].forEach(function(t){document.addEventListener(t,no,{passive:false})});
+document.addEventListener("touchmove",function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});
+document.addEventListener("touchstart",function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});
+document.addEventListener("dblclick",no,{passive:false});
+document.addEventListener("wheel",function(e){if(e.ctrlKey)e.preventDefault()},{passive:false});
+document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&["+","-","=","0"].indexOf(e.key)>=0)e.preventDefault()});
+})();</script>
 </head>
 <body>
 <canvas id="gioco"></canvas>
@@ -214,6 +225,7 @@ const BOSS=[
  {n:'Troll del Bosco',gate:6000,hp:25,pelle:'#a483d6',scuro:'#5e3a99',vestito:'#3b2a1a',arma:'clava',proj:'fuoco',vel:65,punti:800,corna:true},
  {n:'Re dei Giganti di Pietra',gate:9000,hp:30,pelle:'#a3a3ae',scuro:'#5e5e66',vestito:'#c0392b',arma:'martello',proj:'masso',vel:60,punti:1200,corona:true}
 ];
+const MOLLE=[1100,2550,3900,5450,6900,8150]; // scarpe a molla = salto doppio per 20 secondi
 const RAGGIO={roccia:95,albero:75,cespuglio:75,tronco:95,grotta:125};
 const ALTEZZA={roccia:95,albero:215,cespuglio:80,tronco:42,grotta:235};
 const ZONE=[{fino:3000,n:'il Prato Verde 🌼',erba:'#5cbf4f',terra:'#9b6b3a'},{fino:6000,n:'il Bosco Fitto 🌲',erba:'#3f9a45',terra:'#7d5530'},{fino:1e9,n:'le Montagne Rocciose ⛰️',erba:'#8aa05a',terra:'#8a7a6a'}];
@@ -428,9 +440,9 @@ let S=null,giocando=false,menuCam=0;
 const K={sx:false,dx:false,fuoco:false};
 function nuovaPartita(){
  S={t:0,punti:0,uccisi:0,grado:0,shake:0,zona:0,
-  p:{x:260,y:GROUND,vx:0,vy:0,terra:true,dir:1,vita:5,max:5,inv:0,cd:0,walk:0,rin:0,morto:false},
+  p:{x:260,y:GROUND,vx:0,vy:0,terra:true,doppio:0,salti:0,dir:1,vita:5,max:5,inv:0,cd:0,walk:0,rin:0,morto:false},
   armi:['pistola'],arma:'pistola',proiettili:[],mostri:[],part:[],cuori:[],
-  coda:[],msg:null,avviso:null,spawn:2,livello:0,boss:null,bproj:[],onde:[],vinto:false,chiusura:false,
+  coda:[],msg:null,avviso:null,spawn:2,livello:0,combo:0,molle:MOLLE.map(x=>({x,preso:false})),boss:null,bproj:[],onde:[],vinto:false,chiusura:false,
   nasc:NASCONDIGLI.map(n=>Object.assign({},n,{cercato:false,anim:0,icona:''}))};
  K.sx=K.dx=K.fuoco=false;
 }
@@ -447,7 +459,11 @@ function aggiornaArmaBox(){
 function cambiaArma(){if(!S||S.armi.length<2)return;const i=S.armi.indexOf(S.arma);S.arma=S.armi[(i+1)%S.armi.length];suono(600,.08,'triangle',.06);aggiornaArmaBox()}
 
 // ======================= AZIONI =======================
-function salta(){if(!S||!giocando)return;const p=S.p;if(p.terra){p.vy=-780;p.terra=false;suono(380,.15,'square',.04,620)}}
+function salta(){if(!S||!giocando)return;const p=S.p;
+ if(p.terra){p.vy=-780;p.terra=false;p.salti=1;suono(380,.15,'square',.04,620)}
+ else if(p.doppio>0&&p.salti<2){p.vy=-740;p.salti=2;particelle(p.x,p.y,10,'#ffeb3b','scintilla',220);S.part.push({x:p.x,y:p.y,vx:0,vy:0,vita:.4,col:'#fff',tipo:'anello',grav:0});suono(600,.15,'square',.05,1300)}}
+function prendiMolla(o){const p=S.p;o.preso=true;p.doppio=Math.min(40,p.doppio+20);S.punti+=25;
+ particelle(o.x,GROUND-115,14,'#ffeb3b');mostra('SALTO DOPPIO! 👟','Premi salta due volte: funziona per 20 secondi','#f57f17');melodia([523,784,1047,1568])}
 function spara(){
  const p=S.p,w=ARMA[S.arma];p.cd=w.cd;p.rin=5;
  S.proiettili.push({x:p.x+p.dir*(14+w.len),y:p.y-57-(p.terra?0:0),vx:p.dir*w.vel,w,dmg:w.dmg,vita:1.3,colpiti:new Set()});
@@ -494,6 +510,14 @@ function progressi(){
  if(g>S.grado){S.grado=g;S.punti+=50*g;p.vita=Math.min(p.max,p.vita+1);mostra('PROMOSSO! 🎖️',`Ora sei ${GRADI[g].n} ${prof.nome}!`,'#2e7d32');melodia([523,659,784,1047])}
  ARMI.forEach(a=>{if(!a.segreta&&!S.armi.includes(a.id)&&S.uccisi>=a.kill){S.armi.push(a.id);S.arma=a.id;mostra('NUOVA ARMA!',`${a.em} ${a.n} · ${testoColpi(a)}`,'#e23b2e');melodia([440,554,659,880])}});
  aggiornaArmaBox();
+}
+function schiaccia(m){
+ const p=S.p;S.combo++;m.hp=0;uccidi(m);
+ const bonus=5*S.combo;S.punti+=bonus;
+ testoVol(m.x,m.y-m.h-44,S.combo>1?`SBAM! x${S.combo} +${bonus}`:`SBAM! +${bonus}`,'#ffeb3b');
+ particelle(m.x,m.y-m.h,8,'#ffffff','scintilla',220);
+ p.y=Math.min(p.y,m.y-m.h);p.vy=-600;p.terra=false;p.salti=1;p.inv=Math.max(p.inv,.15);
+ suono(330+S.combo*80,.18,'square',.06,900+S.combo*120);
 }
 function ferito(m){
  const p=S.p;p.vita--;p.inv=1.4;p.vy=-380;p.terra=false;p.x-=Math.sign(m.x-p.x||1)*45;S.shake=12;
@@ -611,7 +635,9 @@ function aggiorna(dt){
   const gate=S.livello<BOSS.length?BOSS[S.livello].gate:WORLD_W;
   p.x=clamp(p.x+p.vx*dt,40,gate-40);if(ax)p.walk+=dt;
  }
- p.vy+=1900*dt;p.y+=p.vy*dt;if(p.y>=GROUND){p.y=GROUND;p.vy=0;p.terra=true}
+ p.vy+=1900*dt;p.y+=p.vy*dt;if(p.y>=GROUND){p.y=GROUND;p.vy=0;p.terra=true;S.combo=0;p.salti=0}
+ if(p.doppio>0){p.doppio-=dt;if(p.doppio<=0){p.doppio=0;avviso('Le scarpe a molla si sono scaricate 👟')}}
+ for(const o of S.molle){if(!o.preso&&Math.abs(o.x-p.x)<42&&Math.abs((GROUND-115)-(p.y-55))<75)prendiMolla(o)}
  p.inv=Math.max(0,p.inv-dt);p.cd-=dt;p.rin=Math.max(0,p.rin-dt*50);S.shake=Math.max(0,S.shake-dt*40);
  if(K.fuoco&&p.cd<=0&&!p.morto)spara();
  S.cam=clamp(p.x-VW*.4,0,Math.max(0,WORLD_W-VW));
@@ -632,6 +658,9 @@ function aggiorna(dt){
  for(const m of S.mostri){if(m.tipo==='boss'){aggiornaBoss(m,dt);continue}
   m.t+=dt;m.flash-=dt;const d=Math.sign(p.x-m.x);m.x+=d*m.vel*dt;
   if(m.tipo==='pipistrello')m.y=GROUND-90+Math.sin(m.t*2.2+m.fase)*55;
+  // salto alla Mario: ricadendo sopra un mostro normale lo schiacci
+  const top=m.y-m.h;
+  if(!p.morto&&!p.terra&&p.vy>0&&Math.abs(p.x-m.x)<m.w/2+12&&p.y>=top-6&&p.y<=top+22){schiaccia(m);continue}
   if(!p.morto&&p.inv<=0&&Math.abs(p.x-m.x)<m.w/2+14&&p.y-100<m.y&&p.y>m.y-m.h+10)ferito(m);
  }
  S.mostri=S.mostri.filter(m=>!m.morto&&(m.tipo==='boss'||Math.abs(m.x-p.x)<VW*2));
@@ -677,6 +706,10 @@ function disegna(){
  lista.forEach(n=>{if(n.x>cam-260&&n.x<cam+VW+260)disegnaNasc(ctx,Object.assign({cercato:false,anim:0},n),n===vic,S?S.t:performance.now()/1000,S?S.grado:0)});
  BOSS.slice(0,2).forEach((b,i)=>{if(b.gate>cam-150&&b.gate<cam+VW+150)disegnaCancello(b.gate,S?S.livello>i:false)});
  if(S){
+  S.molle.forEach(o=>{if(o.preso||o.x<cam-60||o.x>cam+VW+60)return;const yy=GROUND-115+Math.sin(S.t*3+o.x)*8;
+   ctx.fillStyle='rgba(255,235,59,.35)';cerchio(ctx,o.x,yy,30+Math.sin(S.t*6)*3);ctx.fillStyle='rgba(255,255,255,.6)';cerchio(ctx,o.x,yy,22);
+   ctx.font='32px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('👟',o.x,yy);
+   ctx.font='800 15px "Baloo 2",sans-serif';ctx.fillStyle='#e65100';ctx.fillText('x2',o.x+22,yy-20)});
   S.cuori.forEach(c=>{ctx.font='30px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('❤️',c.x,c.y+Math.sin(c.t*5)*4)});
   const dmg=ARMA[S.arma].dmg;S.mostri.forEach(m=>m.tipo==='boss'?disegnaBoss(ctx,m):disegnaMostro(ctx,m,S.p.x,dmg));
   S.onde.forEach(o=>{ctx.strokeStyle=`rgba(255,255,255,${1-o.t/.6})`;ctx.lineWidth=6;ctx.beginPath();ctx.ellipse(o.x,GROUND-4,40+o.t*400,10+o.t*20,0,0,Math.PI*2);ctx.stroke()});
@@ -687,7 +720,7 @@ function disegna(){
   const p=S.p;if(!p.morto&&!(p.inv>0&&Math.floor(S.t*14)%2))soldato(ctx,p.x,p.y,p.dir,p.walk,(K.sx||K.dx)&&p.terra,prof,ARMA[S.arma],p.rin,1,p.terra?null:p.vy);
   S.proiettili.forEach(disegnaProiettile);
   S.part.forEach(q=>{ctx.globalAlpha=clamp(q.vita*1.6,0,1);ctx.fillStyle=q.col;
-   if(q.tipo==='stella')stella(ctx,q.x,q.y,q.r+3);else if(q.tipo==='fumo')cerchio(ctx,q.x,q.y,q.r+(1-q.vita)*14);else if(q.tipo==='testo'){ctx.font='800 22px "Baloo 2",sans-serif';ctx.textAlign='center';ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=4;ctx.strokeText(q.txt,q.x,q.y);ctx.fillText(q.txt,q.x,q.y)}else cerchio(ctx,q.x,q.y,q.r*.6)});
+   if(q.tipo==='stella')stella(ctx,q.x,q.y,q.r+3);else if(q.tipo==='fumo')cerchio(ctx,q.x,q.y,q.r+(1-q.vita)*14);else if(q.tipo==='anello'){ctx.strokeStyle=q.col;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(q.x,q.y,10+(.4-q.vita)*120,4+(.4-q.vita)*30,0,0,Math.PI*2);ctx.stroke()}else if(q.tipo==='testo'){ctx.font='800 22px "Baloo 2",sans-serif';ctx.textAlign='center';ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=4;ctx.strokeText(q.txt,q.x,q.y);ctx.fillText(q.txt,q.x,q.y)}else cerchio(ctx,q.x,q.y,q.r*.6)});
   ctx.globalAlpha=1;
  }
  ctx.restore();
@@ -700,6 +733,8 @@ function hud(){
  ctx.fillStyle='rgba(255,253,245,.9)';rr(ctx,12,10,262,76,16);ctx.fill();ctx.strokeStyle='#3c7a3c';ctx.lineWidth=3;ctx.stroke();
  ctx.textAlign='left';ctx.fillStyle='#2e5d2e';ctx.font='800 19px "Baloo 2",sans-serif';ctx.fillText('🎖️ '+GRADI[S.grado].n+' '+prof.nome,24,36);
  ctx.font='20px serif';for(let i=0;i<p.max;i++)ctx.fillText(i<p.vita?'❤️':'🤍',24+i*27,70);
+ if(p.doppio>0){const w=178;ctx.fillStyle=p.doppio<5&&Math.floor(S.t*6)%2?'rgba(245,127,23,.6)':'rgba(245,127,23,.92)';rr(ctx,VW-w-12,64,w,30,12);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='800 16px "Baloo 2",sans-serif';ctx.textAlign='left';ctx.fillText(`👟 Salto doppio ${Math.ceil(p.doppio)}s`,VW-w,85)}
  // punti
  ctx.textAlign='center';testoBordo('⭐ '+S.punti,VW/2,42,32,'#e23b2e');testoBordo('👾 '+S.uccisi+' mostri · Livello '+Math.min(S.livello+1,BOSS.length),VW/2,66,18,'#2e5d2e');
  // mappa
@@ -733,7 +768,7 @@ function avvia(){
  $('#topbtn').classList.remove('hidden');$('#armaBox').classList.remove('hidden');if(TOUCH)$('#touch').classList.remove('hidden');
  aggiornaArmaBox();melodia([392,523,659,784]);
  mostra('MISSIONE INIZIATA!',`Forza ${prof.nome}, difendi la valle!`,'#2e7d32');
- avviso(TOUCH?'◀ ▶ muovi · ⬆ salta · 💥 spara · 🔍 cerca armi nascoste':'← → muovi · ↑ salta · SPAZIO spara · E cerca · Q cambia arma',5);
+ avviso(TOUCH?'◀ ▶ muovi · ⬆ salta (anche sopra i mostri!) · 💥 spara · 🔍 cerca':'← → muovi · ↑ salta sui mostri · SPAZIO spara · E cerca · Q cambia arma',5);
 }
 function apriReg(){giocando=false;document.body.classList.remove('ingioco');['#pausa','#fine','#topbtn','#armaBox','#touch'].forEach(s=>$(s).classList.add('hidden'));S=null;preparaReg();$('#reg').classList.remove('hidden')}
 
@@ -747,7 +782,7 @@ function preparaReg(){
  swatch('#swPelle',PELLI,'pelle');swatch('#swCapelli',CAPELLI,'capelli');swatch('#swOcchi',OCCHI,'occhi');swatch('#swDivisa',DIVISE,'divisa',true);
  $('#togliFoto').classList.toggle('hidden',!prof.foto);
  $('#comandi').innerHTML=(TOUCH?'<b>Comandi:</b> ◀ ▶ cammina · ⬆ salta · 💥 spara · 🔍 cerca · tocca l\'arma in basso per cambiarla':'<b>Comandi:</b> ← → cammina · ↑ salta · SPAZIO spara · E cerca · Q cambia arma · P pausa')+
-  '<br><b>Missione:</b> la pistola abbatte un mostro in 3 colpi. Più mostri sconfiggi, più sali di grado e ricevi armi più potenti. Cerca dietro rocce, alberi e grotte: ci sono 3 armi segrete! Alla fine di ognuno dei 3 livelli ti aspetta un <b>boss gigante</b>: servono almeno 20 colpi per batterlo.';
+  '<br><b>Missione:</b> la pistola abbatte un mostro in 3 colpi. Più mostri sconfiggi, più sali di grado e ricevi armi più potenti. Cerca dietro rocce, alberi e grotte: ci sono 3 armi segrete! Puoi anche <b>saltare sopra i mostri</b> per schiacciarli, come Super Mario! Prendi le <b>scarpe a molla 👟</b> per avere il salto doppio. Alla fine di ognuno dei 3 livelli ti aspetta un <b>boss gigante</b> (lui non si schiaccia): servono almeno 20 colpi per batterlo.';
 }
 $('#nome').addEventListener('input',e=>{prof.nome=e.target.value.trim()||'Federico';$('#titNome').textContent=prof.nome});
 $('#fotoIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
