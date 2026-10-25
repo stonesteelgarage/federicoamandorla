@@ -111,7 +111,7 @@ document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&["+",
 
     <section class="griglia" id="griglia"></section>
 
-    <section class="libri-striscia"><h3>📚 I libri di papà</h3><div class="fila" id="libri-fila"></div></section>
+    <section class="libri-striscia"><h3>📚 I libri consigliati da papà</h3><div class="fila" id="libri-fila"></div></section>
 
     <footer>Fatto con ❤️ da papà</footer>
   </main>
@@ -181,7 +181,7 @@ function cardLibro(l){
 }
 ["sx","dx"].forEach(lato => {
   const box = document.getElementById("libri-" + lato);
-  const et = document.createElement("div"); et.className = "libri-etichetta"; et.textContent = "📚 I libri di papà";
+  const et = document.createElement("div"); et.className = "libri-etichetta"; et.textContent = "📚 I libri consigliati da papà";
   box.appendChild(et);
   LIBRI.filter(l => l.lato === lato).forEach(l => box.appendChild(cardLibro(l)));
 });
