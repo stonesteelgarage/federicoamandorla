@@ -67,6 +67,14 @@
 
   footer{text-align:center;margin-top:40px;font-size:16px;opacity:.7}
 
+  /* canale YouTube */
+  .canale{display:inline-flex;align-items:center;gap:10px;margin-top:16px;
+    background:#ff0033;color:#fff;font-weight:800;font-size:20px;text-decoration:none;
+    padding:10px 24px;border-radius:999px;box-shadow:var(--ombra);text-shadow:0 2px 0 rgba(0,0,0,.18);
+    transition:transform .15s ease}
+  .canale:hover{transform:translateY(-4px) rotate(-1deg)}
+  .canale:active{transform:translateY(3px)}
+
   /* ===== banner libri ai lati ===== */
   .libri-lato{position:fixed;top:50%;transform:translateY(-50%);z-index:2;width:180px;display:flex;flex-direction:column;gap:18px}
   .libri-lato.sx{left:18px} .libri-lato.dx{right:18px}
@@ -107,6 +115,7 @@ document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&["+",
       <div class="gatto">🐱</div>
       <h1>I Giochi di Federico</h1>
       <p class="sotto">Scegli un gioco e divertiti insieme a Luna!</p>
+      <a class="canale" href="https://www.youtube.com/@CAMIONCINOBLU" target="_blank" rel="noopener">▶️ Visita il nostro canale Camioncino Blu</a>
     </header>
 
     <section class="griglia" id="griglia"></section>
