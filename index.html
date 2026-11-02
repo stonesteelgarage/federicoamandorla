@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>I Giochi di Federico</title>
+<title>I giochi del Camioncino Blu</title>
+<meta name="description" content="Giochi educativi gratis per bambini: numeri, sillabe, coding, elettricità e tanto divertimento con il Camioncino Blu, Teo e Leo.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -65,7 +66,8 @@
   .presto .icona{background:#e3e8f0}
   .presto .gioca{background:#b9c2d0}
 
-  footer{text-align:center;margin-top:40px;font-size:16px;opacity:.7}
+  footer{text-align:center;margin-top:40px;font-size:16px;opacity:.8}
+  footer a{color:var(--testo);font-weight:700}
 
   /* canale YouTube */
   .canale{display:inline-flex;align-items:center;gap:10px;margin-top:16px;
@@ -74,6 +76,16 @@
     transition:transform .15s ease}
   .canale:hover{transform:translateY(-4px) rotate(-1deg)}
   .canale:active{transform:translateY(3px)}
+  .social{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:6px}
+  .canale.tiktok{background:#111}
+  .canale.libri{background:#ff9900}
+  .novita-natale{display:flex;align-items:center;gap:16px;background:#fff;border:5px solid #d62828;border-radius:28px;padding:14px 18px;
+    margin:0 auto 26px;max-width:640px;text-decoration:none;color:var(--testo);box-shadow:var(--ombra);transition:transform .15s ease}
+  .novita-natale:hover{transform:translateY(-4px) rotate(-1deg)}
+  .novita-natale img{width:110px;height:110px;border-radius:14px;object-fit:cover;flex:none}
+  .novita-natale b{font-size:22px;line-height:1.1;display:block}
+  .novita-natale span{font-size:16px;opacity:.85}
+  .novita-natale .compra{display:inline-block;margin-top:6px;background:#ff9900;color:#fff;font-weight:800;padding:3px 14px;border-radius:999px;opacity:1}
 
   /* ===== banner libri ai lati ===== */
   .libri-lato{position:fixed;top:50%;transform:translateY(-50%);z-index:2;width:180px;display:flex;flex-direction:column;gap:18px}
@@ -112,17 +124,26 @@ document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&["+",
 
   <main>
     <header>
-      <div class="gatto">🐱</div>
-      <h1>I Giochi di Federico</h1>
-      <p class="sotto">Scegli un gioco e divertiti insieme a Luna!</p>
-      <a class="canale" href="https://www.youtube.com/@CAMIONCINOBLU" target="_blank" rel="noopener">▶️ Visita il nostro canale Camioncino Blu</a>
+      <div class="gatto">🚚</div>
+      <h1>I giochi del Camioncino Blu</h1>
+      <p class="sotto">Giochi gratis per imparare divertendosi: numeri, sillabe, coding ed elettricità!</p>
+      <div class="social">
+        <a class="canale" href="https://www.youtube.com/@CAMIONCINOBLU" target="_blank" rel="noopener">▶️ Canale YouTube</a>
+        <a class="canale tiktok" href="https://www.tiktok.com/@camioncino_blu" target="_blank" rel="noopener">🎵 TikTok</a>
+        <a class="canale libri" href="libri.html">📚 I libri di Teo e Leo</a>
+      </div>
     </header>
+
+    <a class="novita-natale" href="https://www.amazon.it/dp/B0HPZRKFDW" target="_blank" rel="noopener">
+      <img src="img/natale-teo-e-leo.jpg" alt="Copertina Natale con Teo e Leo">
+      <div><b>🎄 Novità: Natale con Teo e Leo</b><span>46 disegni di Natale da colorare e tante barzellette da leggere insieme.</span><br><span class="compra">Su Amazon</span></div>
+    </a>
 
     <section class="griglia" id="griglia"></section>
 
     <section class="libri-striscia"><h3>📚 I libri consigliati da papà</h3><div class="fila" id="libri-fila"></div></section>
 
-    <footer>Fatto con ❤️ da papà</footer>
+    <footer>Fatto con ❤️ da papà · <a href="https://www.youtube.com/@CAMIONCINOBLU" target="_blank" rel="noopener">YouTube</a> · <a href="https://www.tiktok.com/@camioncino_blu" target="_blank" rel="noopener">TikTok</a> · <a href="libri.html">I libri di Oliver Blue</a></footer>
   </main>
 
 <script>
@@ -132,12 +153,20 @@ document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&["+",
    nuovo: true per mostrare l'etichetta "NUOVO!"
    ========================================================= */
 const GIOCHI = [
+  { titolo: "Teo e Leo", file: "teo-e-leo.html", emoji: "🐊", colore: "#4caf50",
+    descrizione: "Conta le banane con il coccodrillo e il leone, e ridi con le loro barzellette!", nuovo: true },
+  { titolo: "Accendi la lampadina", file: "elettricita.html", emoji: "💡", colore: "#f4b400",
+    descrizione: "Pila, fili e interruttore: scopri come funziona l'elettricità!", nuovo: true },
+  { titolo: "Programma il Camioncino", file: "coding-camioncino.html", emoji: "🚚", colore: "#1e6fd9",
+    descrizione: "Primi passi nel coding: dai i comandi e porta il camioncino al regalo!", nuovo: true },
+  { titolo: "Il Treno delle Sillabe", file: "sillabe.html", emoji: "🚂", colore: "#e8437a",
+    descrizione: "Componi le parole sillaba per sillaba e impara a leggere!", nuovo: true },
   { titolo: "Corsa delle Macchinine", file: "corsa-macchinine.html", emoji: "🏎️", colore: "#e23b2e",
     descrizione: "Guida la rossa n. 7, schiva coni e olio e arriva primo!" },
-  { titolo: "Federico & Luna in Colonna", file: "federico-luna-colonna.html", emoji: "🐟", colore: "#3a78cc",
+  { titolo: "Impara i numeri con Federico e Luna", file: "federico-luna-colonna.html", emoji: "🐟", colore: "#3a78cc",
     descrizione: "Somme e sottrazioni in colonna: aiuta Luna a prendere 10 pesciolini." },
   { titolo: "Soldato Federico", file: "soldato-federico.html", emoji: "🪖", colore: "#3c7a3c",
-    descrizione: "Sconfiggi i mostri, sali di grado e trova le armi segrete!", nuovo: true },
+    descrizione: "Sconfiggi i mostri, sali di grado e trova le armi segrete!" },
 ];
 
 const griglia = document.getElementById("griglia");
@@ -172,11 +201,13 @@ griglia.appendChild(presto);
    lato: "sx" o "dx" (sugli schermi stretti finiscono tutti sotto ai giochi)
    ========================================================= */
 const LIBRI = [
+  { titolo: "Natale con Teo e Leo", asin: "B0HPZRKFDW", lato: "sx",
+    img: "img/natale-teo-e-leo.jpg" },
   { titolo: "Il Coccodrillo e il Leone", asin: "B0GV75QDTX", lato: "sx",
     img: "https://m.media-amazon.com/images/I/71+yesRIJ7L._SL500_.jpg" },
   { titolo: "Angolini Felici", asin: "B0HNT29S9C", lato: "dx",
     img: "https://m.media-amazon.com/images/I/61lPLLFZPEL._SL500_.jpg" },
-  { titolo: "Angolini Felici – Halloween", asin: "B0HP1FN76N", lato: "dx",
+  { titolo: "Angolini Felici – Halloween", asin: "B0HP1FN76N", lato: "sx",
     img: "https://m.media-amazon.com/images/I/61v6oA2JvlL._SL500_.jpg" },
 ];
 

@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Accendi la lampadina</title>
+<meta name="description" content="Accendi la lampadina! Un gioco per bambini da 5 a 8 anni per scoprire come funziona un circuito elettrico: pila, fili, interruttore e lampadina.">
+<style>html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+button,a,canvas,[data-k]{touch-action:manipulation;-webkit-touch-callout:none}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1f2a44;
+  --sky1:#7fd3ff;
+  --sky2:#c9f0ff;
+  --card:#ffffff;
+  --shadow:0 10px 0 rgba(31,42,68,.18);
+  --yellow:#ffd23f;
+  --orange:#ff8a3d;
+  --green:#35c46a;
+  --red:#ff6b6b;
+  --blue:#2f8ff0;
+  --board:#fffaf0;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;overflow-x:hidden}
+body{
+  min-height:100vh;min-height:100dvh;
+  background:linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 100%) fixed;
+  color:var(--ink);
+  font-family:'Baloo 2',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font-family:inherit;color:inherit;cursor:pointer;border:0}
+.top{
+  display:flex;align-items:center;gap:8px;justify-content:space-between;
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+  max-width:1100px;margin:0 auto;
+}
+.back{
+  display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--ink);
+  background:var(--card);border-radius:999px;padding:8px 16px;font-weight:800;font-size:16px;
+  box-shadow:0 5px 0 rgba(31,42,68,.18);line-height:1.2;
+}
+.back:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(31,42,68,.18)}
+.iconbtn{
+  width:48px;height:48px;border-radius:50%;background:var(--card);font-size:24px;
+  box-shadow:0 5px 0 rgba(31,42,68,.18);display:inline-flex;align-items:center;justify-content:center;flex:none;
+}
+.iconbtn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(31,42,68,.18)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px calc(24px + env(safe-area-inset-bottom))}
+.card{background:var(--card);border-radius:28px;box-shadow:var(--shadow);padding:16px}
+.hidden{display:none!important}
+
+/* ---------- menu ---------- */
+.hero{text-align:center;padding:18px 16px 20px;margin-bottom:22px}
+.hero h1{margin:0;font-size:clamp(30px,7vw,52px);line-height:1.05;font-weight:800}
+.hero p{margin:6px 0 0;font-size:clamp(18px,4.2vw,24px);font-weight:700;opacity:.85}
+.hero .big{font-size:clamp(56px,14vw,96px);line-height:1;display:block;animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.levels{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media(min-width:620px){.levels{grid-template-columns:repeat(4,1fr)}}
+.lv{
+  background:var(--card);border-radius:24px;box-shadow:var(--shadow);padding:12px 8px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;min-height:132px;position:relative;
+}
+.lv:active{transform:translateY(5px);box-shadow:0 5px 0 rgba(31,42,68,.18)}
+.lv .n{font-size:40px;font-weight:800;line-height:1}
+.lv .ic{font-size:30px;line-height:1.1}
+.lv .st{font-size:22px;letter-spacing:2px;line-height:1.2}
+.lv.locked{opacity:.55}
+.lv.locked .n::after{content:" 🔒";font-size:26px}
+.lv.done{background:#fffbe6}
+.foot{text-align:center;margin-top:22px;font-weight:700;font-size:17px}
+.foot .card{display:inline-block;padding:10px 18px;border-radius:20px}
+
+/* ---------- game ---------- */
+.game{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:860px){
+  .game{grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);align-items:start}
+}
+.head{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.badge{
+  flex:none;width:58px;height:58px;border-radius:18px;background:var(--yellow);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;line-height:1;
+  box-shadow:inset 0 -5px 0 rgba(31,42,68,.15)
+}
+.badge small{font-size:12px}
+.badge b{font-size:28px}
+.instr{flex:1;font-size:clamp(20px,5vw,26px);font-weight:800;line-height:1.15;min-width:0}
+.boardcard{padding:10px}
+#board{display:block;width:100%;height:auto;max-height:62vh;margin:0 auto;overflow:visible;touch-action:manipulation}
+@media(min-width:860px){#board{max-height:calc(100vh - 200px)}}
+.side{display:flex;flex-direction:column;gap:16px}
+.bubble{
+  display:flex;align-items:center;gap:10px;font-size:clamp(19px,4.6vw,23px);font-weight:700;line-height:1.2;
+  min-height:76px;padding:12px 14px;transition:background .2s;
+}
+.bubble .face{font-size:40px;flex:none}
+.bubble.bad{background:#fff1f0}
+.bubble.good{background:#eafff0}
+.bubble.wiggle{animation:wig .45s}
+@keyframes wig{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.traycard h2{margin:0 0 8px;font-size:20px;font-weight:800;display:flex;align-items:center;gap:6px}
+.tray{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:12px}
+.item{
+  background:#f1f8ff;border-radius:20px;min-height:96px;padding:6px 4px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+  box-shadow:0 6px 0 rgba(31,42,68,.16);border:3px solid transparent;
+}
+.item .e{font-size:42px;line-height:1.1;height:48px;display:flex;align-items:center}
+.item .l{font-size:17px;font-weight:800;line-height:1.1}
+.item:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(31,42,68,.16)}
+.item.hint{border-color:var(--yellow);animation:hintp .7s ease-in-out 3}
+@keyframes hintp{50%{transform:scale(1.08)}}
+.tools{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.pill{
+  background:var(--card);border-radius:999px;padding:10px 18px;font-size:19px;font-weight:800;
+  box-shadow:0 6px 0 rgba(31,42,68,.18);min-height:52px;
+}
+.pill:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(31,42,68,.18)}
+.pill.go{background:var(--green);color:#fff}
+.pill.yel{background:var(--yellow)}
+.notray{font-size:20px;font-weight:700;text-align:center;padding:8px}
+
+/* svg bits */
+.pulse{animation:pls 1s ease-in-out infinite}
+@keyframes pls{0%,100%{opacity:1}50%{opacity:.35}}
+.glow{animation:glw 1.2s ease-in-out infinite}
+@keyframes glw{0%,100%{opacity:.85}50%{opacity:.55}}
+.slot{cursor:pointer}
+
+/* ---------- overlay ---------- */
+.ov{
+  position:fixed;inset:0;background:rgba(31,42,68,.45);display:flex;align-items:center;justify-content:center;
+  padding:16px;z-index:50;
+}
+.ovcard{
+  width:100%;max-width:460px;text-align:center;padding:22px 18px 20px;animation:pop .35s cubic-bezier(.2,1.6,.4,1);
+}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.ovcard h2{margin:0;font-size:clamp(40px,11vw,56px);line-height:1}
+.ovcard .stars{font-size:52px;letter-spacing:6px;margin:6px 0}
+.ovcard .stars span{display:inline-block;animation:pop .4s backwards}
+.ovcard .why{font-size:clamp(20px,5vw,24px);font-weight:700;line-height:1.25;margin:6px 0 16px;background:#fffbe6;border-radius:18px;padding:10px 12px}
+.ovcard .safe{font-size:18px;font-weight:800;background:#fff1f0;border-radius:16px;padding:10px 12px;margin:10px 0 16px}
+.ovcard .tools{gap:12px}
+.confetti{position:fixed;top:-20px;width:12px;height:16px;border-radius:3px;z-index:60;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translate3d(var(--dx),110vh,0) rotate(var(--r))}}
+@media (prefers-reduced-motion:reduce){
+  .hero .big,.pulse,.glow,.item.hint{animation:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="back" href="index.html">← I giochi del Camioncino Blu</a>
+  <button class="iconbtn" id="snd" aria-label="Suono acceso o spento">🔊</button>
+</header>
+
+<main class="wrap">
+  <!-- MENU -->
+  <section id="menu">
+    <div class="card hero">
+      <span class="big" aria-hidden="true">💡</span>
+      <h1>Accendi la lampadina! ⚡</h1>
+      <p>🔋 + 〰️ + 💡 = ✨</p>
+    </div>
+    <div class="levels" id="levels"></div>
+    <div class="foot"><span class="card">⚠️ Non giocare mai con le prese di corrente di casa!</span></div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" class="hidden">
+    <div class="game">
+      <div class="side" style="gap:16px">
+        <div class="card head">
+          <div class="badge"><small>LIV.</small><b id="lvn">1</b></div>
+          <div class="instr" id="instr"></div>
+          <button class="iconbtn" id="say" aria-label="Ascolta">🗣️</button>
+        </div>
+        <div class="card boardcard"><svg id="board" viewBox="0 0 400 320" role="img" aria-label="Circuito elettrico"></svg></div>
+      </div>
+      <div class="side">
+        <div class="card bubble" id="bubble"><span class="face" id="face">🙂</span><span id="msg"></span></div>
+        <div class="card traycard" id="traycard">
+          <h2>🧰 Scegli:</h2>
+          <div class="tray" id="tray"></div>
+        </div>
+        <div class="tools">
+          <button class="pill" id="btnMenu">🏠 Livelli</button>
+          <button class="pill yel" id="btnHint">💡 Aiuto</button>
+          <button class="pill" id="btnReset">↻ Ricomincia</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- END -->
+  <section id="end" class="hidden">
+    <div class="card ovcard" style="margin:10px auto;animation:none">
+      <div style="font-size:90px;line-height:1">🏆</div>
+      <h2 style="font-size:clamp(34px,9vw,48px)">Bravissimo!</h2>
+      <p style="font-size:22px;font-weight:700;margin:6px 0">Sei un piccolo elettricista! 👷⚡</p>
+      <div class="stars" id="endStars"></div>
+      <div class="why">🔋 La pila dà l'energia.<br>〰️ I fili di metallo la portano.<br>⭕ Il cerchio deve essere chiuso.<br>💡 E la luce si accende!</div>
+      <div class="safe">⚠️ Non giocare mai con le prese di corrente di casa!</div>
+      <div class="tools">
+        <button class="pill go" id="btnAgain">↻ Gioca ancora</button>
+        <a class="pill" href="index.html" style="text-decoration:none;display:inline-flex;align-items:center">🏠 Altri giochi</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- WIN OVERLAY -->
+<div class="ov hidden" id="win">
+  <div class="card ovcard">
+    <h2>Bravo! 🎉</h2>
+    <div class="stars" id="winStars"></div>
+    <div class="why" id="winWhy"></div>
+    <div class="tools">
+      <button class="pill" id="btnRetry">↻ Ancora</button>
+      <button class="pill go" id="btnNext">Avanti ▶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ================= DATA ================= */
+var ITEMS = {
+  filo:      {n:'Filo',      e:null, c:true},
+  lana:      {n:'Lana',      e:'🧶', c:false, why:'La lana non fa passare la corrente.'},
+  pila:      {n:'Pila',      e:'🔋', kind:'battery'},
+  lampadina: {n:'Lampadina', e:'💡', kind:'bulb'},
+  orsetto:   {n:'Orsetto',   e:'🧸', c:false, why:"L'orsetto non ha energia."},
+  bullone:   {n:'Bullone',   e:'🔩', c:true},
+  gomma:     {n:'Gomma',     e:'🎈', c:false, why:'La gomma non fa passare la corrente.'},
+  legno:     {n:'Legno',     e:'🪵', c:false, why:'Il legno non fa passare la corrente.'},
+  moneta:    {n:'Moneta',    e:'🪙', c:true},
+  calzino:   {n:'Calzino',   e:'🧦', c:false, why:'La stoffa non fa passare la corrente.'},
+  pastello:  {n:'Pastello a cera', e:'🖍️', c:false, why:'La cera non fa passare la corrente.'},
+  graffetta: {n:'Graffetta', e:'📎', c:true},
+  chiave:    {n:'Chiave',    e:'🔑', c:true}
+};
+
+/* slot positions on the loop. a = rotation (local -y points outward) */
+var X0=70,X1=330,Y0=85,Y1=250;
+var POS = {
+  T1:{x:135,y:Y0,a:0}, T2:{x:265,y:Y0,a:0},
+  R:{x:X1,y:167,a:90},
+  B1:{x:135,y:Y1,a:180}, B2:{x:265,y:Y1,a:180},
+  L:{x:X0,y:167,a:-90}
+};
+
+/* slot types: battery, bulb, switch, gap (wire gap), batteryGap, bulbGap */
+var LEVELS = [
+  { icon:'〰️', say:'Metti il filo nel buco per chiudere il cerchio!',
+    instr:'Chiudi il cerchio! 〰️ ➜ ❓',
+    slots:{L:'battery',T1:'bulb',R:'gap'}, tray:['filo'],
+    why:'La corrente passa solo se il cerchio è chiuso! ⭕' },
+  { icon:'❓❓', say:'Ci sono due buchi. Riempili tutti e due!',
+    instr:'2 buchi! ❓❓ Riempili!',
+    slots:{L:'battery',T1:'bulb',T2:'gap',B1:'gap'}, tray:['filo','lana'],
+    why:'Nessun buco: il cerchio è tutto chiuso! Il filo di metallo porta la corrente.' },
+  { icon:'🔘', say:"Premi l'interruttore per accendere la luce!",
+    instr:"Premi l'interruttore! 👆",
+    slots:{L:'battery',T1:'bulb',R:'switch'}, tray:[],
+    why:"L'interruttore chiude il cerchio e la luce si accende!" },
+  { icon:'🔋', say:"Manca la pila! Mettila al suo posto, poi premi l'interruttore.",
+    instr:'Manca la pila! 🔋',
+    slots:{L:'batteryGap',T1:'bulb',B2:'switch'}, tray:['pila','orsetto'],
+    why:"La pila dà l'energia per accendere la luce! 🔋" },
+  { icon:'🔩', say:'Cosa fa passare la corrente? Scegli bene!',
+    instr:'Cosa fa passare la corrente? 🤔',
+    slots:{L:'battery',T1:'bulb',R:'gap'}, tray:['gomma','bullone','legno'],
+    why:'Il metallo fa passare la corrente, la gomma no!' },
+  { icon:'🪙', say:"Scegli la cosa giusta e poi premi l'interruttore!",
+    instr:'Scegli bene, poi 👆',
+    slots:{L:'battery',T1:'bulb',T2:'switch',B1:'gap'}, tray:['calzino','moneta','pastello'],
+    why:'La moneta è di metallo: fa passare la corrente! 🪙' },
+  { icon:'💡💡', say:'Accendi tutte e due le lampadine!',
+    instr:'Accendi 2 lampadine! 💡💡',
+    slots:{L:'battery',T1:'bulb',R:'bulb',T2:'switch',B1:'gap'}, tray:['lana','graffetta','gomma'],
+    why:'Un solo cerchio: la corrente passa in tutte e due le lampadine!' },
+  { icon:'⚡', say:'Il grande circuito! Metti a posto tutti i pezzi!',
+    instr:'Il grande circuito! ⚡',
+    slots:{L:'battery',T1:'switch',T2:'bulb',R:'bulbGap',B1:'gap',B2:'gap'},
+    tray:['lampadina','chiave','legno','filo','gomma'],
+    why:'Pila, fili, interruttore e lampadine: hai costruito un circuito completo!' }
+];
+
+/* ================= STORAGE ================= */
+var KEY='accendi_lampadina_v1';
+var save={stars:{}};
+try{ var raw=localStorage.getItem(KEY); if(raw){ var p=JSON.parse(raw); if(p&&p.stars) save=p; } }catch(e){}
+function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(save)); }catch(e){} }
+var muted=false;
+try{ muted = localStorage.getItem(KEY+'_mute')==='1'; }catch(e){}
+
+/* ================= AUDIO ================= */
+var AC=null;
+function ac(){
+  if(muted) return null;
+  try{
+    if(!AC){ var C=window.AudioContext||window.webkitAudioContext; if(!C) return null; AC=new C(); }
+    if(AC.state==='suspended') AC.resume();
+  }catch(e){ return null; }
+  return AC;
+}
+function tone(f,dur,type,delay,vol){
+  var a=ac(); if(!a) return;
+  try{
+    var t=a.currentTime+(delay||0), o=a.createOscillator(), g=a.createGain();
+    o.type=type||'sine'; o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol||0.18,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+dur+0.05);
+  }catch(e){}
+}
+var sfx={
+  tap:function(){ tone(660,0.08,'triangle',0,0.12); },
+  place:function(){ tone(520,0.09,'triangle',0,0.15); tone(780,0.12,'triangle',0.07,0.15); },
+  click:function(){ tone(180,0.05,'square',0,0.08); tone(900,0.04,'square',0.03,0.05); },
+  oops:function(){ tone(330,0.18,'sine',0,0.14); tone(262,0.25,'sine',0.15,0.14); },
+  win:function(){ [523,659,784,1047].forEach(function(f,i){ tone(f,0.25,'triangle',i*0.11,0.18); }); tone(1319,0.5,'sine',0.48,0.12); }
+};
+function speak(text){
+  if(muted) return;
+  try{
+    if(!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(text.replace(/[^\p{L}\p{N}\s'!?.,]/gu,''));
+    u.lang='it-IT'; u.rate=0.95; u.pitch=1.15;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ================= DOM ================= */
+var $=function(id){return document.getElementById(id);};
+var svg=$('board'), tray=$('tray');
+var state=null, raf=0, lit=false, winTimer=0, wrongTimer=0;
+
+function show(id){
+  ['menu','game','end'].forEach(function(s){ $(s).classList.toggle('hidden', s!==id); });
+  window.scrollTo(0,0);
+}
+function starStr(n){ var s=''; for(var i=0;i<3;i++) s+= i<n?'⭐':'☆'; return s; }
+function unlocked(i){ return i===0 || (save.stars[i]||0)>0; } // level i (0-based) unlocked if level i-1 done (stars stored 1-based)
+
+function renderMenu(){
+  var h='';
+  LEVELS.forEach(function(L,i){
+    var st=save.stars[i+1]||0, un=unlocked(i);
+    h+='<button class="lv'+(un?'':' locked')+(st?' done':'')+'" data-lv="'+i+'" aria-label="Livello '+(i+1)+'">'+
+       '<span class="n">'+(i+1)+'</span><span class="ic">'+L.icon+'</span>'+
+       '<span class="st">'+starStr(st)+'</span></button>';
+  });
+  $('levels').innerHTML=h;
+  show('menu');
+}
+$('levels').addEventListener('click',function(ev){
+  var b=ev.target.closest('[data-lv]'); if(!b) return;
+  var i=+b.getAttribute('data-lv');
+  if(!unlocked(i)){ sfx.oops(); b.classList.add('wiggle'); return; }
+  sfx.tap(); startLevel(i);
+});
+
+/* ================= GAME LOGIC ================= */
+function startLevel(i){
+  clearTimeout(winTimer); clearTimeout(wrongTimer);
+  var L=LEVELS[i];
+  state={i:i, L:L, fill:{}, wrong:null, sw:false, mistakes:0, sel:null, won:false};
+  lit=false;
+  $('lvn').textContent=i+1;
+  $('instr').textContent=L.instr;
+  $('win').classList.add('hidden');
+  setMsg('🙂', L.say, '');
+  state.sel=firstEmpty();
+  renderTray(); render();
+  show('game');
+  setTimeout(function(){ speak(L.say); },250);
+}
+function isFillable(t){ return t==='gap'||t==='batteryGap'||t==='bulbGap'; }
+function firstEmpty(){
+  var k=Object.keys(state.L.slots);
+  for(var j=0;j<k.length;j++){ if(isFillable(state.L.slots[k[j]]) && !state.fill[k[j]]) return k[j]; }
+  return null;
+}
+function allFilled(){
+  var k=Object.keys(state.L.slots);
+  for(var j=0;j<k.length;j++){ if(isFillable(state.L.slots[k[j]]) && !state.fill[k[j]]) return false; }
+  return true;
+}
+function hasSwitch(){ var s=state.L.slots; for(var k in s) if(s[k]==='switch') return true; return false; }
+
+function setMsg(face,text,cls){
+  $('face').textContent=face; $('msg').textContent=text;
+  var b=$('bubble'); b.classList.remove('bad','good','wiggle');
+  if(cls){ void b.offsetWidth; b.classList.add(cls); if(cls==='bad') b.classList.add('wiggle'); }
+}
+
+function renderTray(){
+  var L=state.L;
+  $('traycard').classList.toggle('hidden', !L.tray.length);
+  var h='';
+  L.tray.forEach(function(id){
+    var it=ITEMS[id];
+    var icon = it.e ? it.e :
+      '<svg width="58" height="30" viewBox="0 0 58 30" aria-hidden="true"><path d="M4 15 C16 2, 26 28, 38 15 S 52 6, 54 15" fill="none" stroke="#1f2a44" stroke-width="9" stroke-linecap="round"/><path d="M4 15 C16 2, 26 28, 38 15 S 52 6, 54 15" fill="none" stroke="#ff8a3d" stroke-width="4" stroke-linecap="round"/></svg>';
+    h+='<button class="item" data-item="'+id+'" aria-label="'+it.n+'"><span class="e">'+icon+'</span><span class="l">'+it.n+'</span></button>';
+  });
+  tray.innerHTML=h;
+}
+
+tray.addEventListener('click',function(ev){
+  var b=ev.target.closest('[data-item]'); if(!b||!state||state.won) return;
+  var id=b.getAttribute('data-item');
+  if(state.wrong) return; // wait for bounce-back
+  // pick a slot that suits this kind of piece (pila -> posto pila, lampadina -> posto lampadina, altro -> buco nel filo)
+  var want = ITEMS[id].kind==='battery' ? 'batteryGap' : ITEMS[id].kind==='bulb' ? 'bulbGap' : 'gap';
+  var S=state.L.slots, target=null;
+  if(state.sel && !state.fill[state.sel] && S[state.sel]===want) target=state.sel;
+  if(!target){ for(var k in S){ if(S[k]===want && !state.fill[k]){ target=k; break; } } }
+  if(!target) target=state.sel && !state.fill[state.sel] ? state.sel : firstEmpty();
+  if(!target){ sfx.tap(); setMsg('😊','Tutto pieno! Tocca un pezzo per toglierlo.',''); return; }
+  place(id,target);
+});
+
+function place(id,slot){
+  var t=state.L.slots[slot], it=ITEMS[id], ok=false, msg='';
+  if(t==='gap'){
+    if(it.kind==='battery'||it.kind==='bulb'){
+      sfx.tap(); setMsg('🤔', it.kind==='bulb'?'La lampadina va nel suo posto 💡':'La pila va nel suo posto 🔋','');
+      pulseEmpty(); return;
+    }
+    ok=!!it.c; msg=it.why||'';
+  } else if(t==='batteryGap'){
+    ok = id==='pila';
+    msg = ok?'': (id==='orsetto' ? "L'orsetto non ha energia. Ci vuole la pila! 🔋" : 'Qui ci vuole la pila! 🔋');
+  } else if(t==='bulbGap'){
+    ok = id==='lampadina';
+    msg = ok?'':'Qui ci vuole la lampadina! 💡';
+  }
+  if(ok){
+    state.fill[slot]=id;
+    sfx.place();
+    state.sel=firstEmpty();
+    afterChange(true);
+  } else {
+    state.mistakes++;
+    state.wrong={slot:slot,id:id};
+    sfx.oops();
+    setMsg('🙃', (msg?msg+' ':'')+'Riprova! 🙂','bad');
+    speak((msg?msg+' ':'')+'Riprova!');
+    render();
+    wrongTimer=setTimeout(function(){ if(state){ state.wrong=null; render(); } },1300);
+  }
+}
+
+function pulseEmpty(){ render(); }
+
+function circuitClosed(){ return allFilled(); }
+
+function afterChange(fromPlace){
+  render();
+  if(state.won) return;
+  if(circuitClosed() && (!hasSwitch() || state.sw)){ doWin(); return; }
+  if(circuitClosed() && hasSwitch() && !state.sw){
+    setMsg('👆',"Ora premi l'interruttore!",'good');
+    if(fromPlace) speak("Ora premi l'interruttore!");
+  } else if(fromPlace){
+    var left=0, s=state.L.slots; for(var k in s) if(isFillable(s[k])&&!state.fill[k]) left++;
+    setMsg('😃', left>1?'Bene! Ancora '+left+' buchi ❓':'Bene! Ancora 1 buco ❓','good');
+  }
+}
+
+svg.addEventListener('click',function(ev){
+  if(!state||state.won) return;
+  var sw=ev.target.closest('[data-switch]');
+  if(sw){
+    state.sw=!state.sw; sfx.click();
+    if(state.sw && !circuitClosed()){
+      render();
+      setMsg('🤔','Il cerchio ha ancora un buco ❓','bad');
+      speak('Il cerchio ha ancora un buco!');
+      return;
+    }
+    if(!state.sw){ render(); setMsg('🌙','Interruttore spento: il cerchio è aperto.',''); return; }
+    afterChange(false); return;
+  }
+  var s=ev.target.closest('[data-slot]');
+  if(s){
+    var k=s.getAttribute('data-slot');
+    if(state.wrong) return;
+    if(state.fill[k]){ delete state.fill[k]; state.sel=k; sfx.tap(); setMsg('🙂','Pezzo tolto. Scegline un altro!',''); render(); return; }
+    state.sel=k; sfx.tap(); render();
+    setMsg('👇','Ora scegli un pezzo qui sotto!','');
+  }
+});
+
+function doWin(){
+  state.won=true; lit=true;
+  render(); startFlow();
+  sfx.win(); confetti();
+  var st = state.mistakes===0?3 : state.mistakes===1?2 : 1;
+  var key=state.i+1;
+  if((save.stars[key]||0)<st){ save.stars[key]=st; persist(); }
+  setMsg('🤩','Si è accesa! ✨','good');
+  $('winWhy').textContent=state.L.why;
+  var h=''; for(var i=0;i<3;i++) h+='<span style="animation-delay:'+(0.15+i*0.18)+'s">'+(i<st?'⭐':'☆')+'</span>';
+  $('winStars').innerHTML=h;
+  $('btnNext').textContent = state.i===LEVELS.length-1 ? 'Fine 🏆' : 'Avanti ▶';
+  winTimer=setTimeout(function(){
+    $('win').classList.remove('hidden');
+    speak('Bravo! '+state.L.why);
+  },1700);
+}
+
+/* ================= DRAWING ================= */
+var INK='#1f2a44', CU='#ff8a3d', BG='#fffaf0';
+var LOOP='M'+(X0+22)+','+Y0+' H'+(X1-22)+' Q'+X1+','+Y0+' '+X1+','+(Y0+22)+' V'+(Y1-22)+' Q'+X1+','+Y1+' '+(X1-22)+','+Y1+
+         ' H'+(X0+22)+' Q'+X0+','+Y1+' '+X0+','+(Y1-22)+' V'+(Y0+22)+' Q'+X0+','+Y0+' '+(X0+22)+','+Y0+' Z';
+
+function wireSeg(x1,x2){
+  return '<line x1="'+x1+'" y1="0" x2="'+x2+'" y2="0" stroke="'+INK+'" stroke-width="12" stroke-linecap="round"/>'+
+         '<line x1="'+x1+'" y1="0" x2="'+x2+'" y2="0" stroke="'+CU+'" stroke-width="5" stroke-linecap="round"/>';
+}
+function cover(w){ return '<rect x="'+(-w)+'" y="-11" width="'+(2*w)+'" height="22" fill="'+BG+'"/>'; }
+function term(x){ return '<circle cx="'+x+'" cy="0" r="7" fill="'+INK+'"/><circle cx="'+x+'" cy="0" r="3" fill="#c0c7d4"/>'; }
+function txt(s,a,size,y,extra){
+  return '<text x="0" y="0" transform="translate(0,'+(y||0)+') rotate('+(-a)+')" text-anchor="middle" dominant-baseline="central" font-size="'+size+'" '+(extra||'')+'>'+s+'</text>';
+}
+
+function drawBattery(a){
+  return cover(46)+
+    '<rect x="-38" y="-20" width="38" height="40" rx="7" fill="#2b2d42" stroke="'+INK+'" stroke-width="3"/>'+
+    '<rect x="0" y="-20" width="38" height="40" rx="7" fill="#ffc43d" stroke="'+INK+'" stroke-width="3"/>'+
+    '<rect x="38" y="-9" width="8" height="18" rx="3" fill="#adb5bd" stroke="'+INK+'" stroke-width="2.5"/>'+
+    '<g transform="translate(-19,0)">'+txt('−',a,26,0,'fill="#fff" font-weight="800"')+'</g>'+
+    '<g transform="translate(19,0)">'+txt('+',a,28,0,'fill="'+INK+'" font-weight="800"')+'</g>';
+}
+function drawBulb(a,on){
+  var g='';
+  if(on){
+    g+='<circle cx="0" cy="-46" r="50" fill="url(#halo)" class="glow"/>';
+    for(var r=0;r<8;r++){
+      var ang=r*Math.PI/4 - Math.PI/2, c=Math.cos(ang), s=Math.sin(ang);
+      if(s>0.5) continue;
+      g+='<line x1="'+(c*32)+'" y1="'+(-46+s*32)+'" x2="'+(c*44)+'" y2="'+(-46+s*44)+'" stroke="#ffb703" stroke-width="5" stroke-linecap="round" class="glow"/>';
+    }
+  }
+  return cover(24)+g+
+    '<path d="M-24,0 H-11 M24,0 H11" stroke="'+INK+'" stroke-width="12" stroke-linecap="round"/>'+
+    '<path d="M-24,0 H-11 M24,0 H11" stroke="'+CU+'" stroke-width="5" stroke-linecap="round"/>'+
+    '<circle cx="0" cy="-46" r="25" fill="'+(on?'#fff59d':'#e9f4fb')+'" stroke="'+INK+'" stroke-width="3.5"/>'+
+    '<path d="M-7,-22 L-7,-42 Q0,-56 7,-42 L7,-22" fill="none" stroke="'+(on?'#ff8f00':'#8d99ae')+'" stroke-width="3" stroke-linecap="round"/>'+
+    '<rect x="-13" y="-24" width="26" height="22" rx="4" fill="#c9ced6" stroke="'+INK+'" stroke-width="3"/>'+
+    '<line x1="-12" y1="-17" x2="12" y2="-17" stroke="'+INK+'" stroke-width="2"/><line x1="-12" y1="-10" x2="12" y2="-10" stroke="'+INK+'" stroke-width="2"/>'+
+    (on?'<circle cx="-9" cy="-54" r="5" fill="#fff" opacity=".9"/>':'<circle cx="-9" cy="-54" r="4" fill="#fff" opacity=".9"/>');
+}
+function drawSwitch(a,on,ready){
+  var ang=on?0:-38;
+  return cover(36)+
+    (ready&&!on?'<circle cx="0" cy="-6" r="44" fill="none" stroke="#ffb703" stroke-width="5" stroke-dasharray="10 8" class="pulse"/>':'')+
+    '<rect x="-40" y="-14" width="80" height="26" rx="10" fill="#e3e8ef" stroke="'+INK+'" stroke-width="2.5"/>'+
+    term(-28)+term(28)+
+    '<g transform="rotate('+ang+' -28 0)">'+
+      '<line x1="-28" y1="0" x2="30" y2="0" stroke="'+INK+'" stroke-width="9" stroke-linecap="round"/>'+
+      '<line x1="-28" y1="0" x2="30" y2="0" stroke="#adb5bd" stroke-width="4" stroke-linecap="round"/>'+
+      '<circle cx="30" cy="0" r="9" fill="'+(on?'#35c46a':'#ff6b6b')+'" stroke="'+INK+'" stroke-width="3"/>'+
+    '</g>'+
+    '<rect data-switch="1" class="slot" x="-52" y="-56" width="104" height="80" fill="transparent"/>';
+}
+function drawGap(k,a){
+  var f=state.fill[k], w=state.wrong&&state.wrong.slot===k ? state.wrong.id : null;
+  var sel=(state.sel===k && !f && !w);
+  var out=cover(40);
+  var id=f||w;
+  if(id){
+    if(id==='filo'){
+      out+=wireSeg(-42,42);
+    } else {
+      var bad=!!w;
+      out+=wireSeg(-42,-24)+wireSeg(24,42)+
+        '<circle cx="0" cy="0" r="25" fill="'+(bad?'#ffe3e3':'#fff')+'" stroke="'+(bad?'#ff6b6b':INK)+'" stroke-width="3.5"/>'+
+        txt(ITEMS[id].e,a,30,0)+
+        (bad?'<g transform="translate(20,-20)">'+txt('❌',a,18,0)+'</g>':'');
+    }
+    if(!bad || id==='filo') out+='<rect data-slot="'+k+'" class="slot" x="-44" y="-34" width="88" height="68" fill="transparent"/>';
+  } else {
+    out+=term(-40)+term(40)+
+      '<rect x="-29" y="-26" width="58" height="52" rx="12" fill="#fff" stroke="'+(sel?'#ffb703':'#2f8ff0')+'" stroke-width="'+(sel?5:3.5)+'" stroke-dasharray="8 6" '+(sel?'class="pulse"':'')+'/>'+
+      txt('?',a,36,0,'fill="'+(sel?'#f08c00':'#2f8ff0')+'" font-weight="800"')+
+      '<rect data-slot="'+k+'" class="slot" x="-44" y="-36" width="88" height="72" fill="transparent"/>';
+  }
+  return out;
+}
+function drawBatteryGap(k,a){
+  var f=state.fill[k], w=state.wrong&&state.wrong.slot===k ? state.wrong.id : null;
+  if(f) return drawBattery(a)+'<rect data-slot="'+k+'" class="slot" x="-48" y="-30" width="96" height="60" fill="transparent"/>';
+  var sel=state.sel===k && !w;
+  var out=cover(46)+term(-44)+term(44)+
+    '<rect x="-34" y="-26" width="68" height="52" rx="12" fill="'+(w?'#ffe3e3':'#fff')+'" stroke="'+(w?'#ff6b6b':sel?'#ffb703':'#2f8ff0')+'" stroke-width="'+(sel?5:3.5)+'" stroke-dasharray="8 6" '+(sel?'class="pulse"':'')+'/>';
+  out+= w ? txt(ITEMS[w].e,a,30,0) : txt('🔋',a,24,0,'opacity=".35"')+'<g transform="translate(14,-12)">'+txt('?',a,24,0,'fill="#2f8ff0" font-weight="800"')+'</g>';
+  return out+'<rect data-slot="'+k+'" class="slot" x="-48" y="-34" width="96" height="68" fill="transparent"/>';
+}
+function drawBulbGap(k,a){
+  var f=state.fill[k], w=state.wrong&&state.wrong.slot===k ? state.wrong.id : null;
+  if(f) return drawBulb(a,lit)+'<rect data-slot="'+k+'" class="slot" x="-30" y="-76" width="60" height="86" fill="transparent"/>';
+  var sel=state.sel===k && !w;
+  var out=cover(24)+
+    '<path d="M-24,0 H-11 M24,0 H11" stroke="'+INK+'" stroke-width="12" stroke-linecap="round"/>'+
+    '<path d="M-24,0 H-11 M24,0 H11" stroke="'+CU+'" stroke-width="5" stroke-linecap="round"/>'+
+    '<rect x="-13" y="-24" width="26" height="22" rx="4" fill="#c9ced6" stroke="'+INK+'" stroke-width="3"/>'+
+    '<circle cx="0" cy="-48" r="25" fill="'+(w?'#ffe3e3':'#fff')+'" stroke="'+(w?'#ff6b6b':sel?'#ffb703':'#2f8ff0')+'" stroke-width="'+(sel?5:3.5)+'" stroke-dasharray="8 6" '+(sel?'class="pulse"':'')+'/>';
+  out+='<g transform="translate(0,-48)">'+(w ? txt(ITEMS[w].e,a,28,0) : txt('💡',a,22,0,'opacity=".35"')+'<g transform="translate(10,-8)">'+txt('?',a,22,0,'fill="#2f8ff0" font-weight="800"')+'</g>')+'</g>';
+  return out+'<rect data-slot="'+k+'" class="slot" x="-34" y="-80" width="68" height="90" fill="transparent"/>';
+}
+
+function render(){
+  var L=state.L, ready=allFilled();
+  var h='<defs><radialGradient id="halo"><stop offset="0" stop-color="#fff9c4" stop-opacity="1"/><stop offset=".45" stop-color="#ffe066" stop-opacity=".75"/><stop offset="1" stop-color="#ffe066" stop-opacity="0"/></radialGradient></defs>';
+  h+='<rect x="4" y="4" width="392" height="312" rx="24" fill="'+BG+'"/>';
+  // little "+"/"-" guide dots grid
+  for(var gx=30;gx<400;gx+=40) for(var gy=30;gy<320;gy+=40) h+='<circle cx="'+gx+'" cy="'+gy+'" r="1.6" fill="#e9dcc0"/>';
+  h+='<path id="loop" d="'+LOOP+'" fill="none" stroke="'+INK+'" stroke-width="12" stroke-linejoin="round"/>';
+  h+='<path d="'+LOOP+'" fill="none" stroke="'+CU+'" stroke-width="5" stroke-linejoin="round"/>';
+  h+='<g id="dots"></g>';
+  Object.keys(L.slots).forEach(function(k){
+    var p=POS[k], t=L.slots[k], inner='';
+    if(t==='battery') inner=drawBattery(p.a);
+    else if(t==='bulb') inner=drawBulb(p.a,lit);
+    else if(t==='switch') inner=drawSwitch(p.a,state.sw,ready);
+    else if(t==='gap') inner=drawGap(k,p.a);
+    else if(t==='batteryGap') inner=drawBatteryGap(k,p.a);
+    else if(t==='bulbGap') inner=drawBulbGap(k,p.a);
+    h+='<g transform="translate('+p.x+','+p.y+') rotate('+p.a+')">'+inner+'</g>';
+  });
+  if(lit) h+='<g transform="translate(200,167)">'+txt('⚡',0,40,0,'class="glow"')+'</g>';
+  svg.innerHTML=h;
+  if(lit) placeDots(lastOffset);
+}
+
+/* electrons flow: from the "−" end of the battery round the loop to "+" */
+var lastOffset=0, N=16;
+function placeDots(off){
+  var path=document.getElementById('loop'), g=document.getElementById('dots');
+  if(!path||!g) return;
+  var len=path.getTotalLength(), h='';
+  for(var i=0;i<N;i++){
+    var d=((off + i*len/N)%len+len)%len, pt=path.getPointAtLength(d);
+    h+='<circle cx="'+pt.x.toFixed(1)+'" cy="'+pt.y.toFixed(1)+'" r="5" fill="#fff36b" stroke="#f08c00" stroke-width="2"/>';
+  }
+  g.innerHTML=h;
+}
+function startFlow(){
+  cancelAnimationFrame(raf);
+  var last=performance.now();
+  (function step(now){
+    if(!lit) return;
+    var dt=Math.min(50,now-last); last=now;
+    lastOffset -= dt*0.07; // counter-clockwise: out of "−" (bottom), back into "+" (top)
+    placeDots(lastOffset);
+    raf=requestAnimationFrame(step);
+  })(last);
+}
+
+/* ================= FX ================= */
+function confetti(){
+  var cols=['#ff6b6b','#ffd23f','#35c46a','#2f8ff0','#ff8a3d','#b07cff'];
+  for(var i=0;i<70;i++){
+    var c=document.createElement('div'); c.className='confetti';
+    c.style.left=(Math.random()*100)+'vw';
+    c.style.background=cols[i%cols.length];
+    c.style.setProperty('--dx',(Math.random()*160-80)+'px');
+    c.style.setProperty('--r',(Math.random()*720-360)+'deg');
+    c.style.animationDuration=(1.8+Math.random()*1.6)+'s';
+    c.style.animationDelay=(Math.random()*0.4)+'s';
+    document.body.appendChild(c);
+    (function(el){ setTimeout(function(){ el.remove(); },4000); })(c);
+  }
+}
+
+/* ================= BUTTONS ================= */
+$('btnMenu').onclick=function(){ sfx.tap(); stopLevel(); renderMenu(); };
+$('btnReset').onclick=function(){ sfx.tap(); startLevel(state.i); };
+$('btnHint').onclick=function(){
+  if(!state||state.won) return; sfx.tap();
+  var k=firstEmpty();
+  if(!k){
+    if(hasSwitch()&&!state.sw){ setMsg('👆',"Premi l'interruttore!",'good'); speak("Premi l'interruttore!"); render(); }
+    return;
+  }
+  state.sel=k; render();
+  var t=state.L.slots[k], good=null;
+  state.L.tray.forEach(function(id){
+    var it=ITEMS[id];
+    if(good) return;
+    if(t==='gap' && it.c) good=id;
+    if(t==='batteryGap' && id==='pila') good=id;
+    if(t==='bulbGap' && id==='lampadina') good=id;
+  });
+  var hintMsg = t==='gap' ? 'Cerca una cosa di metallo! 🔩' : t==='batteryGap' ? 'Ci vuole la pila! 🔋' : 'Ci vuole la lampadina! 💡';
+  if(state.i<2) hintMsg='Il filo chiude il buco! 〰️';
+  setMsg('💡',hintMsg,''); speak(hintMsg);
+  var b=tray.querySelector('[data-item="'+good+'"]');
+  if(b){ b.classList.remove('hint'); void b.offsetWidth; b.classList.add('hint'); }
+};
+$('btnRetry').onclick=function(){ sfx.tap(); startLevel(state.i); };
+$('btnNext').onclick=function(){
+  sfx.tap();
+  if(state.i<LEVELS.length-1) startLevel(state.i+1);
+  else { stopLevel(); showEnd(); }
+};
+$('btnAgain').onclick=function(){ sfx.tap(); renderMenu(); };
+$('say').onclick=function(){ if(state) speak(state.L.say); };
+$('snd').onclick=function(){
+  muted=!muted; this.textContent=muted?'🔇':'🔊';
+  try{ localStorage.setItem(KEY+'_mute',muted?'1':'0'); }catch(e){}
+  try{ if(muted&&'speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){}
+  if(!muted) sfx.tap();
+};
+$('snd').textContent=muted?'🔇':'🔊';
+
+function stopLevel(){
+  lit=false; cancelAnimationFrame(raf); clearTimeout(winTimer); clearTimeout(wrongTimer);
+  $('win').classList.add('hidden');
+}
+function showEnd(){
+  var tot=0; for(var i=1;i<=LEVELS.length;i++) tot+=save.stars[i]||0;
+  $('endStars').innerHTML='<span style="font-size:44px">⭐ '+tot+' / '+(LEVELS.length*3)+'</span>';
+  show('end'); confetti(); sfx.win();
+  speak('Bravissimo! Sei un piccolo elettricista! Ricorda: non giocare mai con le prese di corrente di casa!');
+}
+
+window.__accendi={start:startLevel, get state(){return state;}, menu:renderMenu};
+renderMenu();
+})();
+</script>
+</body>
+</html>
