@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Calcia il Maiale</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#8fd3ff;font-family:'Baloo 2','Trebuchet MS',sans-serif;user-select:none;-webkit-user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#home,#audio{position:fixed;top:max(8px,env(safe-area-inset-top));z-index:6;background:rgba(255,255,255,.9);border-radius:14px;padding:4px 12px;font-weight:800;color:#1f2a44;text-decoration:none;font-size:17px;border:0;font-family:inherit;cursor:pointer}
+#home{left:8px}#audio{right:8px}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(60,30,40,.45);z-index:10;padding:14px;overflow:auto}
+.hidden{display:none!important}
+.card{background:#fffaf5;border-radius:24px;box-shadow:0 10px 0 #c2577a,0 20px 40px rgba(0,0,0,.3);padding:18px 22px;max-width:560px;width:100%;border:4px solid #e57399;margin:auto}
+h1{margin:0 0 4px;font-size:clamp(30px,6vw,46px);color:#b3315c;text-align:center;line-height:1.05}
+h1 span{color:#2e7d32}
+.sub{text-align:center;color:#555;margin:0 0 10px;font-size:17px;line-height:1.3}
+.box{background:#fff0f5;border-radius:14px;padding:8px 12px;font-size:15px;line-height:1.35;color:#5a2a3a;margin:8px 0}
+.riga{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+.np{border:3px solid #f2b8cb;background:#fff;border-radius:12px;padding:4px 14px;font:inherit;font-weight:800;font-size:18px;color:#b3315c;cursor:pointer}
+.np.on{background:#e57399;color:#fff;border-color:#e57399}
+#nomi input{font:inherit;font-size:17px;border:3px solid #f2b8cb;border-radius:12px;padding:4px 10px;width:100%;margin:3px 0;color:#5a2a3a}
+.btn{display:block;margin:12px auto 4px;background:#2e9b4f;color:#fff;border:0;border-radius:18px;padding:10px 34px;font-size:26px;font-weight:800;font-family:inherit;box-shadow:0 6px 0 #1d6b35;cursor:pointer}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #1d6b35}
+table{width:100%;border-collapse:collapse;margin:8px 0;font-size:17px;color:#5a2a3a}
+td,th{padding:5px 6px;text-align:center;border-bottom:2px dashed #f2b8cb}
+th{color:#b3315c}
+td.n{text-align:left;font-weight:800}
+.link{text-align:center;font-size:15px;margin-top:8px}
+.link a{color:#1e6fd9;font-weight:700}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<a id="home" href="index.html" aria-label="Torna ai giochi">🏠 Giochi</a>
+<button id="audio" aria-label="Audio">🔊</button>
+
+<div id="menu" class="overlay">
+  <div class="card">
+    <h1>Calcia il <span>Maiale</span> 🐷</h1>
+    <p class="sub">Il maialino Rosolino adora volare! Dagli un bel calcione come a una pallina da golf: vince chi lo manda <b>più lontano</b>.</p>
+    <div class="box">👆 <b>Come si gioca:</b> tocca lo schermo (o premi <b>Spazio</b>) una volta per scegliere la <b>forza</b>, e una seconda volta per scegliere l'<b>angolo</b>. Guarda il <b>vento</b>! Le balle di fieno 🌾 fanno rimbalzare, il fango 🟫 lo ferma.</div>
+    <p class="sub" style="margin-top:10px"><b>Quanti giocatori?</b></p>
+    <div class="riga" id="numGioc"></div>
+    <div id="nomi"></div>
+    <p class="sub" style="font-size:15px">Ogni giocatore ha <b>3 calci</b>: conta il più lungo.</p>
+    <button class="btn" id="via">Calcia! 🦶</button>
+    <p class="link" id="recordTxt"></p>
+  </div>
+</div>
+
+<div id="fine" class="overlay hidden">
+  <div class="card">
+    <h1>Classifica 🏆</h1>
+    <p class="sub" id="vince"></p>
+    <table id="classifica"></table>
+    <p class="link" id="recordFine"></p>
+    <button class="btn" id="ancora">Rivincita! 🐷</button>
+    <p class="link"><a href="#" id="cambia">👥 Cambia giocatori</a> · <a href="index.html">🏠 Altri giochi</a> · <a href="libri.html">📚 I libri di Teo e Leo</a></p>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const cv=$('#c'),ctx=cv.getContext('2d');
+let VW=0,VH=0,DPR=1;
+function ridimensiona(){DPR=Math.min(devicePixelRatio||1,2);VW=innerWidth;VH=innerHeight;cv.width=VW*DPR;cv.height=VH*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
+addEventListener('resize',ridimensiona);ridimensiona();
+const load=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+
+/* ======================= AUDIO: il verso del maiale ======================= */
+let AC=null,muto=load('maialeMuto',false);
+$('#audio').textContent=muto?'🔇':'🔊';
+$('#audio').onclick=()=>{muto=!muto;save('maialeMuto',muto);$('#audio').textContent=muto?'🔇':'🔊'};
+function audio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume()}
+// un grugnito: voce nasale (dente di sega) con vibrato veloce e due formanti
+function grugnito(t0,dur,f,vol){
+ const o=AC.createOscillator(),o2=AC.createOscillator(),g=AC.createGain(),f1=AC.createBiquadFilter(),f2=AC.createBiquadFilter(),lfo=AC.createOscillator(),lg=AC.createGain(),mix=AC.createGain();
+ o.type='sawtooth';o2.type='square';o.frequency.setValueAtTime(f*1.25,t0);o.frequency.exponentialRampToValueAtTime(f*.78,t0+dur);
+ o2.frequency.setValueAtTime(f*.5,t0);o2.frequency.exponentialRampToValueAtTime(f*.4,t0+dur);
+ lfo.frequency.value=38;lg.gain.value=f*.18;lfo.connect(lg);lg.connect(o.frequency);
+ f1.type='bandpass';f1.frequency.value=900;f1.Q.value=4;f2.type='bandpass';f2.frequency.value=2300;f2.Q.value=6;
+ o.connect(f1);o.connect(f2);o2.connect(f1);f1.connect(mix);f2.connect(mix);mix.connect(g);g.connect(AC.destination);
+ g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+.025);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+ for(const x of [o,o2,lfo]){x.start(t0);x.stop(t0+dur+.02)}}
+function oink(alto){if(!AC||muto)return;const t=AC.currentTime,f=alto?320:190;grugnito(t,.17,f,.5);grugnito(t+.22,.2,f*.92,.45)}
+function squittio(){if(!AC||muto)return;const t=AC.currentTime;grugnito(t,.35,520,.35)}
+function versetto(){if(!AC||muto)return;grugnito(AC.currentTime,.12,240,.3)}
+function tono(f1,f2,d,tipo,v){if(!AC||muto)return;const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=tipo||'sine';o.frequency.setValueAtTime(f1,t);o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.15,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)}
+function tonfo(){if(!AC||muto)return;const t=AC.currentTime,n=AC.createBufferSource(),b=AC.createBuffer(1,AC.sampleRate*.25,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);n.buffer=b;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=500;const g=AC.createGain();g.gain.value=.6;n.connect(f);f.connect(g);g.connect(AC.destination);n.start(t)}
+
+/* ======================= GIOCATORI ======================= */
+let nGioc=load('maialeN',1),nomi=load('maialeNomi',['Federico','Giocatore 2','Giocatore 3','Giocatore 4']);
+const TIRI=3;
+function disegnaSetup(){const r=$('#numGioc');r.innerHTML='';
+ for(let n=1;n<=4;n++){const b=document.createElement('button');b.className='np'+(n===nGioc?' on':'');b.textContent=n===1?'1 🙋':n+' 👥';b.onclick=()=>{leggiNomi();nGioc=n;save('maialeN',n);disegnaSetup()};r.appendChild(b)}
+ const nm=$('#nomi');nm.innerHTML='';for(let i=0;i<nGioc;i++){const inp=document.createElement('input');inp.maxLength=14;inp.value=nomi[i];inp.placeholder='Nome giocatore '+(i+1);inp.id='nome'+i;nm.appendChild(inp)}
+ const rec=load('maialeRecord',null);$('#recordTxt').textContent=rec?`🏆 Record: ${rec.d.toFixed(1).replace('.',',')} m di ${rec.nome}`:''}
+function leggiNomi(){for(let i=0;i<nGioc;i++){const el=$('#nome'+i);if(el)nomi[i]=el.value.trim()||('Giocatore '+(i+1))}save('maialeNomi',nomi)}
+disegnaSetup();
+
+/* ======================= MONDO ======================= */
+const PX=9;           // pixel per metro
+const G=9.81;
+let G_={cam:0,camY:0},ost=[];
+function nuovoCampo(){ost=[];let x=28+Math.random()*15;
+ while(x<400){const tipo=Math.random()<.55?'fieno':'fango';ost.push({tipo,x,w:tipo==='fieno'?2.6:5+Math.random()*3});x+=22+Math.random()*30}}
+function nuovaPartita(){leggiNomi();
+ G_={gioc:nomi.slice(0,nGioc).map(n=>({nome:n,tiri:[]})),turno:0,tiro:0,fase:'pronto',t:0,pot:0,ang:0,cam:0,camY:0,parti:[],
+  vento:0,pig:null,calcio:0,msg:'',msgT:0};
+ nuovoCampo();nuovoTiro();$('#menu').classList.add('hidden');$('#fine').classList.add('hidden')}
+function nuovoTiro(){const g=G_;g.fase='potenza';g.t=0;g.pot=0;g.ang=0;g.calcio=0;g.cam=0;g.camY=0;g.parti=[];
+ g.vento=Math.round((Math.random()*2-1)*6*10)/10;   // m/s, + = verso destra
+ g.pig={x:0,y:.55,vx:0,vy:0,rot:0,vr:0,stato:'tee',rimb:0,fango:false,fieno:0,maxH:0,face:0};
+ const p=g.gioc[g.turno];messaggio(`Tocca a ${p.nome}! Calcio ${g.tiro+1} di ${TIRI}`,2)}
+function messaggio(t,d){G_.msg=t;G_.msgT=d||1.8}
+
+/* ======================= INPUT ======================= */
+function tocca(){audio();const g=G_;if(!g.gioc)return;
+ if(g.fase==='potenza'){g.fase='angolo';g.t=0;tono(500,700,.08,'triangle',.12)}
+ else if(g.fase==='angolo'){g.fase='calcio';g.t=0;tono(700,900,.08,'triangle',.12)}
+ else if(g.fase==='fermo'&&g.t>.6)prossimo()}
+cv.addEventListener('pointerdown',e=>{e.preventDefault();tocca()});
+addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='Enter'){if(!$('#menu').classList.contains('hidden')||!$('#fine').classList.contains('hidden'))return;e.preventDefault();if(!e.repeat)tocca()}});
+
+function calcia(){const g=G_,p=g.pig;
+ const v=11+g.pot*27,a=(12+g.ang*58)*Math.PI/180;
+ p.vx=v*Math.cos(a);p.vy=v*Math.sin(a);p.vr=-(4+g.pot*8);p.stato='vola';
+ g.fase='volo';g.t=0;oink(false);
+ for(let i=0;i<14;i++)g.parti.push({x:p.x,y:p.y,vx:(Math.random()-.3)*6,vy:Math.random()*5,vita:.6,col:'#fff59d',r:3+Math.random()*3});
+ messaggio(['BOOM! 💥','Che calcione!','Vola Rosolino!','Ciao ciao! 👋'][Math.floor(Math.random()*4)],1.2)}
+
+function prossimo(){const g=G_;g.turno++;if(g.turno>=g.gioc.length){g.turno=0;g.tiro++}
+ if(g.tiro>=TIRI){fine();return}nuovoTiro()}
+
+function fine(){const g=G_;g.fase='fine';
+ const cl=g.gioc.map(p=>({nome:p.nome,best:Math.max(...p.tiri),tiri:p.tiri})).sort((a,b)=>b.best-a.best);
+ const med=['🥇','🥈','🥉','🏅'];const f=n=>n.toFixed(1).replace('.',',')+' m';
+ $('#classifica').innerHTML='<tr><th></th><th>Giocatore</th><th>Migliore</th><th>Calci</th></tr>'+cl.map((c,i)=>`<tr><td>${med[i]}</td><td class="n">${c.nome}</td><td><b>${f(c.best)}</b></td><td>${c.tiri.map(t=>t.toFixed(0)).join(' · ')}</td></tr>`).join('');
+ $('#vince').innerHTML=cl.length>1?`<b>${cl[0].nome}</b> vince con un calcio da <b>${f(cl[0].best)}</b>! 🎉`:`Il tuo calcio più lungo: <b>${f(cl[0].best)}</b>`;
+ const rec=load('maialeRecord',null);if(!rec||cl[0].best>rec.d){save('maialeRecord',{d:cl[0].best,nome:cl[0].nome});$('#recordFine').textContent='🏆 Nuovo record!'}
+ else $('#recordFine').textContent=`🏆 Record: ${f(rec.d)} di ${rec.nome}`;
+ squittio();setTimeout(()=>$('#fine').classList.remove('hidden'),400)}
+$('#via').onclick=()=>{audio();nuovaPartita()};
+$('#ancora').onclick=()=>{audio();nuovaPartita()};
+$('#cambia').onclick=e=>{e.preventDefault();$('#fine').classList.add('hidden');disegnaSetup();$('#menu').classList.remove('hidden')};
+
+/* ======================= FISICA ======================= */
+function aggiorna(dt){const g=G_;if(!g.gioc)return;g.t+=dt;if(g.msgT>0)g.msgT-=dt;
+ if(g.fase==='potenza')g.pot=1-Math.abs(((g.t*1.25)%2)-1);
+ if(g.fase==='angolo')g.ang=1-Math.abs(((g.t*1.1)%2)-1);
+ if(g.fase==='calcio'){g.calcio=Math.min(1,g.t/.28);if(g.t>=.28&&g.pig.stato==='tee')calcia()}
+ const p=g.pig;
+ if(p.stato==='vola'||p.stato==='rotola'){
+  const passi=4,h=dt/passi;
+  for(let i=0;i<passi;i++){
+   if(p.stato==='vola'){
+    const rvx=p.vx-g.vento,sp=Math.hypot(rvx,p.vy),k=.011;
+    p.vx+=(-k*sp*rvx)*h;p.vy+=(-G-k*sp*p.vy)*h;p.x+=p.vx*h;p.y+=p.vy*h;p.rot+=p.vr*h;p.maxH=Math.max(p.maxH,p.y);
+    if(p.y<=.55){p.y=.55;
+     const o=ost.find(o=>p.x>o.x-o.w/2&&p.x<o.x+o.w/2);
+     if(o&&o.tipo==='fango'){p.stato='fermo';p.fango=true;p.vx=p.vy=0;squittio();tonfo();schizzi(p.x,'#7a4b25',22);messaggio('SPLASH! Rosolino adora il fango 🟫',2);break}
+     if(o&&o.tipo==='fieno'){p.vy=Math.max(9,Math.abs(p.vy)*.9);p.vx*=.95;p.fieno++;oink(true);schizzi(p.x,'#e8c14a',14);messaggio('BOING! 🌾',1);continue}
+     if(Math.abs(p.vy)>3){p.vy=-p.vy*.42;p.vx*=.72;p.vr*=.7;p.rimb++;versetto();tonfo();schizzi(p.x,'#6bbf4a',8)}
+     else{p.stato='rotola';p.vy=0}}
+   }else{ // rotola
+    p.vx-=Math.sign(p.vx)*3.2*h;p.x+=p.vx*h;p.rot-=p.vx/.55*h;
+    const o=ost.find(o=>p.x>o.x-o.w/2&&p.x<o.x+o.w/2);
+    if(o&&o.tipo==='fango'){p.stato='fermo';p.fango=true;squittio();schizzi(p.x,'#7a4b25',18);messaggio('SPLASH! 🟫',1.6);break}
+    if(Math.abs(p.vx)<.25){p.stato='fermo';break}}
+  }
+  if(p.stato==='fermo'){g.fase='fermo';g.t=0;p.rot=0;const d=Math.max(0,p.x);g.gioc[g.turno].tiri.push(d);
+   if(!p.fango)oink(true);
+   const best=Math.max(...g.gioc[g.turno].tiri);messaggio(`${d.toFixed(1).replace('.',',')} metri! ${d>=best&&g.gioc[g.turno].tiri.length>1?'Il tuo migliore! ':''}— tocca per continuare`,99)}
+ }
+ for(const q of g.parti){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy-=14*dt;q.vita-=dt}g.parti=g.parti.filter(q=>q.vita>0);
+ // camera segue il maiale
+ const tx=Math.max(0,p.x-VW/PX*.35);g.cam+=(tx-g.cam)*Math.min(1,dt*4);
+ const ty=Math.max(0,p.y-VH/PX*.45);g.camY+=(ty-g.camY)*Math.min(1,dt*3)}
+function schizzi(x,col,n){for(let i=0;i<n;i++)G_.parti.push({x,y:.4,vx:(Math.random()*2-1)*5,vy:2+Math.random()*6,vita:.7,col,r:2+Math.random()*3})}
+
+/* ======================= DISEGNO ======================= */
+const SUOLO=()=>VH*.8;
+const sx=x=>(x-G_.cam)*PX+VW*.18,sy=y=>SUOLO()-(y-G_.camY)*PX;
+function cerchio(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}
+function ellisse(x,y,rx,ry,c,rot){ctx.fillStyle=c;ctx.beginPath();ctx.ellipse(x,y,rx,ry,rot||0,0,Math.PI*2);ctx.fill()}
+function sfondo(){const g=G_,cam=g.cam||0,cy=g.camY||0;
+ const gr=ctx.createLinearGradient(0,0,0,VH);gr.addColorStop(0,'#5fb8f5');gr.addColorStop(1,'#cdeeff');ctx.fillStyle=gr;ctx.fillRect(0,0,VW,VH);
+ cerchio(VW-90,90+cy*PX*.05,42,'#fff3a8');
+ for(let i=0;i<6;i++){const x=((i*260-cam*PX*.15)%(VW+400)+VW+400)%(VW+400)-200,y=70+(i%3)*45+cy*PX*.1;ellisse(x,y,60,22,'rgba(255,255,255,.9)');ellisse(x+40,y-10,40,20,'rgba(255,255,255,.9)')}
+ // colline lontane
+ const base=SUOLO()+cy*PX;
+ ctx.fillStyle='#9ed98a';ctx.beginPath();ctx.moveTo(0,VH);for(let x=0;x<=VW;x+=20){const w=(x+cam*PX*.3);ctx.lineTo(x,base-60-Math.sin(w/170)*28-Math.sin(w/61)*9)}ctx.lineTo(VW,VH);ctx.fill();
+ ctx.fillStyle='#7cc768';ctx.beginPath();ctx.moveTo(0,VH);for(let x=0;x<=VW;x+=20){const w=(x+cam*PX*.55);ctx.lineTo(x,base-26-Math.sin(w/120+1)*16)}ctx.lineTo(VW,VH);ctx.fill();
+ // prato
+ ctx.fillStyle='#5cb247';ctx.fillRect(0,base,VW,VH-base);ctx.fillStyle='#4a9a39';ctx.fillRect(0,base,VW,6);
+ // fienile alla partenza
+ const bx=sx(-14),by=sy(0);ctx.fillStyle='#c0392b';ctx.fillRect(bx-60,by-80,120,80);ctx.fillStyle='#8e2a20';ctx.beginPath();ctx.moveTo(bx-72,by-80);ctx.lineTo(bx,by-130);ctx.lineTo(bx+72,by-80);ctx.fill();
+ ctx.fillStyle='#fff';ctx.fillRect(bx-18,by-50,36,50);ctx.strokeStyle='#c0392b';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(bx-18,by-50);ctx.lineTo(bx+18,by);ctx.moveTo(bx+18,by-50);ctx.lineTo(bx-18,by);ctx.stroke();
+ // bandierine ogni 10 m
+ ctx.textAlign='center';ctx.font='800 16px "Baloo 2",sans-serif';
+ const m0=Math.floor(cam/10)*10;for(let m=Math.max(10,m0);m<cam+VW/PX+10;m+=10){const x=sx(m),y=sy(0);
+  ctx.fillStyle='#fff';ctx.fillRect(x-1.5,y-38,3,38);ctx.fillStyle=m%50===0?'#e23b2e':'#ffd54a';ctx.beginPath();ctx.moveTo(x+1.5,y-38);ctx.lineTo(x+22,y-31);ctx.lineTo(x+1.5,y-24);ctx.fill();
+  ctx.fillStyle='#1f4f1f';ctx.fillText(m+' m',x,y+20)}
+ // record e migliori del turno
+ const rec=load('maialeRecord',null);if(rec&&rec.d>0){const x=sx(rec.d),y=sy(0);if(x>-20&&x<VW+20){ctx.fillStyle='#7b1fa2';ctx.fillRect(x-2,y-70,4,70);ctx.font='800 14px "Baloo 2",sans-serif';ctx.fillText('🏆 '+rec.nome,x,y-76)}}
+ // ostacoli
+ for(const o of ost){const x=sx(o.x),y=sy(0);if(x<-120||x>VW+120)continue;
+  if(o.tipo==='fango'){ellisse(x,y+3,o.w*PX/2,9,'#7a4b25');ellisse(x-o.w*PX*.15,y+1,o.w*PX/4,4,'#94602f')}
+  else{ctx.fillStyle='#e8c14a';ctx.beginPath();ctx.roundRect?ctx.roundRect(x-o.w*PX/2,y-20,o.w*PX,20,8):ctx.rect(x-o.w*PX/2,y-20,o.w*PX,20);ctx.fill();
+   ctx.strokeStyle='#b8902a';ctx.lineWidth=2;for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(x+i*o.w*PX/4,y-20);ctx.lineTo(x+i*o.w*PX/4,y);ctx.stroke()}}}}
+
+function maiale(x,y,s,rot,faccia){ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.scale(s,s);
+ const rosa='#ffaec9',scuro='#f07fa7';
+ // zampe
+ ctx.fillStyle=scuro;for(const zx of [-14,-5,6,15])ctx.fillRect(zx-3,8,7,11);
+ // codina
+ ctx.strokeStyle=scuro;ctx.lineWidth=3;ctx.beginPath();ctx.arc(-25,-2,5,0,Math.PI*1.6);ctx.stroke();
+ ellisse(0,0,24,16,rosa);
+ // testa
+ cerchio(20,-8,13,rosa);
+ ctx.fillStyle=scuro;ctx.beginPath();ctx.moveTo(12,-19);ctx.lineTo(16,-29);ctx.lineTo(21,-19);ctx.fill();ctx.beginPath();ctx.moveTo(22,-20);ctx.lineTo(28,-28);ctx.lineTo(29,-16);ctx.fill();
+ ellisse(31,-6,6,5,scuro);cerchio(29.5,-6,1.4,'#7a2a45');cerchio(32.5,-6,1.4,'#7a2a45');
+ // occhi felici
+ ctx.strokeStyle='#3a1a25';ctx.lineWidth=2;
+ if(faccia==='wow'){cerchio(17,-12,2.6,'#3a1a25');cerchio(24,-13,2.6,'#3a1a25');ellisse(22,1,3,3.5,'#7a2a45')}
+ else{ctx.beginPath();ctx.arc(17,-11,2.5,Math.PI,0);ctx.stroke();ctx.beginPath();ctx.arc(24,-12,2.5,Math.PI,0);ctx.stroke();ctx.beginPath();ctx.arc(22,0,4,0,Math.PI);ctx.stroke()}
+ ellisse(13,-4,3,2,'rgba(255,90,120,.45)');
+ ctx.restore()}
+function bimbo(x,y,calcio){// Federico con lo scarpone
+ ctx.save();ctx.translate(x,y);
+ ellisse(0,2,22,5,'rgba(0,0,0,.15)');
+ // gamba d'appoggio
+ ctx.strokeStyle='#1e4f9c';ctx.lineWidth=9;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-4,-40);ctx.lineTo(-8,-6);ctx.stroke();
+ ctx.fillStyle='#4a2a14';ctx.fillRect(-18,-8,16,8);
+ // gamba che calcia (ruota col calcio)
+ const a=-.9+calcio*2.2;ctx.save();ctx.translate(4,-40);ctx.rotate(a);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,34);ctx.stroke();ctx.fillStyle='#4a2a14';ctx.fillRect(-4,30,20,9);ctx.restore();
+ // corpo
+ ctx.fillStyle='#2e9b4f';ctx.beginPath();ctx.roundRect?ctx.roundRect(-14,-78,28,42,9):ctx.rect(-14,-78,28,42);ctx.fill();
+ ctx.strokeStyle='#f0c4a0';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-10,-70);ctx.lineTo(-24,-50+calcio*10);ctx.moveTo(10,-70);ctx.lineTo(24,-58-calcio*8);ctx.stroke();
+ cerchio(0,-92,15,'#f0c4a0');ctx.fillStyle='#5a3a1e';ctx.beginPath();ctx.arc(0,-96,15,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+ ctx.fillStyle='#e23b2e';ctx.beginPath();ctx.arc(0,-98,15.5,Math.PI,0);ctx.fill();ctx.fillRect(0,-100,22,5);
+ cerchio(5,-92,2,'#222');ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.beginPath();ctx.arc(4,-86,4,0,Math.PI);ctx.stroke();
+ ctx.restore()}
+function barra(){const g=G_;if(g.fase!=='potenza'&&g.fase!=='angolo')return;
+ const w=Math.min(320,VW*.7),x=(VW-w)/2,y=VH*.86+8;
+ ctx.fillStyle='rgba(30,20,30,.55)';ctx.beginPath();ctx.roundRect?ctx.roundRect(x-10,y-34,w+20,64,16):ctx.rect(x-10,y-34,w+20,64);ctx.fill();
+ ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font='800 17px "Baloo 2",sans-serif';
+ ctx.fillText(g.fase==='potenza'?'💪 FORZA: tocca al momento giusto!':'📐 ANGOLO: tocca per calciare!',VW/2,y-12);
+ const gr=ctx.createLinearGradient(x,0,x+w,0);gr.addColorStop(0,'#7ed957');gr.addColorStop(.6,'#ffd54a');gr.addColorStop(1,'#e23b2e');
+ ctx.fillStyle=gr;ctx.fillRect(x,y,w,16);ctx.fillStyle='#fff';ctx.fillRect(x+w*g.pot-3,y-4,6,24)}
+function freccia(){const g=G_;if(g.fase!=='angolo')return;const px=sx(0),py=sy(.6);
+ const a=(12+g.ang*58)*Math.PI/180,L=90;ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=5;ctx.setLineDash([8,6]);
+ ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+Math.cos(a)*L,py-Math.sin(a)*L);ctx.stroke();ctx.setLineDash([]);
+ ctx.fillStyle='#fff';ctx.font='800 16px "Baloo 2",sans-serif';ctx.fillText(Math.round(12+g.ang*58)+'°',px+Math.cos(a)*(L+18),py-Math.sin(a)*(L+18))}
+function hud(){const g=G_;ctx.textAlign='center';
+ const p=g.gioc[g.turno];
+ pill(VW/2,26,`${p.nome} · calcio ${Math.min(g.tiro+1,TIRI)}/${TIRI}`);
+ const v=g.vento,vt=v===0?'nessun vento':(v>0?'➡️ ':'⬅️ ')+Math.abs(v).toFixed(1).replace('.',',')+' m/s';
+ pill(VW/2,58,'🌬️ '+vt,14);
+ const d=Math.max(0,g.pig.x);if(g.pig.stato!=='tee')pill(VW/2,90,'📏 '+d.toFixed(1).replace('.',',')+' m',20,'#b3315c');
+ // classifica piccola
+ ctx.textAlign='left';let y=110;if(g.gioc.length>1||g.gioc[0].tiri.length){ctx.font='800 14px "Baloo 2",sans-serif';
+  for(const q of g.gioc){const b=q.tiri.length?Math.max(...q.tiri).toFixed(1).replace('.',',')+' m':'—';ctx.fillStyle='rgba(30,20,30,.5)';const t=`${q===p?'▶ ':''}${q.nome}: ${b}`;const w=ctx.measureText(t).width+16;
+   ctx.fillRect(8,y-15,w,21);ctx.fillStyle='#fff';ctx.fillText(t,16,y);y+=24}}
+ if(g.msgT>0&&g.msg){ctx.textAlign='center';ctx.font=`800 ${Math.min(30,VW/18)}px "Baloo 2",sans-serif`;ctx.lineWidth=6;ctx.strokeStyle='rgba(80,20,40,.6)';
+  ctx.strokeText(g.msg,VW/2,VH*.3);ctx.fillStyle='#fff';ctx.fillText(g.msg,VW/2,VH*.3)}}
+function pill(x,y,t,fs,col){ctx.font=`800 ${fs||17}px "Baloo 2",sans-serif`;const w=ctx.measureText(t).width+24;
+ ctx.fillStyle=col||'rgba(30,20,30,.55)';ctx.beginPath();ctx.roundRect?ctx.roundRect(x-w/2,y-(fs||17)*.95,w,(fs||17)*1.45,12):ctx.rect(x-w/2,y-18,w,26);ctx.fill();ctx.fillStyle='#fff';ctx.fillText(t,x,y)}
+function disegna(){const g=G_;
+ if(!g.gioc){G_.cam=0;sfondo();maiale(sx(0),sy(.55)-6,1.4,0,'');bimbo(sx(-2.6),sy(0),0);return}
+ sfondo();
+ const p=g.pig;
+ bimbo(sx(-2.6),sy(0),g.calcio);
+ // tee di fango
+ ellisse(sx(0),sy(0)+2,16,5,'#8a5a30');
+ for(const q of g.parti)cerchio(sx(q.x),sy(q.y),q.r,q.col);
+ const faccia=p.stato==='vola'?'wow':'';
+ maiale(sx(p.x),sy(p.y)-6,1.4,p.stato==='tee'?0:p.rot,faccia);
+ if(p.fango){ctx.fillStyle='rgba(122,75,37,.75)';ctx.beginPath();ctx.ellipse(sx(p.x),sy(p.y),30,12,0,0,Math.PI*2);ctx.fill()}
+ // freccina se il maiale esce dallo schermo in alto
+ if(sy(p.y)<40){ctx.fillStyle='#b3315c';ctx.textAlign='center';ctx.font='800 16px "Baloo 2",sans-serif';ctx.fillText('🐷 '+p.y.toFixed(0)+' m su!',sx(p.x),60)}
+ freccia();barra();hud()}
+
+let last=performance.now();
+function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;aggiorna(dt);disegna();requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

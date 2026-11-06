@@ -206,7 +206,7 @@ const testoColpi=w=>colpi(w)===1?'1 colpo per mostro':colpi(w)+' colpi per mostr
 
 const TIPI={
  slime:{hp:6,vel:70,w:62,h:56,punti:10,col:'#6ccf4a'},
- pipistrello:{hp:6,vel:115,w:60,h:36,punti:15,col:'#8e5bd1'},
+ pipistrello:{hp:4,vel:90,w:60,h:36,punti:15,col:'#8e5bd1'},
  ciclope:{hp:9,vel:75,w:64,h:96,punti:25,col:'#f08a2c'},
  golem:{hp:18,vel:48,w:100,h:124,punti:50,col:'#8d8d96'}
 };
@@ -494,7 +494,7 @@ function cerca(){
 }
 function generaMostro(){
  const k=S.uccisi,pool=[['slime',5]];
- if(k>=3)pool.push(['pipistrello',3]);if(k>=12)pool.push(['ciclope',3]);if(k>=35)pool.push(['golem',2]);if(k>=60)pool.push(['golem',2],['ciclope',2]);
+ if(k>=3&&S.mostri.filter(m=>!m.morto&&m.tipo==='pipistrello').length<2)pool.push(['pipistrello',2]);if(k>=12)pool.push(['ciclope',3]);if(k>=35)pool.push(['golem',2]);if(k>=60)pool.push(['golem',2],['ciclope',2]);
  let tot=pool.reduce((s,a)=>s+a[1],0),r=Math.random()*tot,tipo='slime';for(const [n,w] of pool){if((r-=w)<0){tipo=n;break}}
  const T=TIPI[tipo];let x=Math.random()<.7?S.cam+VW+60:S.cam-60;
  if(x>WORLD_W-30)x=S.cam-60;if(x<30)x=S.cam+VW+60;x=clamp(x,30,WORLD_W-30);
@@ -659,14 +659,14 @@ function aggiorna(dt){
  for(const b of S.proiettili){b.x+=b.vx*dt;b.vita-=dt;
   if(b.w.tipo==='razzo'&&Math.random()<.6)S.part.push({x:b.x-Math.sign(b.vx)*14,y:b.y,vx:0,vy:-20,vita:.5,col:'rgba(200,200,200,.7)',tipo:'fumo',r:5,grav:-40});
   for(const m of S.mostri){if(m.morto||b.colpiti.has(m))continue;
-   if(b.x>m.x-m.w/2-8&&b.x<m.x+m.w/2+8&&b.y>m.y-m.h-8&&b.y<m.y+8){b.colpiti.add(m);const d=Math.sign(b.vx);colpisci(m,b.dmg,d);
+   const tol=m.tipo==='pipistrello'?30:8;if(b.x>m.x-m.w/2-8&&b.x<m.x+m.w/2+8&&b.y>m.y-m.h-tol&&b.y<m.y+tol){b.colpiti.add(m);const d=Math.sign(b.vx);colpisci(m,b.dmg,d);
     if(b.w.area)esplosione(b.x,b.y,b.w.area,b.dmg,d,b.colpiti);if(!b.w.pierce){b.vita=0;break}}}
  }
  S.proiettili=S.proiettili.filter(b=>b.vita>0&&b.x>S.cam-150&&b.x<S.cam+VW+150);
  // mostri
  for(const m of S.mostri){if(m.tipo==='boss'){aggiornaBoss(m,dt);continue}
   m.t+=dt;m.flash-=dt;const d=Math.sign(p.x-m.x);m.x+=d*m.vel*dt;
-  if(m.tipo==='pipistrello')m.y=GROUND-90+Math.sin(m.t*2.2+m.fase)*55;
+  if(m.tipo==='pipistrello')m.y=GROUND-66+Math.sin(m.t*2.2+m.fase)*30;
   // salto alla Mario: ricadendo sopra un mostro normale lo schiacci
   const top=m.y-m.h;
   if(!p.morto&&!p.terra&&p.vy>0&&Math.abs(p.x-m.x)<m.w/2+12&&p.y>=top-6&&p.y<=top+22){schiaccia(m);continue}

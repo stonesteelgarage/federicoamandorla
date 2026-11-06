@@ -14,8 +14,10 @@ html,body{margin:0;height:100%;overflow:hidden;background:#9fcbea;font-family:'B
 @media (max-width:600px){#hud{top:calc(max(8px,env(safe-area-inset-top)) + 40px);width:96%}.pill{font-size:14px;padding:2px 8px}}
 .pill.warn{background:rgba(214,40,40,.85)}
 .pill.hot{background:rgba(242,128,0,.88)}
-#home,#audio{position:fixed;top:max(8px,env(safe-area-inset-top));z-index:6;background:rgba(255,255,255,.88);border-radius:14px;padding:4px 12px;font-weight:800;color:#1f2a44;text-decoration:none;font-size:17px;border:0;font-family:inherit;cursor:pointer}
-#home{left:8px}#audio{right:8px}
+#home,#audio,#pausaBtn{position:fixed;top:max(8px,env(safe-area-inset-top));z-index:6;background:rgba(255,255,255,.88);border-radius:14px;padding:4px 12px;font-weight:800;color:#1f2a44;text-decoration:none;font-size:17px;border:0;font-family:inherit;cursor:pointer}
+#home{left:8px}#audio{right:8px}#pausaBtn{right:64px}
+#mappa{position:fixed;left:max(8px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));width:124px;height:220px;z-index:4;border-radius:14px;background:rgba(15,30,50,.45);pointer-events:none}
+@media (max-width:600px){#mappa{width:100px;height:178px}}
 #msg{position:fixed;top:17%;left:0;right:0;text-align:center;z-index:5;pointer-events:none;color:#fff;font-weight:800;font-size:clamp(26px,6vw,54px);text-shadow:0 3px 0 rgba(0,0,0,.35),0 0 18px rgba(0,0,0,.35);transition:opacity .3s}
 #chute{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:6;width:86px;height:86px;border-radius:50%;border:4px solid #fff;background:#e8437a;color:#fff;font-size:38px;box-shadow:0 6px 0 #9c1f4a;cursor:pointer;display:none}
 #chute small{display:block;font-size:12px;font-weight:800;margin-top:-6px;font-family:'Baloo 2',sans-serif}
@@ -55,6 +57,8 @@ h1 span{color:#e8437a}
 <canvas id="c"></canvas>
 <a id="home" href="index.html" aria-label="Torna ai giochi">🏠 Giochi</a>
 <button id="audio" aria-label="Audio">🔊</button>
+<button id="pausaBtn" aria-label="Pausa" style="display:none">⏸</button>
+<canvas id="mappa" width="248" height="440" class="hidden"></canvas>
 <div id="hud" class="hidden">
   <span class="pill" id="hVel">0 km/h</span>
   <span class="pill" id="hAlt">0 m</span>
@@ -70,10 +74,10 @@ h1 span{color:#e8437a}
 <div id="menu" class="overlay">
   <div class="card">
     <h1>Volo in <span>Tuta Alare</span></h1>
-    <p class="sub">Salta dalla scogliera e plana tra le montagne come un uccello!<br>Passa negli anelli gialli, vola basso per fare più punti e atterra con il paracadute.</p>
+    <p class="sub">Salta dalla scogliera e plana tra le montagne fino al <b>campo base ⛺</b>.<br>Lì apri il paracadute e atterra nel <b>cerchio rosso e bianco</b>: superi il livello e ricevi ali migliori!</p>
     <div class="comandi">
-      <div class="box"><b>📱 Telefono e tablet</b><br>Appoggia il dito sullo schermo e trascinalo: <b>su</b> per salire, <b>giù</b> per scendere, <b>destra e sinistra</b> per girare. Tocca 🪂 per atterrare.</div>
-      <div class="box"><b>⌨️ Computer</b><br><b>↑ ↓</b> sali e scendi · <b>← →</b> giri<br><b>Spazio</b> apri il paracadute</div>
+      <div class="box"><b>📱 Telefono e tablet</b><br>Appoggia il dito sullo schermo e trascinalo: <b>su</b> per salire, <b>giù</b> per scendere, <b>destra e sinistra</b> per girare. Tocca 🪂 per aprire il paracadute, ✂️ per chiuderlo e tornare a volare. ⏸ mette in pausa.</div>
+      <div class="box"><b>⌨️ Computer</b><br><b>↑ ↓</b> sali e scendi · <b>← →</b> giri<br><b>Spazio</b> apri e chiudi il paracadute<br><b>Esc</b> pausa</div>
     </div>
     <div class="box">💡 <b>Come si vola davvero:</b> per andare veloce devi scendere. Se tiri su troppo a lungo rallenti, e se vai troppo piano la tuta non ti regge più (<b>stallo</b>): punta il naso in giù per riprendere velocità!</div>
     <h3 class="tit">🪽 Scegli le ali</h3>
@@ -84,6 +88,14 @@ h1 span{color:#e8437a}
   </div>
 </div>
 
+<div id="pausa" class="overlay hidden">
+  <div class="card">
+    <h1>Pausa ⏸</h1>
+    <button class="btn" id="riprendi">▶ Riprendi</button>
+    <button class="btn" id="rifai" style="background:#2a6aa0;box-shadow:0 6px 0 #1e4f7a">↺ Ricomincia il livello</button>
+    <p class="link"><a href="#" id="alMenu">🪽 Scegli le ali</a> · <a href="index.html">🏠 Altri giochi</a></p>
+  </div>
+</div>
 <div id="fine" class="overlay hidden">
   <div class="card">
     <h1 id="fTitolo">Atterrato!</h1>
@@ -117,9 +129,9 @@ let SEME=0;
 function centro(d){return 130*Math.sin(d/720+SEME)+55*Math.sin(d/270+1.3+SEME*2)+18*Math.sin(d/95+.4)}
 function largh(d){return 95+35*Math.sin(d/900+.7+SEME)}
 function base(d){return -PENDENZA*d}
-let CRESTE=[];
+let CRESTE=[],CAMPO=1000;
 function preparaCreste(){CRESTE=[];const s=Math.floor(SEME*1000);
- for(let k=0;k<80;k++){const dk=1150+k*1000+(hash(k,7+s)-.5)*300;
+ for(let k=0;k<80;k++){const dk=620+k*700+(hash(k,7+s)-.5)*200;if(Math.abs(dk-CAMPO)<280)continue;
   CRESTE.push({d:dk,o:(hash(k,11+s)-.5)*1.1,h:140+hash(k,13+s)*90+Math.min(80,k*8)})}}
 function quota(x,d){
  const c=centro(d),w=largh(d),dx=Math.abs(x-c);
@@ -130,6 +142,7 @@ function quota(x,d){
  for(let i=0;i<CRESTE.length;i++){const r=CRESTE[i],dd=d-r.d;
   if(dd>-170&&dd<170){const g=Math.exp(-(dd*dd)/(2*52*52)),ox=c+r.o*w,gap=Math.exp(-((x-ox)*(x-ox))/(2*24*24));
    h+=r.h*g*(1-gap*.97)*(1-muro)}}
+ {const dc=Math.abs(d-CAMPO);if(dc<230){const f=smooth(230,100,dc)*(1-smooth(w*.85,w+70,dx));if(f>0){const h0=base(CAMPO)+(fbm(x*.02,d*.02)-.5)*2;h=h*(1-f)+h0*f}}}
  if(d<45){const t=smooth(45,6,d);h=h*(1-t)+(START_Y-1.6+(fbm(x*.05,d*.05)-.5)*3)*t}
  return h}
 
@@ -195,20 +208,20 @@ function creaChunk(k){
   const im=new THREE.InstancedMesh(geo,matPianta,N);let n=0;
   for(let t=0;t<N*4&&n<N;t++){const u=k*seme+t;const d=k*L+hash(u,3)*L;const c=centro(d),w=largh(d);
    const x=c+(hash(u,5)-.5)*2*(w+170);if(d<60)continue;const h=suolo(x,d),rel=h-base(d);
-   if(rel>maxRel+hash(u,6)*25)continue;
+   if(rel>maxRel+hash(u,6)*25)continue;if(Math.hypot(x-centro(CAMPO),d-CAMPO)<75)continue;
    const sc=(geo===geoAbete?.65:.75)+hash(u,9)*.75;s.set(sc*(.85+hash(u,10)*.3),sc*(.85+hash(u,11)*.45),sc*(.85+hash(u,12)*.3));
    e.set((hash(u,13)-.5)*.12,hash(u,14)*6.28,(hash(u,15)-.5)*.12);q.setFromEuler(e);v.set(x,h-.6,-d);M.compose(v,q,s);im.setMatrixAt(n,M);
    const l=.78+hash(u,16)*.4;tinta.setRGB(l*(.92+hash(u,17)*.16),l,l*(.9+hash(u,18)*.12));im.setColorAt(n,tinta);n++}
   im.count=n;if(im.instanceColor)im.instanceColor.needsUpdate=true;grp.add(im)}
  // guglie di roccia nella valle
  if(k>=2){const ng=2+Math.floor(hash(k,21)*3);
-  for(let j=0;j<ng;j++){const d=k*L+hash(k,30+j)*L;if(CRESTE.some(r=>Math.abs(r.d-d)<140))continue;
+  for(let j=0;j<ng;j++){const d=k*L+hash(k,30+j)*L;if(CRESTE.some(r=>Math.abs(r.d-d)<140)||Math.abs(d-CAMPO)<240)continue;
    const c=centro(d),w=largh(d),x=c+(hash(k,40+j)-.5)*1.5*w,y0=quota(x,d)-6;
    const alt=70+hash(k,50+j)*110,rag=9+hash(k,60+j)*9;
    const gm=new THREE.Mesh(new THREE.ConeGeometry(rag,alt,7),matRoccia);gm.position.set(x,y0+alt/2,-d);gm.rotation.y=hash(k,70+j)*6;grp.add(gm);
    const g={x,d,y0,alt,rag,mesh:gm};ch.guglie.push(g);guglie.push(g)}}
  // un anello per chunk
- if(k>=1){const d=k*L+L*.55;if(!CRESTE.some(r=>Math.abs(r.d-d)<90)){
+ if(k>=1){const d=k*L+L*.55;if(!CRESTE.some(r=>Math.abs(r.d-d)<90)&&Math.abs(d-CAMPO)>200){
   const x=centro(d)+(hash(k,80)-.5)*largh(d)*.6;const y=quota(x,d)+32+hash(k,81)*38;
   const am=new THREE.Mesh(geoAnello,matAnello);am.position.set(x,y,-d);
   const dc=centro(d+5)-centro(d-5);am.rotation.y=Math.atan2(dc,10);grp.add(am);
@@ -231,21 +244,39 @@ function suolo(x,d){const k=Math.floor(d/L),ch=chunks.get(k);if(!ch)return quota
 const TUTE=[
  {nome:'Ali di pelle rattoppate',glide:1.65,v0:36,tuta:0x6b4a2b,ala:0x8a6a45,riga:0x4a3420,strappi:true,traballa:.5,giro:.75,meta:1000,
   info:'Vecchie ali di pelle, mezze rotte e piene di toppe: scendono in fretta e traballano col vento.'},
- {nome:'Ali di tela cucite a mano',glide:2.0,v0:39,tuta:0x7b6d4c,ala:0xc9b48a,riga:0x8c3b2a,strappi:false,traballa:.3,giro:.85,meta:2000,
+ {nome:'Ali di tela cucite a mano',glide:2.0,v0:39,tuta:0x7b6d4c,ala:0xc9b48a,riga:0x8c3b2a,strappi:false,traballa:.3,giro:.85,meta:1400,
   info:'Tela robusta e cuciture nuove: niente più buchi, ma sono ancora pesanti.'},
- {nome:'Tuta da allievo',glide:2.4,v0:42,tuta:0x2d7d46,ala:0x3fa35f,riga:0xffffff,strappi:false,traballa:.15,giro:.95,meta:3000,
+ {nome:'Tuta da allievo',glide:2.4,v0:42,tuta:0x2d7d46,ala:0x3fa35f,riga:0xffffff,strappi:false,traballa:.15,giro:.95,meta:1800,
   info:'La prima vera tuta alare: plana bene e si guida con precisione.'},
- {nome:'Tuta sportiva',glide:2.8,v0:46,tuta:0xff6a13,ala:0x1e4f9c,riga:0xffd12a,strappi:false,traballa:.07,giro:1,meta:4500,
+ {nome:'Tuta sportiva',glide:2.8,v0:46,tuta:0xff6a13,ala:0x1e4f9c,riga:0xffd12a,strappi:false,traballa:.07,giro:1,meta:2200,
   info:'Ali più grandi e tessuto leggero: voli lontano e più veloce.'},
- {nome:'Tuta da campione',glide:3.15,v0:50,tuta:0xd81b3c,ala:0x1b1b2a,riga:0xffc400,strappi:false,traballa:.03,giro:1.05,meta:6000,
+ {nome:'Tuta da campione',glide:3.15,v0:50,tuta:0xd81b3c,ala:0x1b1b2a,riga:0xffc400,strappi:false,traballa:.03,giro:1.05,meta:2600,
   info:'La tuta delle gare: tantissima planata e virate strette.'},
- {nome:'Tuta da record',glide:3.5,v0:54,tuta:0xf2f2f2,ala:0x00a6d6,riga:0xff2d7a,strappi:false,traballa:0,giro:1.1,meta:0,
-  info:'La migliore del mondo: vola più lontano che puoi e batti il tuo record!'},
+ {nome:'Tuta da record',glide:3.5,v0:54,tuta:0xf2f2f2,ala:0x00a6d6,riga:0xff2d7a,strappi:false,traballa:0,giro:1.1,meta:3000,
+  info:'La migliore del mondo: il campo base più lontano di tutti!'},
 ];
 let livello=1,scelta=0;
 try{livello=Math.max(1,Math.min(TUTE.length,+localStorage.getItem('tutaLivello')||1))}catch(e){}
 scelta=livello-1;
 
+
+/* ======================= CAMPO BASE ======================= */
+let campoG=null;
+function creaCampo(){
+ if(campoG)scene.remove(campoG);campoG=new THREE.Group();
+ const xc=centro(CAMPO),y=quota(xc,CAMPO),M=c=>new THREE.MeshLambertMaterial({color:c});
+ const disco=(r,c,dy)=>{const m=new THREE.Mesh(new THREE.CircleGeometry(r,40),M(c));m.rotation.x=-Math.PI/2;m.position.set(xc,y+dy,-CAMPO);campoG.add(m)};
+ disco(26,0xffffff,.35);disco(19,0xd81b2a,.4);disco(12,0xffffff,.45);disco(5,0xd81b2a,.5);
+ const tende=[[0xff7a1a,40,20],[0x2e9b4f,-38,30],[0xffc400,30,-34],[0x1e6fd9,-34,-30]];
+ for(const [c,dx,dz] of tende){const ty=quota(xc+dx,CAMPO+dz);const t=new THREE.Mesh(new THREE.ConeGeometry(4.2,4.6,4),M(c));t.position.set(xc+dx,ty+2.3,-(CAMPO+dz));t.rotation.y=Math.PI/4;campoG.add(t)}
+ const by=quota(xc+48,CAMPO-8);const baita=new THREE.Mesh(new THREE.BoxGeometry(9,4,6),M(0x8a5a32));baita.position.set(xc+48,by+2,-(CAMPO-8));campoG.add(baita);
+ const tetto=new THREE.Mesh(new THREE.ConeGeometry(7.4,3.4,4),M(0x6b2a1e));tetto.position.set(xc+48,by+5.7,-(CAMPO-8));tetto.rotation.y=Math.PI/4;tetto.scale.set(1,1,.75);campoG.add(tetto);
+ const asta=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,16,8),M(0xdddddd));asta.position.set(xc-30,y+8,-(CAMPO+2));campoG.add(asta);
+ const band=new THREE.Mesh(new THREE.PlaneGeometry(6,3.6),new THREE.MeshLambertMaterial({color:0xd81b2a,side:THREE.DoubleSide}));band.position.set(xc-27,y+14,-(CAMPO+2));campoG.add(band);
+ // colonna di fumo arancione: si vede da lontano
+ const fumo=new THREE.Mesh(new THREE.CylinderGeometry(3,7,160,16,1,true),new THREE.MeshBasicMaterial({color:0xff8a1a,transparent:true,opacity:.22,depthWrite:false,side:THREE.DoubleSide,fog:false}));
+ fumo.position.set(xc,y+80,-CAMPO);campoG.add(fumo);
+ scene.add(campoG)}
 /* ======================= PILOTA ======================= */
 function osso(a,b,r1,r2,mat){const v=new THREE.Vector3().subVectors(b,a),len=v.length();
  const m=new THREE.Mesh(new THREE.CylinderGeometry(r2,r1,len,12),mat);m.position.copy(a).addScaledVector(v,.5);
@@ -325,6 +356,8 @@ $('#audio').addEventListener('click',()=>{muto=!muto;$('#audio').textContent=mut
 const K={su:false,giu:false,sx:false,dx:false};
 const J={on:false,id:null,x0:0,y0:0,ix:0,iy:0};
 addEventListener('keydown',e=>{const c=e.code;
+ if((c==='Escape'||c==='KeyP')&&!e.repeat){if(S&&['conto','volo','para'].includes(S.stato)){pausa(!pausaOn);e.preventDefault();return}}
+ if(pausaOn)return;
  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(c))e.preventDefault();
  if(c==='ArrowUp'||c==='KeyW')K.su=true;else if(c==='ArrowDown'||c==='KeyS')K.giu=true;
  else if(c==='ArrowLeft'||c==='KeyA')K.sx=true;else if(c==='ArrowRight'||c==='KeyD')K.dx=true;
@@ -358,48 +391,58 @@ function disegnaTute(){const box=$('#tute');box.innerHTML='';
   b.addEventListener('click',()=>{usaTuta(i);disegnaTute()});box.appendChild(b)});
  const t=TUTE[scelta];
  $('#tutaInfo').innerHTML=`<b>${t.nome}</b> <span class="stelle">${stelle(t)}</span><br>${t.info}<br>`+
-  (t.meta?`🎯 <b>Obiettivo:</b> vola per almeno <b>${distanza(t.meta)}</b> e atterra con il paracadute${scelta===livello-1?' per sbloccare le ali nuove!':'.'}`:'🎯 <b>Obiettivo:</b> il volo più lungo che riesci!')}
+  `🎯 <b>Livello ${scelta+1}:</b> il campo base ⛺ è a <b>${distanza(t.meta)}</b>. Atterra nel cerchio${scelta===livello-1&&scelta<TUTE.length-1?' per sbloccare le ali nuove!':'!'}`}
 disegnaTute();
 let msgT=0;
 function messaggio(t,dur){const m=$('#msg');m.textContent=t;m.style.opacity=1;msgT=dur||1.6}
 function nuovo(){
- SEME=Math.random()*6.28;preparaCreste();
+ SEME=Math.random()*6.28;CAMPO=T.meta;preparaCreste();
  for(const [,ch] of chunks)togliChunk(ch);guglie=[];anelli=[];
- aggiornaChunk(0,true);
+ for(const a of aerei)scene.remove(a.A.g);aerei=[];
+ aggiornaChunk(0,true);creaCampo();
  const x0=centro(4);
  S={stato:'pronto',t:0,x:x0,y:START_Y+.1,d:4,V:3,gam:0,psi:Math.atan2(centro(40)-centro(4),36),phi:0,
-   punti:0,vicino:0,anelli:0,vmax:0,stallo:false,aperto:0,crash:false,fine:false,yApertura:0,suggerito:false,dPrima:4};
+   punti:0,vicino:0,anelli:0,vmax:0,stallo:false,aperto:0,crash:false,fine:false,yApertura:0,suggerito:false,dPrima:4,prossimoAereo:14+Math.random()*10,av1:false,av2:false,av3:false};
  P.g.visible=true;P.vela.visible=false;
 }
 function parti(){audio();if(AC&&AC.state==='suspended')AC.resume();
  $('#menu').classList.add('hidden');$('#fine').classList.add('hidden');$('#hud').classList.remove('hidden');
- nuovo();S.stato='conto';S.t=0;$('#chute').style.display='none';$('#hint').textContent='';}
-function apri(){if(!S||S.stato!=='volo'||S.t<2.5)return;const agl=S.y-suolo(S.x,S.d);
- S.stato='para';S.yApertura=agl;P.vela.visible=true;P.vela.scale.set(.15,.15,.15);suono(220,90,.5,'sawtooth',.12);
- $('#chute').style.display='none';$('#hint').textContent='';messaggio(agl<45?'Troppo basso!':'Paracadute aperto!',1.4)}
+ nuovo();S.stato='conto';S.t=0;$('#chute').style.display='none';$('#hint').textContent='';$('#mappa').classList.remove('hidden');$('#pausaBtn').style.display='block';$('#pausa').classList.add('hidden');pausaOn=false;}
+function bottoneChute(){$('#chute').innerHTML=S&&S.stato==='para'?'✂️<small>CHIUDI</small>':'🪂<small>PARACADUTE</small>'}
+function apri(){if(!S||pausaOn)return;if(S.stato==='para'){chiudi();return}
+ if(S.stato!=='volo'||S.t<2.5)return;const agl=S.y-suolo(S.x,S.d);
+ S.stato='para';S.aperto=0;S.yApertura=agl;P.vela.visible=true;P.vela.scale.set(.15,.15,.15);suono(220,90,.5,'sawtooth',.12);
+ bottoneChute();$('#hint').textContent='';messaggio(agl<45?'Troppo basso!':'Paracadute aperto!',1.4);$('#hint').textContent='Sotto la vela: ↑ frena · ↓ vai avanti · ← → giri · Spazio la chiudi'}
+function chiudi(){const agl=S.y-suolo(S.x,S.d);if(agl<4)return;
+ S.stato='volo';S.gam=-1.0;S.V=Math.max(S.V,12);S.t=Math.max(S.t,3);P.vela.visible=false;S.stallo=false;
+ suono(500,250,.25,'triangle',.12);messaggio('✂️ Paracadute chiuso: vola!',1.3);bottoneChute()}
 function schianto(){S.stato='fine';S.crash=true;suono(160,40,.6,'square',.25);messaggio('💥 Schianto!',2);P.g.visible=false;P.vela.visible=false;
  if(ventoG)ventoG.gain.value=0;setTimeout(()=>finePartita(),1500)}
 function atterra(){S.stato='fine';let bonus=0,titolo='Atterrato!',sub='';
+ const dc=Math.hypot(S.x-centro(CAMPO),S.d-CAMPO);S.dCampo=dc;
  if(S.yApertura>=90){bonus=500;sub='Paracadute aperto alla quota giusta: atterraggio perfetto! +500 punti.'}
  else if(S.yApertura>=45){bonus=250;sub='Atterraggio un po\' veloce, ma tutto bene! +250 punti.'}
  else{bonus=0;titolo='Atterraggio duro!';sub='La prossima volta apri il paracadute più in alto (sopra i 90 m).'}
  S.punti+=bonus;
- if(T.meta&&S.d>=T.meta){
+ if(dc<=130){
+  const centro_=dc<6?[1000,'🎯 Centro perfetto! +1000']:dc<13?[700,'Dentro il cerchio rosso! +700']:dc<27?[400,'Dentro il cerchio! +400']:[200,'Al campo base. +200'];
+  S.punti+=centro_[0];sub=centro_[1]+(sub?' · '+sub:'');S.passato=true;
   if(scelta===livello-1&&livello<TUTE.length){livello++;try{localStorage.setItem('tutaLivello',livello)}catch(e){}
    S.sblocco=TUTE[livello-1];usaTuta(livello-1);titolo='🎉 Livello superato!'}
-  else titolo='🎯 Obiettivo raggiunto!'}
- else if(T.meta)sub+=(sub?' ':'')+`Per superare il livello devi arrivare a ${distanza(T.meta)}: ne hai fatti ${distanza(S.d)}.`;
+  else if(scelta===TUTE.length-1)titolo='🏆 Hai completato tutti i livelli!';
+  else{titolo='⛺ Campo base raggiunto!';if(scelta+1<livello)usaTuta(scelta+1)}}
+ else{titolo='Fuori dal campo base';sub=`Sei atterrato a ${distanza(dc)} dal campo base ⛺. Segui la mappa e apri il paracadute quando ci sei sopra!`}
  suono(520,880,.35,'triangle',.18);messaggio('🎉 '+titolo,1.8);S.titolo=titolo;S.sub=sub;if(ventoG)ventoG.gain.value=0;setTimeout(()=>finePartita(),1500)}
 function finePartita(){
  const p=Math.round(S.punti);
  $('#fTitolo').textContent=S.crash?'💥 Schianto!':S.titolo;
- $('#fSub').textContent=S.crash?'Hai toccato la montagna. Tieniti un po\' più alto e apri il paracadute prima di arrivare a terra!':S.sub;
+ $('#fSub').textContent=S.crash&&S.aereo?'Ti sei scontrato con un aereo! Quando senti il motore, spostati di lato o cambia quota.':S.crash?'Hai toccato la montagna. Tieniti un po\' più alto e apri il paracadute prima di arrivare a terra!':S.sub;
  $('#fDist').textContent=distanza(S.d);$('#fAnelli').textContent=S.anelli;$('#fVmax').textContent=Math.round(S.vmax*3.6)+' km/h';$('#fPunti').textContent=p;
  let nuovoRec=false;if(p>record){record=p;nuovoRec=true;try{localStorage.setItem('tutaRecord',p)}catch(e){}}
  $('#fRecord').textContent=nuovoRec?'🏆 Nuovo record!':`🏆 Record: ${record} punti`;mostraRecord();
  if(S.sblocco){$('#fSub').innerHTML=`Hai sbloccato: <b>${S.sblocco.nome}</b>! <span class="stelle">${stelle(S.sblocco)}</span><br>${S.sblocco.info}`}
- $('#ancora').textContent=S.sblocco?'Prova le ali nuove ▶':'Vola ancora ▶';disegnaTute();
- $('#fine').classList.remove('hidden');$('#hud').classList.add('hidden');$('#chute').style.display='none';$('#hint').textContent=''}
+ $('#ancora').textContent=S.sblocco?'Livello '+(scelta+1)+' con le ali nuove ▶':S.passato&&!S.sblocco&&scelta<TUTE.length?'Livello '+(scelta+1)+' ▶':'Riprova ▶';disegnaTute();
+ $('#fine').classList.remove('hidden');$('#hud').classList.add('hidden');$('#mappa').classList.add('hidden');$('#pausaBtn').style.display='none';$('#chute').style.display='none';$('#hint').textContent=''}
 function distanza(d){return d<1000?Math.round(d)+' m':(d/1000).toFixed(2).replace('.',',')+' km'}
 
 function fisica(dt){
@@ -407,7 +450,7 @@ function fisica(dt){
  let pitch=(K.su?1:0)-(K.giu?1:0)-J.iy;pitch=Math.max(-1,Math.min(1,pitch));
  let roll=(K.dx?1:0)-(K.sx?1:0)+J.ix;roll=Math.max(-1,Math.min(1,roll));
  if(s.stato==='para'){
-  const a=Math.min(1,dt*1.4);s.V+=(7-s.V)*a;const alto=s.y-suolo(s.x,s.d);const vz=alto>110?-Math.min(22,8.5+(alto-110)*.08):-8.5;
+  const a=Math.min(1,dt*1.4);s.V+=((7-pitch*5)-s.V)*a;const alto=s.y-suolo(s.x,s.d);const vz=alto>110?-Math.min(22,8.5+(alto-110)*.08):-8.5;
   s.gam=Math.atan2(vz,s.V);s.psi+=roll*.55*dt;s.phi+=(roll*.25-s.phi)*Math.min(1,dt*3);
   s.x+=s.V*Math.sin(s.psi)*dt;s.d+=s.V*Math.cos(s.psi)*dt;s.y+=vz*dt*Math.min(1,s.aperto*1.5+.25);
   s.aperto=Math.min(1,s.aperto+dt*1.6);
@@ -431,13 +474,14 @@ function fisica(dt){
 function aggiorna(dt){
  const s=S;s.t+=dt;
  if(s.stato==='conto'){const n=3-Math.floor(s.t);if(n>0){if($('#msg').textContent!==String(n)){messaggio(String(n),.9);suono(440,440,.12,'sine',.15)}}
-  else{s.stato='volo';s.t=0;s.V=12;s.gam=-50*DEG;messaggio('SALTA! 🪂',1.2);suono(660,990,.25,'sine',.18);$('#chute').style.display='block'}
+  else{s.stato='volo';s.t=0;s.V=12;s.gam=-50*DEG;messaggio('SALTA! 🪂',1.2);suono(660,990,.25,'sine',.18);$('#chute').style.display='block';bottoneChute()}
   return}
  if(s.stato!=='volo'&&s.stato!=='para')return;
  s.dPrima=s.d;
  const passi=3;for(let i=0;i<passi;i++)fisica(dt/passi);
  s.vmax=Math.max(s.vmax,s.V);
  aggiornaChunk(s.d,false);
+ aggiornaAerei(s,dt);if(s.stato==='fine')return;
  const terra=suolo(s.x,s.d),agl=s.y-terra;
  if(s.stato==='para'){if(agl<=.4){s.y=terra+.4;atterra()}return}
  if(agl<.9){schianto();return}
@@ -447,10 +491,80 @@ function aggiorna(dt){
  // punti: distanza + volo radente
  s.punti+=Math.max(0,s.d-s.dPrima);
  if(agl<45&&s.V>25){const f=(45-agl)/45;s.vicino=f;s.punti+=f*s.V*dt*2}else s.vicino=0;
- if(!s.suggerito&&s.t>8&&agl<170){s.suggerito=true;$('#hint').textContent='Stai arrivando in basso: tocca 🪂 o premi Spazio per aprire il paracadute!'}
- if(agl>200&&s.suggerito){$('#hint').textContent=''}
+ const rem=CAMPO-s.d;
+ if(!s.av1&&rem<420){s.av1=true;messaggio('⛺ Campo base in vista!',2);suono(660,880,.3,'triangle',.15)}
+ if(!s.av2&&Math.abs(rem)<110){s.av2=true;messaggio('⛺ Sei al campo base: apri il paracadute!',2.4);suono(880,1320,.3,'triangle',.18);$('#hint').textContent='Apri il paracadute 🪂 (Spazio) e atterra nel cerchio rosso e bianco!'}
+ if(!s.av3&&rem<-230){s.av3=true;messaggio('Hai superato il campo base: torna indietro!',2.2);$('#hint').textContent='Gira e torna verso il fumo arancione ⛺'}
+ if(!s.suggerito&&s.t>8&&agl<120&&Math.abs(rem)>110){s.suggerito=true;$('#hint').textContent='Sei basso! Apri il paracadute 🪂 se non arrivi al campo base.'}
 }
 
+
+/* ======================= AEREI (pochi, ogni tanto) ======================= */
+let aerei=[];
+function creaAereo(){
+ const g=new THREE.Group(),M=c=>new THREE.MeshLambertMaterial({color:c});
+ const bianco=M(0xf3f3f3),rosso=M(0xd81b2a),scuro=M(0x1b2a44);
+ const fus=new THREE.Mesh(new THREE.CylinderGeometry(.5,.32,6,12),bianco);fus.rotation.z=Math.PI/2;g.add(fus);
+ const muso=new THREE.Mesh(new THREE.SphereGeometry(.5,12,8),rosso);muso.position.x=3;muso.scale.set(.9,1,1);g.add(muso);
+ const cab=new THREE.Mesh(new THREE.SphereGeometry(.45,12,8,0,Math.PI*2,0,Math.PI/2),scuro);cab.position.set(1.1,.35,0);cab.scale.set(1.6,1,1);g.add(cab);
+ const ali=new THREE.Mesh(new THREE.BoxGeometry(1.5,.12,8.4),bianco);ali.position.set(.5,.05,0);g.add(ali);
+ for(const z of [-3.6,3.6]){const pu=new THREE.Mesh(new THREE.BoxGeometry(1.52,.14,1.2),rosso);pu.position.set(.5,.06,z);g.add(pu)}
+ const coda=new THREE.Mesh(new THREE.BoxGeometry(.9,.08,2.8),bianco);coda.position.set(-2.8,.1,0);g.add(coda);
+ const deriva=new THREE.Mesh(new THREE.BoxGeometry(1,1.3,.08),rosso);deriva.position.set(-2.8,.7,0);g.add(deriva);
+ const elica=new THREE.Mesh(new THREE.BoxGeometry(.08,2.4,.22),scuro);elica.position.x=3.45;g.add(elica);
+ return {g,elica}}
+function lanciaAereo(s){
+ const dist=380+Math.random()*120,vOriz=Math.max(20,s.V*Math.cos(s.gam)),t=dist/vOriz;
+ const d0=s.d+dist,dir=Math.random()<.5?1:-1,vx=28+Math.random()*10;
+ const y0=s.y+s.V*Math.sin(s.gam)*t+(Math.random()*16-4);
+ const xc=centro(d0)+(Math.random()-.5)*largh(d0)*.6;
+ const A=creaAereo();A.g.position.set(xc-dir*vx*t,y0,-d0);A.g.rotation.y=dir>0?0:Math.PI;scene.add(A.g);
+ aerei.push({A,vx:vx*dir,d:d0,y:y0,vicino:false,off:Math.random()*12,lat:(Math.random()-.5)*18});
+ messaggio('✈️ Attento, un aereo!',1.6);suono(120,95,1.4,'sawtooth',.05)}
+function aggiornaAerei(s,dt){
+ if(s.stato==='volo'){s.prossimoAereo-=dt;if(s.prossimoAereo<=0&&aerei.length===0&&s.t>10){lanciaAereo(s);s.prossimoAereo=25+Math.random()*20}}
+ for(const a of aerei){a.A.elica.rotation.x+=dt*40;
+  const dzP=a.d-s.d,vO=Math.max(15,s.V*Math.cos(s.gam));
+  if(s.stato==='volo'&&dzP>110){// rotta di intercetto: incrocia la tua traiettoria quando ci arrivi
+   const tm=dzP/vO,xp=s.x+Math.sin(s.psi)*dzP+a.lat;a.A.g.position.x=xp-a.vx*tm;
+   a.y=s.y+s.V*Math.sin(s.gam)*tm+a.off;a.A.g.position.y=a.y}
+  else a.A.g.position.x+=a.vx*dt;
+  if(s.stato!=='volo')continue;
+  const dx=a.A.g.position.x-s.x,dy=a.y-s.y,dz=a.d-s.d,dist=Math.hypot(dx,dy,dz);
+  if(dist<5.5){s.aereo=true;schianto();return}
+  if(dist<32&&!a.vicino){a.vicino=true;s.phi+=(Math.random()<.5?-1:1)*.7;s.gam-=.15;messaggio('💨 Turbolenza!',1.2);suono(90,60,.5,'sawtooth',.08)}}
+ aerei=aerei.filter(a=>{const via=(a.d-s.d<110&&Math.abs(a.A.g.position.x-centro(a.d))>700)||a.d<s.d-200;if(via)scene.remove(a.A.g);return !via})}
+
+/* ======================= MAPPA ======================= */
+const mc=$('#mappa'),mx=mc.getContext('2d');
+function disegnaMappa(s){
+ const W=mc.width,H=mc.height,top=40,bot=H-18,D=CAMPO+180,k=(bot-top)/D,sc=.2,cx0=centro(0);
+ mx.clearRect(0,0,W,H);
+ const X=d=>W/2+(centro(d)-cx0)*sc,Y=d=>bot-d*k;
+ mx.lineCap='round';mx.strokeStyle='rgba(140,200,120,.55)';mx.lineWidth=Math.max(10,largh(0)*sc*1.6);
+ mx.beginPath();for(let d=0;d<=D;d+=20){const x=X(d),y=Y(d);d?mx.lineTo(x,y):mx.moveTo(x,y)}mx.stroke();
+ mx.strokeStyle='rgba(255,255,255,.85)';mx.lineWidth=2.5;mx.setLineDash([6,5]);
+ mx.beginPath();for(let d=0;d<=CAMPO;d+=20){const x=X(d),y=Y(d);d?mx.lineTo(x,y):mx.moveTo(x,y)}mx.stroke();mx.setLineDash([]);
+ for(const r of CRESTE){if(r.d>D)break;const y=Y(r.d),x=X(r.d),gx=x+r.o*largh(r.d)*sc;
+  mx.strokeStyle='#c98a4b';mx.lineWidth=6;mx.beginPath();mx.moveTo(x-30,y);mx.lineTo(x+30,y);mx.stroke();
+  mx.fillStyle='#7fd0ff';mx.beginPath();mx.arc(gx,y,5,0,7);mx.fill()}
+ mx.font='34px serif';mx.textAlign='center';mx.textBaseline='middle';mx.fillText('⛺',X(CAMPO),Y(CAMPO));
+ mx.font='bold 22px sans-serif';mx.fillStyle='#fff';mx.fillText('⛺ '+Math.max(0,Math.round((CAMPO-s.d)))+' m',W/2,18);
+ // tu
+ const px=W/2+(s.x-cx0)*sc,py=Math.max(top-6,Y(Math.min(s.d,D)));
+ mx.save();mx.translate(px,py);mx.rotate(s.psi);mx.fillStyle='#ff3b5c';mx.strokeStyle='#fff';mx.lineWidth=2;
+ mx.beginPath();mx.moveTo(0,-13);mx.lineTo(10,10);mx.lineTo(0,5);mx.lineTo(-10,10);mx.closePath();mx.fill();mx.stroke();mx.restore()}
+
+/* ======================= PAUSA ======================= */
+let pausaOn=false;
+function pausa(on){if(!S||!['conto','volo','para'].includes(S.stato))return;pausaOn=on;$('#pausa').classList.toggle('hidden',!on);
+ K.su=K.giu=K.sx=K.dx=false;J.on=false;J.ix=J.iy=0;$('#joy').style.display='none';if(ventoG&&AC)ventoG.gain.setTargetAtTime(0,AC.currentTime,.05)}
+$('#pausaBtn').addEventListener('click',()=>pausa(!pausaOn));
+$('#riprendi').addEventListener('click',()=>pausa(false));
+$('#rifai').addEventListener('click',()=>{pausa(false);parti()});
+$('#alMenu').addEventListener('click',e=>{e.preventDefault();pausaOn=false;$('#pausa').classList.add('hidden');$('#hud').classList.add('hidden');$('#mappa').classList.add('hidden');$('#pausaBtn').style.display='none';
+ $('#chute').style.display='none';$('#hint').textContent='';nuovo();S.stato='menu';disegnaTute();$('#menu').classList.remove('hidden')});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&S&&['volo','para'].includes(S.stato))pausa(true)});
 /* ======================= CAMERA E HUD ======================= */
 const camPos=new THREE.Vector3(),camLook=new THREE.Vector3();let camInit=false;
 function disegna(dt){
@@ -475,9 +589,10 @@ function disegna(dt){
   const agl=Math.max(0,s.y-suolo(s.x,s.d));
   $('#hVel').textContent='💨 '+Math.round(s.V*3.6)+' km/h';
   const ha=$('#hAlt');ha.textContent='⬇ '+Math.round(agl)+' m';ha.className='pill'+(agl<30&&s.stato==='volo'?' warn':'');
-  $('#hDist').textContent='📏 '+distanza(s.d)+(T.meta?' / '+distanza(T.meta)+(s.d>=T.meta?' ✅':''):'');
+  const rem=CAMPO-s.d;$('#hDist').textContent=Math.abs(rem)<130?'⛺ sei qui!':rem>0?'⛺ '+distanza(rem):'⛺ superato!';
   const hp=$('#hPunti');hp.textContent='⭐ '+Math.round(s.punti)+(s.vicino>.05?' 🔥':'');hp.className='pill'+(s.vicino>.05?' hot':'');
   $('#hAnelli').textContent='💛 '+s.anelli}
+ if(s.stato==='volo'||s.stato==='para'||s.stato==='conto')disegnaMappa(s);
  if(ventoG&&AC){const v=(s.stato==='volo'?s.V:s.stato==='para'?s.V*.5:0);ventoG.gain.setTargetAtTime(muto?0:Math.min(.5,v/110),AC.currentTime,.1);ventoF.frequency.setTargetAtTime(250+v*16,AC.currentTime,.1)}
 }
 
@@ -490,8 +605,8 @@ let last=performance.now(),menuT=0;
 function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;
  if(msgT>0){msgT-=dt;if(msgT<=0)$('#msg').style.opacity=0}
  if(S.stato==='menu'){menuT+=dt;S.psi=Math.atan2(centro(40)-centro(4),36)+Math.sin(menuT*.25)*.5;S.gam=-.15}
- else aggiorna(dt);
- disegna(dt);requestAnimationFrame(loop)}
+ else if(!pausaOn)aggiorna(dt);
+ disegna(pausaOn?0:dt);requestAnimationFrame(loop)}
 $('#via').addEventListener('click',parti);$('#ancora').addEventListener('click',parti);
 requestAnimationFrame(loop);
 </script>
