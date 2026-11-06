@@ -418,7 +418,7 @@ function chiudi(){const agl=S.y-suolo(S.x,S.d);if(agl<4)return;
  suono(500,250,.25,'triangle',.12);messaggio('✂️ Paracadute chiuso: vola!',1.3);bottoneChute()}
 function schianto(){S.stato='fine';S.crash=true;suono(160,40,.6,'square',.25);messaggio('💥 Schianto!',2);P.g.visible=false;P.vela.visible=false;
  if(ventoG)ventoG.gain.value=0;setTimeout(()=>finePartita(),1500)}
-function atterra(){S.stato='fine';let bonus=0,titolo='Atterrato!',sub='';
+function atterra(){S.stato='fine';$('#hint').textContent='';$('#chute').style.display='none';let bonus=0,titolo='Atterrato!',sub='';
  const dc=Math.hypot(S.x-centro(CAMPO),S.d-CAMPO);S.dCampo=dc;
  if(S.yApertura>=90){bonus=500;sub='Paracadute aperto alla quota giusta: atterraggio perfetto! +500 punti.'}
  else if(S.yApertura>=45){bonus=250;sub='Atterraggio un po\' veloce, ma tutto bene! +250 punti.'}
@@ -481,9 +481,8 @@ function aggiorna(dt){
  const passi=3;for(let i=0;i<passi;i++)fisica(dt/passi);
  s.vmax=Math.max(s.vmax,s.V);
  aggiornaChunk(s.d,false);
- aggiornaAerei(s,dt);if(s.stato==='fine')return;
  const terra=suolo(s.x,s.d),agl=s.y-terra;
- if(s.stato==='para'){if(agl<=.4){s.y=terra+.4;atterra()}return}
+ if(s.stato==='para'){if(agl<=1.2){s.y=terra+1.2;s.atterrato=true;s.phi=0;atterra()}return}
  if(agl<.9){schianto();return}
  for(const g of guglie){if(Math.abs(g.d-s.d)>g.rag+2)continue;const yr=s.y-g.y0;if(yr>g.alt)continue;
   const r=g.rag*(1-Math.max(0,yr)/g.alt)+.6;if(Math.hypot(g.x-s.x,g.d-s.d)<r){schianto();return}}
@@ -570,15 +569,16 @@ const camPos=new THREE.Vector3(),camLook=new THREE.Vector3();let camInit=false;
 function disegna(dt){
  if(!S){renderer.render(scene,camera);return}
  const s=S;
- const fwd=new THREE.Vector3(Math.sin(s.psi)*Math.cos(s.gam),Math.sin(s.gam),-Math.cos(s.psi)*Math.cos(s.gam));
+ const gV=s.atterrato?0:s.gam;const fwd=new THREE.Vector3(Math.sin(s.psi)*Math.cos(gV),Math.sin(gV),-Math.cos(s.psi)*Math.cos(gV));
  const pos=new THREE.Vector3(s.x,s.y,-s.d);
- P.g.position.copy(pos);P.g.rotation.y=-s.psi;P.g.rotation.x=s.stato==='para'?1.35:s.gam+.12;P.g.rotation.z=-s.phi;
+ P.g.position.copy(pos);P.g.rotation.y=-s.psi;P.g.rotation.x=s.atterrato?Math.PI/2:s.stato==='para'?1.35:s.gam+.12;P.g.rotation.z=s.atterrato?0:-s.phi;
+ if(s.atterrato){P.g.position.y=suolo(s.x,s.d)+1.2;P.vela.visible=false}
  if(s.stato==='para'){P.vela.visible=true;P.vela.position.copy(pos);P.vela.rotation.y=-s.psi;const k=.15+.85*Math.min(1,s.aperto);P.vela.scale.set(k,k,k);P.g.position.y+=.2}
  const hfwd=new THREE.Vector3(Math.sin(s.psi),0,-Math.cos(s.psi));
- const dist=s.stato==='para'?16:9.5,alto=s.stato==='para'?6:2.8;
+ const dist=s.atterrato?7:s.stato==='para'?16:9.5,alto=s.atterrato?1.4:s.stato==='para'?6:2.8;
  const want=pos.clone().addScaledVector(hfwd,-dist).add(new THREE.Vector3(0,alto-fwd.y*3,0));
  const terraCam=suolo(want.x,-want.z);if(want.y<terraCam+2)want.y=terraCam+2;
- const look=pos.clone().addScaledVector(fwd,18).add(new THREE.Vector3(0,s.stato==='para'?2:3.2,0));
+ const look=s.atterrato?pos.clone().addScaledVector(fwd,5).add(new THREE.Vector3(0,.3,0)):pos.clone().addScaledVector(fwd,18).add(new THREE.Vector3(0,s.stato==='para'?2:3.2,0));
  if(!camInit||s.stato==='conto'){camPos.copy(want);camLook.copy(look);camInit=true}
  if(s.stato!=='fine'||!s.crash){const a=Math.min(1,dt*5);camPos.lerp(want,a);camLook.lerp(look,Math.min(1,dt*8))}
  camera.position.copy(camPos);camera.lookAt(camLook);camera.rotateZ(-s.phi*.35);
