@@ -773,7 +773,7 @@ function rinasci(){
   for(const m of S.mostri){if(m.tipo==='boss'){m.max=Math.max(6,Math.ceil(m.max*k));m.hp=Math.max(1,Math.ceil(m.hp*k))}else{m.max*=k;m.hp*=k}
    if(m.tipo!=='boss'&&Math.abs(m.x-p.x)<320)m.x=p.x+Math.sign(m.x-p.x||1)*420}
   const w=ARMA[S.arma],n=Math.max(1,Math.ceil(6*S.forza/w.dmg));
-  mostra('DI NUOVO IN PIEDI! 💪',S.forza<prima?`Hai tutte le armi · ora i mostri cadono con ${n} ${n===1?'colpo':'colpi'} ${w.em}`:`Hai tutte le armi · ${testoColpiF(w)}`,'#2e7d32');
+  mostra('DI NUOVO IN PIEDI! 💪',S.forza<prima?`Hai tutte le tue armi · ora i mostri cadono con ${n} ${n===1?'colpo':'colpi'} ${w.em}`:`Hai tutte le tue armi · ${testoColpiF(w)}`,'#2e7d32');
  }else{
   // inizio del livello, una sola arma, mostri uguali
   const tieni=S.arma;S.armi=[tieni];S.base=S.uccisi;
