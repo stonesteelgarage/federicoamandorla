@@ -228,34 +228,64 @@ try{livello=Math.max(1,Math.min(TUTE.length,+localStorage.getItem('tutaLivello')
 scelta=livello-1;
 
 /* ======================= PILOTA ======================= */
+function osso(a,b,r1,r2,mat){const v=new THREE.Vector3().subVectors(b,a),len=v.length();
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(r2,r1,len,12),mat);m.position.copy(a).addScaledVector(v,.5);
+ m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());return m}
+function palla(p,r,mat){const m=new THREE.Mesh(new THREE.SphereGeometry(r,14,10),mat);m.position.copy(p);return m}
+function telo(pts,c,mat,y){const pos=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];pos.push(c[0],y,c[1],a[0],y,a[1],b[0],y,b[1])}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.computeVertexNormals();return new THREE.Mesh(g,mat)}
 function creaPilota(T){
  T=T||TUTE[0];
- const g=new THREE.Group();
+ const g=new THREE.Group(),V=(x,y,z)=>new THREE.Vector3(x,y,z);
  const tuta=new THREE.MeshLambertMaterial({color:T.tuta});
  const ala=new THREE.MeshLambertMaterial({color:T.ala,side:THREE.DoubleSide});
- const strisce=new THREE.MeshLambertMaterial({color:T.riga,side:THREE.DoubleSide});
- const corpo=new THREE.Mesh(new THREE.CylinderGeometry(.2,.16,1.55,10),tuta);corpo.rotation.x=Math.PI/2;g.add(corpo);
- const testa=new THREE.Mesh(new THREE.SphereGeometry(.19,14,10),new THREE.MeshLambertMaterial({color:0xffffff}));testa.position.set(0,.04,-.92);g.add(testa);
- const visiera=new THREE.Mesh(new THREE.SphereGeometry(.14,12,8,0,Math.PI*2,0,Math.PI/2.4),new THREE.MeshLambertMaterial({color:0x162133}));visiera.position.set(0,.02,-1.0);visiera.rotation.x=-Math.PI/2.2;g.add(visiera);
- let pts=[[0,-.62],[-1.0,-.48],[-.32,.55],[-.28,.98],[0,.55],[.28,.98],[.32,.55],[1.0,-.48]];
- if(T.strappi){// bordi mangiati e strappati
-  pts=[[0,-.62],[-.92,-.45],[-.8,-.2],[-.62,-.1],[-.66,.12],[-.45,.22],[-.32,.55],[-.28,.9],[0,.5],[.28,.9],[.32,.55],[.5,.3],[.42,.12],[.7,.02],[.62,-.18],[.95,-.44]];
-  const toppa=new THREE.MeshLambertMaterial({color:0xb08a5a,side:THREE.DoubleSide});
-  const tp=[-.55,.012,-.32,-.35,.012,-.36,-.42,.012,-.12, .3,.012,.05,.5,.012,-.05,.45,.012,.2];
-  const tg=new THREE.BufferGeometry();tg.setAttribute('position',new THREE.Float32BufferAttribute(tp,3));tg.computeVertexNormals();g.add(new THREE.Mesh(tg,toppa))}
- const pos=[];const cx=0,cz=.15;
- for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];pos.push(cx,0,cz,a[0],0,a[1],b[0],0,b[1])}
- const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));wg.computeVertexNormals();
- g.add(new THREE.Mesh(wg,ala));
- const sp=[];for(const sgn of [-1,1])sp.push(.35*sgn,.01,-.5,.85*sgn,.01,-.42,.42*sgn,.01,-.3);
- const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));sg.computeVertexNormals();g.add(new THREE.Mesh(sg,strisce));
+ const riga=new THREE.MeshLambertMaterial({color:T.riga});
+ const scuro=new THREE.MeshLambertMaterial({color:0x22252b});
+ const casco=new THREE.MeshLambertMaterial({color:T.strappi?0x7a5634:0xf4f4f4});
+ const lente=new THREE.MeshPhongMaterial({color:0x1b2a44,specular:0x9fc6ff,shininess:90});
+ const pelle=new THREE.MeshLambertMaterial({color:0xf0c4a0});
+ // testa: casco, occhiali, mento
+ g.add(palla(V(0,.03,-.80),.125,casco));
+ const occ=new THREE.Mesh(new THREE.BoxGeometry(.19,.06,.07),lente);occ.position.set(0,-.045,-.905);occ.rotation.x=.5;g.add(occ);
+ g.add(palla(V(0,-.07,-.86),.06,pelle));
+ g.add(osso(V(0,0,-.62),V(0,.02,-.72),.065,.06,tuta));
+ // busto e bacino
+ const busto=osso(V(0,0,-.08),V(0,0,-.6),.15,.19,tuta);busto.scale.set(1.25,1,.8);g.add(busto);
+ const bac=palla(V(0,0,-.05),.15,tuta);bac.scale.set(1.2,.75,1);g.add(bac);
+ // sacca del paracadute sulla schiena
+ const sacca=new THREE.Mesh(new THREE.BoxGeometry(.32,.11,.44),scuro);sacca.position.set(0,.15,-.34);g.add(sacca);
+ const fascia=new THREE.Mesh(new THREE.BoxGeometry(.34,.02,.06),riga);fascia.position.set(0,.215,-.34);g.add(fascia);
+ for(const s of [-1,1]){
+  // braccia aperte
+  const sp=V(.2*s,.02,-.56),go=V(.5*s,.02,-.55),po=V(.78*s,0,-.5);
+  g.add(palla(sp,.07,tuta));g.add(osso(sp,go,.065,.05,tuta));g.add(palla(go,.052,riga));g.add(osso(go,po,.05,.042,tuta));
+  const mano=palla(V(.83*s,0,-.5),.05,scuro);mano.scale.set(1.3,.6,1);g.add(mano);
+  // gambe aperte
+  const an=V(.1*s,0,-.04),gi=V(.2*s,0,.4),ca=V(.3*s,0,.8);
+  g.add(osso(an,gi,.085,.065,tuta));g.add(palla(gi,.066,riga));g.add(osso(gi,ca,.062,.048,tuta));
+  const sc=new THREE.Mesh(new THREE.BoxGeometry(.11,.09,.22),scuro);sc.position.set(.315*s,-.02,.88);sc.rotation.y=-.18*s;g.add(sc);
+  // ala del braccio (dal polso al fianco)
+  let bordo=T.strappi?[[.2,-.56],[.5,-.55],[.78,-.5],[.7,-.38],[.74,-.3],[.6,-.26],[.56,-.12],[.44,-.14],[.32,-.01],[.2,.02],[.15,-.3]]
+                     :[[.2,-.56],[.5,-.55],[.78,-.5],[.68,-.3],[.48,-.12],[.22,.03],[.15,-.3]];
+  g.add(telo(bordo.map(p=>[p[0]*s,p[1]]),[.32*s,-.3],ala,-.012));
+  if(T.strappi){const tp=palla(V(.45*s,-.016,-.3),.07,new THREE.MeshLambertMaterial({color:0xb08a5a}));tp.scale.set(1.4,.05,1);g.add(tp)}
+ }
+ // ala tra le gambe
+ const gamb=T.strappi?[[0,.02],[.1,.05],[.2,.4],[.3,.8],[.2,.72],[.1,.6],[.04,.66],[-.06,.55],[-.18,.7],[-.3,.8],[-.2,.4],[-.1,.05]]
+                     :[[0,.02],[.1,.05],[.2,.4],[.3,.8],[.17,.7],[0,.62],[-.17,.7],[-.3,.8],[-.2,.4],[-.1,.05]];
+ g.add(telo(gamb,[0,.35],ala,-.01));
  g.rotation.order='YXZ';g.scale.setScalar(1.35);
- // vela del paracadute
- const vela=new THREE.Group();
- const cupola=new THREE.Mesh(new THREE.SphereGeometry(4.2,18,8,0,Math.PI*2,0,Math.PI/2.6),new THREE.MeshLambertMaterial({color:0xe8437a,side:THREE.DoubleSide}));
- cupola.scale.set(1.3,.55,.8);cupola.position.y=6.5;vela.add(cupola);
- const fili=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(-4.6,5.6,0),new THREE.Vector3(0,0,0),new THREE.Vector3(4.6,5.6,0),new THREE.Vector3(0,0,0),new THREE.Vector3(0,5.8,2.6),new THREE.Vector3(0,0,0),new THREE.Vector3(0,5.8,-2.6)]),new THREE.LineBasicMaterial({color:0x333333}));
- vela.add(fili);vela.visible=false;
+ // paracadute: vela rettangolare a cassoni, strisce bianche e rosse
+ const vela=new THREE.Group(),R=5.2,N=9,A=.78;
+ const rosso=new THREE.MeshLambertMaterial({color:0xd81b2a,emissive:0x3a0508}),bianco=new THREE.MeshLambertMaterial({color:0xffffff,emissive:0x4a4a4a});
+ const larg=2*R*Math.sin(A/(N-1))*1.03,pf=[];
+ for(let i=0;i<N;i++){const a=-A+2*A*i/(N-1);
+  const c=new THREE.Mesh(new THREE.BoxGeometry(larg,.42,2.7),i%2?bianco:rosso);
+  c.position.set(R*Math.sin(a),1.4+R*Math.cos(a),-.2);c.rotation.z=-a;vela.add(c);
+  const bx=(R-.21)*Math.sin(a),by=1.4+(R-.21)*Math.cos(a);
+  for(const z of [-1.3,0,1.0]){pf.push(V(bx>=0?.27:-.27,.78,0),V(bx,by,z-.2))}}
+ vela.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pf),new THREE.LineBasicMaterial({color:0x3a3a3a})));
+ vela.visible=false;
  return {g,vela}}
 let P=creaPilota(TUTE[scelta]);scene.add(P.g);scene.add(P.vela);
 function cambiaPilota(i){scene.remove(P.g);scene.remove(P.vela);P=creaPilota(TUTE[i]);scene.add(P.g);scene.add(P.vela)}
@@ -409,7 +439,7 @@ function disegna(dt){
  const s=S;
  const fwd=new THREE.Vector3(Math.sin(s.psi)*Math.cos(s.gam),Math.sin(s.gam),-Math.cos(s.psi)*Math.cos(s.gam));
  const pos=new THREE.Vector3(s.x,s.y,-s.d);
- P.g.position.copy(pos);P.g.rotation.y=-s.psi;P.g.rotation.x=s.stato==='para'?-1.25:s.gam+.12;P.g.rotation.z=-s.phi;
+ P.g.position.copy(pos);P.g.rotation.y=-s.psi;P.g.rotation.x=s.stato==='para'?1.35:s.gam+.12;P.g.rotation.z=-s.phi;
  if(s.stato==='para'){P.vela.visible=true;P.vela.position.copy(pos);P.vela.rotation.y=-s.psi;const k=.15+.85*Math.min(1,s.aperto);P.vela.scale.set(k,k,k);P.g.position.y+=.2}
  const hfwd=new THREE.Vector3(Math.sin(s.psi),0,-Math.cos(s.psi));
  const dist=s.stato==='para'?16:9.5,alto=s.stato==='para'?6:2.8;
