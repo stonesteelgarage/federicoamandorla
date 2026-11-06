@@ -31,6 +31,10 @@ input[type=text]:focus{border-color:#3c9a3c}
 .btn.ghost{background:#eee;color:#333;box-shadow:0 6px 0 #bbb;font-size:18px}
 .btn.small{font-size:15px;padding:5px 14px;box-shadow:0 4px 0 #bbb}
 .center{text-align:center}
+#diffBox{margin-top:8px;text-align:center}
+#diffBox .btn.small{box-shadow:0 4px 0 #bbb;background:#fff;color:#2e5d2e;border:3px solid #cfe3c5}
+#diffBox .btn.small.on{background:#2e7d32;color:#fff;border-color:#2e7d32;box-shadow:0 4px 0 #1b5e20}
+#diffInfo{font-size:14px;color:#2e5d2e;margin-top:2px;line-height:1.3}
 .foto{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .foto small{color:#777;font-size:13px;line-height:1.2}
 .comandi{background:#eef7e8;border-radius:14px;padding:8px 12px;font-size:14px;color:#2e5d2e;margin-top:10px;line-height:1.35}
@@ -110,6 +114,11 @@ document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&["+",
       </div>
     </div>
     <div class="comandi" id="comandi"></div>
+    <div id="diffBox"><b>Livello di difficoltà:</b><br>
+      <button type="button" class="btn small" data-d="facile">🙂 Facile</button>
+      <button type="button" class="btn small" data-d="difficile">💪 Difficile</button>
+      <div id="diffInfo"></div>
+    </div>
     <div class="center" style="margin-top:8px">
       <button class="btn verde" id="parti">🪖 Arruolati e parti!</button><br>
       <a class="btn ghost small" href="index.html">🏠 Torna ai giochi</a>
@@ -441,7 +450,7 @@ const K={sx:false,dx:false,fuoco:false};
 function nuovaPartita(){
  S={t:0,punti:0,uccisi:0,grado:0,shake:0,zona:0,
   p:{x:260,y:GROUND,vx:0,vy:0,terra:true,doppio:0,salti:0,dir:1,vita:5,max:5,inv:0,cd:0,walk:0,rin:0,morto:false},
-  armi:['pistola'],arma:'pistola',proiettili:[],mostri:[],part:[],cuori:[],
+  armi:['pistola'],arma:'pistola',morti:0,base:0,forza:1,diff:DIFF,proiettili:[],mostri:[],part:[],cuori:[],
   coda:[],msg:null,avviso:null,spawn:2,livello:0,combo:0,molle:MOLLE.map(x=>({x,preso:false})),boss:null,bproj:[],onde:[],vinto:false,chiusura:false,
   nasc:NASCONDIGLI.map(n=>Object.assign({},n,{cercato:false,anim:0,icona:''}))};
  K.sx=K.dx=K.fuoco=false;
@@ -454,7 +463,7 @@ function testoVol(x,y,txt,col='#fff'){S.part.push({x,y,vx:0,vy:-90,vita:1,col,ti
 function aggiornaArmaBox(){
  const w=ARMA[S.arma];const prox=ARMI.find(a=>!a.segreta&&!S.armi.includes(a.id));
  const seg=ARMI.filter(a=>a.segreta&&S.armi.includes(a.id)).length;
- $('#armaBox').innerHTML=`<b>${w.em} ${w.n}${S.armi.length>1?' 🔄':''}</b><span class="c">💥 ${testoColpi(w)}</span><small>${prox?`Prossima: ${prox.n} tra ${prox.kill-S.uccisi} mostri`:'Hai tutte le armi dei gradi!'} · Segrete ${seg}/3</small>`;
+ $('#armaBox').innerHTML=`<b>${w.em} ${w.n}${S.armi.length>1?' 🔄':''}</b><span class="c">💥 ${testoColpiF(w)}</span><small>${prox?`Prossima: ${prox.n} tra ${Math.max(1,(prox.kill||(S.base?3:0))-(S.uccisi-S.base))} mostri`:'Hai tutte le armi dei gradi!'} · Segrete ${seg}/3</small>`;
 }
 function cambiaArma(){if(!S||S.armi.length<2)return;const i=S.armi.indexOf(S.arma);S.arma=S.armi[(i+1)%S.armi.length];suono(600,.08,'triangle',.06);aggiornaArmaBox()}
 
@@ -489,7 +498,7 @@ function generaMostro(){
  let tot=pool.reduce((s,a)=>s+a[1],0),r=Math.random()*tot,tipo='slime';for(const [n,w] of pool){if((r-=w)<0){tipo=n;break}}
  const T=TIPI[tipo];let x=Math.random()<.7?S.cam+VW+60:S.cam-60;
  if(x>WORLD_W-30)x=S.cam-60;if(x<30)x=S.cam+VW+60;x=clamp(x,30,WORLD_W-30);
- S.mostri.push({tipo,x,y:GROUND,hp:T.hp,max:T.hp,w:T.w,h:T.h,col:T.col,punti:T.punti,vel:T.vel*(1+Math.min(k,120)*.004)*(.85+Math.random()*.3),t:Math.random()*5,fase:Math.random()*6,flash:0,morto:false});
+ S.mostri.push({tipo,x,y:GROUND,hp:T.hp*S.forza,max:T.hp*S.forza,w:T.w,h:T.h,col:T.col,punti:T.punti,vel:T.vel*(1+Math.min(k,120)*.004)*(.85+Math.random()*.3),t:Math.random()*5,fase:Math.random()*6,flash:0,morto:false});
 }
 function colpisci(m,dmg,dir){
  if(m.morto)return;
@@ -508,7 +517,7 @@ function uccidi(m){
 function progressi(){
  const p=S.p;let g=0;GRADI.forEach((r,i)=>{if(S.uccisi>=r.k)g=i});
  if(g>S.grado){S.grado=g;S.punti+=50*g;p.vita=Math.min(p.max,p.vita+1);mostra('PROMOSSO! 🎖️',`Ora sei ${GRADI[g].n} ${prof.nome}!`,'#2e7d32');melodia([523,659,784,1047])}
- ARMI.forEach(a=>{if(!a.segreta&&!S.armi.includes(a.id)&&S.uccisi>=a.kill){S.armi.push(a.id);S.arma=a.id;mostra('NUOVA ARMA!',`${a.em} ${a.n} · ${testoColpi(a)}`,'#e23b2e');melodia([440,554,659,880])}});
+ ARMI.forEach(a=>{if(!a.segreta&&!S.armi.includes(a.id)&&S.uccisi-S.base>=(a.kill||(S.base?3:0))){S.armi.push(a.id);S.arma=a.id;mostra('NUOVA ARMA!',`${a.em} ${a.n} · ${testoColpi(a)}`,'#e23b2e');melodia([440,554,659,880])}});
  aggiornaArmaBox();
 }
 function schiaccia(m){
@@ -522,7 +531,7 @@ function schiaccia(m){
 function ferito(m){
  const p=S.p;p.vita--;p.inv=1.4;p.vy=-380;p.terra=false;p.x-=Math.sign(m.x-p.x||1)*45;S.shake=12;
  suono(140,.3,'sawtooth',.07,60);particelle(p.x,p.y-60,8,'#ff5252','scintilla',200);
- if(p.vita<=0)fineGioco();
+ if(p.vita<=0)morte();
 }
 function esplosione(x,y,r,dmg,dir,colpiti){
  particelle(x,y,18,'#ff9800');particelle(x,y,8,'rgba(120,120,120,.7)','fumo',120);S.shake=8;suono(90,.35,'sawtooth',.08,40);
@@ -531,7 +540,7 @@ function esplosione(x,y,r,dmg,dir,colpiti){
 
 // ======================= BOSS =======================
 function spawnBoss(){const B=BOSS[S.livello];
- const m={tipo:'boss',liv:S.livello,n:B.n,x:B.gate-110,y:GROUND,vy:0,inAria:false,w:120,h:230,hp:B.hp,max:B.hp,punti:B.punti,col:B.pelle,t:0,flash:0,cd:2.5,att:0,lancio:0,mossa:0,passo:0,dir:-1,morto:false};
+ const m={tipo:'boss',liv:S.livello,n:B.n,x:B.gate-110,y:GROUND,vy:0,inAria:false,w:120,h:230,hp:Math.max(6,Math.ceil(B.hp*S.forza)),max:Math.max(6,Math.ceil(B.hp*S.forza)),punti:B.punti,col:B.pelle,t:0,flash:0,cd:2.5,att:0,lancio:0,mossa:0,passo:0,dir:-1,morto:false};
  S.mostri.push(m);S.boss=m;S.shake=16;
  particelle(m.x,GROUND-100,16,'rgba(120,120,120,.7)','fumo',200);
  mostra('⚠️ ATTENZIONE!',`Arriva il boss: ${B.n}!`,'#b71c1c');melodia([196,185,175,165],.25);
@@ -736,7 +745,7 @@ function hud(){
  if(p.doppio>0){const w=178;ctx.fillStyle=p.doppio<5&&Math.floor(S.t*6)%2?'rgba(245,127,23,.6)':'rgba(245,127,23,.92)';rr(ctx,VW-w-12,64,w,30,12);ctx.fill();
   ctx.fillStyle='#fff';ctx.font='800 16px "Baloo 2",sans-serif';ctx.textAlign='left';ctx.fillText(`👟 Salto doppio ${Math.ceil(p.doppio)}s`,VW-w,85)}
  // punti
- ctx.textAlign='center';testoBordo('⭐ '+S.punti,VW/2,42,32,'#e23b2e');testoBordo('👾 '+S.uccisi+' mostri · Livello '+Math.min(S.livello+1,BOSS.length),VW/2,66,18,'#2e5d2e');
+ ctx.textAlign='center';testoBordo('⭐ '+S.punti,VW/2,42,32,'#e23b2e');testoBordo('👾 '+S.uccisi+' mostri · Livello '+Math.min(S.livello+1,BOSS.length)+(S.diff==='facile'?' · 🙂 Facile':' · 💪 Difficile'),VW/2,66,18,'#2e5d2e');
  // mappa
  const mx=VW/2-150,my=80;ctx.fillStyle='rgba(0,0,0,.25)';rr(ctx,mx,my,300,10,5);ctx.fill();
  S.nasc.forEach(n=>{ctx.fillStyle=n.cercato?'#bdbdbd':(n.req&&S.grado<n.req?'#e23b2e':'#ffd54a');cerchio(ctx,mx+n.x/WORLD_W*300,my+5,4)});
@@ -748,6 +757,39 @@ function hud(){
  if(S.avviso){ctx.globalAlpha=clamp(S.avviso.t*2,0,1);ctx.font='800 19px "Baloo 2",sans-serif';const w=Math.min(VW-30,ctx.measureText(S.avviso.txt).width+30);ctx.fillStyle='rgba(46,93,46,.9)';rr(ctx,VW/2-w/2,104,w,36,14);ctx.fill();ctx.fillStyle='#fff';ctx.fillText(S.avviso.txt,VW/2,128,VW-50);ctx.globalAlpha=1}
  if(S.msg){const m=S.msg,k=2.6-m.t,sc=k<.25?.5+k*2:1;ctx.save();ctx.globalAlpha=clamp(m.t*2,0,1);ctx.translate(VW/2,H*.4);ctx.scale(sc,sc);testoBordo(m.t1,0,0,48,m.col);testoBordo(m.t2,0,40,24,'#2e5d2e');ctx.restore()}
 }
+
+
+// ======================= MORTE: FACILE / DIFFICILE =======================
+function morte(){
+ const p=S.p;if(p.morto||S.chiusura)return;p.morto=true;S.morti++;S.bproj=[];
+ particelle(p.x,p.y-60,20,'#90caf9');melodia([523,440,349,262],.18);
+ setTimeout(()=>{if(S&&!S.fine)rinasci()},1300);
+}
+function rinasci(){
+ const p=S.p;
+ if(S.diff==='facile'){
+  // stesso punto, tutte le armi, mostri più deboli
+  const prima=S.forza;S.forza=Math.max(1/3,1-S.morti/3);const k=S.forza/prima;
+  for(const m of S.mostri){if(m.tipo==='boss'){m.max=Math.max(6,Math.ceil(m.max*k));m.hp=Math.max(1,Math.ceil(m.hp*k))}else{m.max*=k;m.hp*=k}
+   if(m.tipo!=='boss'&&Math.abs(m.x-p.x)<320)m.x=p.x+Math.sign(m.x-p.x||1)*420}
+  const w=ARMA[S.arma],n=Math.max(1,Math.ceil(6*S.forza/w.dmg));
+  mostra('DI NUOVO IN PIEDI! 💪',S.forza<prima?`Hai tutte le armi · ora i mostri cadono con ${n} ${n===1?'colpo':'colpi'} ${w.em}`:`Hai tutte le armi · ${testoColpiF(w)}`,'#2e7d32');
+ }else{
+  // inizio del livello, una sola arma, mostri uguali
+  const tieni=S.arma;S.armi=[tieni];S.base=S.uccisi;
+  p.x=S.livello===0?260:BOSS[S.livello-1].gate+120;
+  S.mostri=[];S.boss=null;S.proiettili=[];S.spawn=2.5;
+  const w=ARMA[tieni];
+  mostra('SEI CADUTO! 💀',`Ricominci il livello ${Math.min(S.livello+1,3)} con una sola arma: ${w.em} ${w.n}`,'#e23b2e');
+ }
+ p.morto=false;p.vita=p.max;p.inv=2.5;p.vy=-300;p.terra=false;S.combo=0;
+ melodia([392,523,659]);aggiornaArmaBox();
+}
+const testoColpiF=w=>{const n=Math.max(1,Math.ceil(6*S.forza/w.dmg));return n===1?'1 colpo per mostro':n+' colpi per mostro'};
+let DIFF=load('fs_diff','facile');
+function preparaDiff(){document.querySelectorAll('#diffBox [data-d]').forEach(b=>{b.classList.toggle('on',b.dataset.d===DIFF);b.onclick=()=>{DIFF=b.dataset.d;save('fs_diff',DIFF);preparaDiff()}});
+ $('#diffInfo').innerHTML=DIFF==='facile'?'Quando perdi tutti i cuori <b>riparti dallo stesso punto</b> con <b>tutte le tue armi</b>, e ogni volta i mostri diventano <b>più facili</b> da abbattere.'
+  :'Quando perdi tutti i cuori <b>ricominci il livello</b>, i mostri restano <b>forti uguali</b> e <b>tieni una sola arma</b>: quella che hai in mano!'}
 
 // ======================= FINE / PAUSA =======================
 function fineGioco(vinto=false){
@@ -777,6 +819,7 @@ function swatch(id,arr,key,div){const el=$(id);el.innerHTML='';arr.forEach((col,
  if(div){b.className='lab';b.textContent=col.n;b.style.background=col.a;b.style.color=i===3?'#333':'#fff'}else b.style.background=col;
  if(prof[key]===i)b.classList.add('on');b.onclick=()=>{prof[key]=i;swatch(id,arr,key,div)};el.appendChild(b)})}
 function preparaReg(){
+ preparaDiff();
  $('#nome').value=prof.nome;$('#titNome').textContent=prof.nome;
  $('#regSub').textContent=load('fs_profilo',null)?`Bentornato, soldato ${prof.nome}! Record: ${load('fs_record',0)} punti`:'Arruola il tuo soldato e difendi la valle dai mostri!';
  swatch('#swPelle',PELLI,'pelle');swatch('#swCapelli',CAPELLI,'capelli');swatch('#swOcchi',OCCHI,'occhi');swatch('#swDivisa',DIVISE,'divisa',true);
