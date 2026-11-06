@@ -15,7 +15,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#a9d4f0;font-family:'B
 .pill{background:rgba(20,28,22,.62);color:#fff;border-radius:14px;padding:2px 12px;font-size:clamp(14px,2.4vw,18px);font-weight:700;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .pill.big{font-size:clamp(18px,3.4vw,26px);background:rgba(120,30,60,.72)}
 #tabella{position:fixed;left:8px;top:calc(max(8px,env(safe-area-inset-top)) + 44px);z-index:5;pointer-events:none;display:flex;flex-direction:column;gap:3px}
-@media (max-width:600px){#hud{top:calc(max(8px,env(safe-area-inset-top)) + 40px)}#tabella{top:calc(max(8px,env(safe-area-inset-top)) + 150px)}}
+@media (max-width:600px){#hud{top:calc(max(8px,env(safe-area-inset-top)) + 40px)}#tabella{top:calc(max(8px,env(safe-area-inset-top)) + 200px)}}
 #tabella div{background:rgba(20,28,22,.55);color:#fff;border-radius:10px;padding:1px 9px;font-size:14px;font-weight:700}
 #msg{position:fixed;top:24%;left:0;right:0;text-align:center;z-index:5;pointer-events:none;color:#fff;font-weight:800;font-size:clamp(22px,5vw,42px);text-shadow:0 3px 0 rgba(0,0,0,.35),0 0 16px rgba(0,0,0,.35);transition:opacity .3s;padding:0 12px}
 #metro{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(360px,80vw);background:rgba(20,28,22,.62);border-radius:16px;padding:6px 12px 12px;z-index:5;pointer-events:none;color:#fff;text-align:center;font-weight:800;font-size:16px}
@@ -46,7 +46,7 @@ td.n{text-align:left;font-weight:800}
 <canvas id="c"></canvas>
 <a id="home" href="index.html" aria-label="Torna ai giochi">🏠 Giochi</a>
 <button id="audio" aria-label="Audio">🔊</button>
-<div id="hud" class="hidden"><span class="pill" id="hTurno"></span><span class="pill" id="hVento"></span><span class="pill big hidden" id="hDist"></span></div>
+<div id="hud" class="hidden"><span class="pill" id="hTurno"></span><span class="pill" id="hVento"></span><span class="pill big hidden" id="hDist"></span><span class="pill hidden" id="hEnergia"></span></div>
 <div id="tabella" class="hidden"></div>
 <div id="msg"></div>
 <div id="metro" class="hidden"><div id="metroTxt"></div><div id="barra"><div id="cursore"></div></div></div>
@@ -55,7 +55,7 @@ td.n{text-align:left;font-weight:800}
   <div class="card">
     <h1>Calcia il <span>Maiale</span></h1>
     <p class="sub">Alla fattoria c'è una gara speciale: il maialino Rosolino si fa calciare come una pallina da golf. Vince chi lo manda <b>più lontano</b>!</p>
-    <div class="box">👆 <b>Come si gioca:</b> tocca lo schermo (o premi <b>Spazio</b>) una volta per scegliere la <b>forza</b> e una seconda volta per l'<b>angolo</b>. Attento al <b>vento</b>: contro vento il maiale si ferma prima. Le balle di fieno lo fanno rimbalzare, il fango lo ferma.</div>
+    <div class="box">👆 <b>Come si gioca:</b> tocca lo schermo (o premi <b>Spazio</b>) una volta per scegliere la <b>forza</b> e una seconda volta per l'<b>angolo</b>. Mentre vola, <b>trascina il dito</b> (o usa le frecce) per guidarlo: destra e sinistra, su per farlo planare. Attento al <b>vento</b>! Le balle di fieno lo fanno rimbalzare, il fango lo ferma.</div>
     <p class="sub" style="margin-top:10px"><b>Quanti giocatori?</b></p>
     <div class="riga" id="numGioc"></div>
     <div id="nomi"></div>
@@ -89,19 +89,34 @@ let AC=null,muto=load('maialeMuto',false);
 $('#audio').textContent=muto?'🔇':'🔊';
 $('#audio').onclick=()=>{muto=!muto;save('maialeMuto',muto);$('#audio').textContent=muto?'🔇':'🔊'};
 function audio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume()}
-function grugnito(t0,dur,f,vol){
- const o=AC.createOscillator(),o2=AC.createOscillator(),g=AC.createGain(),fa=AC.createBiquadFilter(),fb=AC.createBiquadFilter(),lfo=AC.createOscillator(),lg=AC.createGain(),mix=AC.createGain();
- o.type='sawtooth';o2.type='square';o.frequency.setValueAtTime(f*1.25,t0);o.frequency.exponentialRampToValueAtTime(f*.78,t0+dur);
- o2.frequency.setValueAtTime(f*.5,t0);o2.frequency.exponentialRampToValueAtTime(f*.4,t0+dur);
- lfo.frequency.value=38;lg.gain.value=f*.18;lfo.connect(lg);lg.connect(o.frequency);
- fa.type='bandpass';fa.frequency.value=900;fa.Q.value=4;fb.type='bandpass';fb.frequency.value=2300;fb.Q.value=6;
- o.connect(fa);o.connect(fb);o2.connect(fa);fa.connect(mix);fb.connect(mix);mix.connect(g);g.connect(AC.destination);
- g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+.025);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
- for(const x of [o,o2,lfo]){x.start(t0);x.stop(t0+dur+.02)}}
-function oink(alto){if(!AC||muto)return;const t=AC.currentTime,f=alto?300:185;grugnito(t,.17,f,.5);grugnito(t+.22,.2,f*.92,.45)}
-function squittio(){if(!AC||muto)return;grugnito(AC.currentTime,.35,520,.35)}
-function strillo(h){if(!AC||muto)return;const t=AC.currentTime,f=520+Math.random()*180+Math.min(200,h*6);grugnito(t,.22,f,.32);if(Math.random()<.5)grugnito(t+.26,.18,f*1.1,.28)}
-function versetto(){if(!AC||muto)return;grugnito(AC.currentTime,.12,240,.3)}
+// Grugnito vero: il maiale "gracchia" con impulsi della gola (40–70 al secondo) filtrati dal muso.
+function bufGrugnito(dur,r0,r1){const sr=AC.sampleRate,n=Math.floor(sr*dur),b=AC.createBuffer(1,n,sr),d=b.getChannelData(0);
+ let fase=0;for(let i=0;i<n;i++){const u=i/n,rate=(r0+(r1-r0)*u)*(1+(Math.random()-.5)*.35);fase+=rate/sr;
+  if(fase>=1){fase-=1;const L=Math.floor(sr*.006),A=.6+Math.random()*.4;for(let k=0;k<L&&i+k<n;k++){const e=Math.exp(-k/(sr*.0016));d[i+k]+=A*e*((Math.random()*2-1)*.7+Math.sin(k/sr*2*Math.PI*170)*.6)}}}
+ for(let i=0;i<n;i++){const u=i/n,env=Math.min(1,u/.12)*Math.min(1,(1-u)/.3)*(.7+.3*Math.sin(u*Math.PI));d[i]*=env}
+ return b}
+function suonaGrugnito(t0,dur,r0,r1,vol,tono){const src=AC.createBufferSource();src.buffer=bufGrugnito(dur,r0,r1);src.playbackRate.value=tono||1;
+ const out=AC.createGain();out.gain.value=vol;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;
+ for(const [f,q,g] of [[420,1.6,1],[1150,3,.7],[2500,5,.25]]){const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=f*(tono||1);bp.Q.value=q;const gg=AC.createGain();gg.gain.value=g*2.2;src.connect(bp);bp.connect(gg);gg.connect(lp)}
+ lp.connect(out);out.connect(AC.destination);src.start(t0)}
+// Strillo: urlo acuto e ruvido, con la voce che trema
+let curva=null;
+function strilloAt(t0,dur,f,vol){if(!curva){curva=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;curva[i]=Math.tanh(x*3.2)}}
+ const o1=AC.createOscillator(),o2=AC.createOscillator(),lfo=AC.createOscillator(),lg=AC.createGain(),ws=AC.createWaveShaper(),bp=AC.createBiquadFilter(),g=AC.createGain(),mix=AC.createGain();
+ o1.type='sawtooth';o2.type='sawtooth';ws.curve=curva;bp.type='bandpass';bp.frequency.value=2100;bp.Q.value=.9;mix.gain.value=.5;
+ o1.frequency.setValueAtTime(f*.85,t0);o1.frequency.linearRampToValueAtTime(f*1.15,t0+dur*.35);o1.frequency.linearRampToValueAtTime(f*.9,t0+dur);
+ o2.frequency.setValueAtTime(f*.87,t0);o2.frequency.linearRampToValueAtTime(f*1.19,t0+dur*.35);o2.frequency.linearRampToValueAtTime(f*.93,t0+dur);
+ lfo.frequency.value=11+Math.random()*5;lg.gain.value=f*.06;lfo.connect(lg);lg.connect(o1.frequency);lg.connect(o2.frequency);
+ o1.connect(mix);o2.connect(mix);mix.connect(ws);ws.connect(bp);bp.connect(g);g.connect(AC.destination);
+ // soffio rauco
+ const nb=AC.createBufferSource(),bb=AC.createBuffer(1,Math.floor(AC.sampleRate*dur),AC.sampleRate),dd=bb.getChannelData(0);for(let i=0;i<dd.length;i++)dd[i]=Math.random()*2-1;nb.buffer=bb;
+ const nf=AC.createBiquadFilter();nf.type='bandpass';nf.frequency.value=f*2.2;nf.Q.value=2;const ng=AC.createGain();ng.gain.value=.35;nb.connect(nf);nf.connect(ng);ng.connect(g);
+ g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+.04);g.gain.setValueAtTime(vol,t0+dur*.7);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+ for(const x of [o1,o2,lfo,nb]){x.start(t0);x.stop(t0+dur+.02)}}
+function oink(alto){if(!AC||muto)return;const t=AC.currentTime,k=alto?1.15:1;suonaGrugnito(t,.2,62,44,.9,k);suonaGrugnito(t+.26,.24,58,38,.85,k*.95)}
+function squittio(){if(!AC||muto)return;strilloAt(AC.currentTime,.55,1150,.3)}
+function strillo(h){if(!AC||muto)return;const t=AC.currentTime,f=1000+Math.random()*350+Math.min(250,h*8);strilloAt(t,.32+Math.random()*.2,f,.24);if(Math.random()<.4)strilloAt(t+.42,.25,f*1.08,.2)}
+function versetto(){if(!AC||muto)return;suonaGrugnito(AC.currentTime,.14,60,42,.8,1)}
 function tono(a,b,d,tipo,v){if(!AC||muto)return;const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=tipo||'sine';o.frequency.setValueAtTime(a,t);o.frequency.exponentialRampToValueAtTime(b,t+d);g.gain.setValueAtTime(v||.15,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)}
 function rumore(dur,freq,vol){if(!AC||muto)return;const t=AC.currentTime,n=AC.createBufferSource(),b=AC.createBuffer(1,AC.sampleRate*dur,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);n.buffer=b;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=freq;const g=AC.createGain();g.gain.value=vol;n.connect(f);f.connect(g);g.connect(AC.destination);n.start(t)}
 
@@ -191,7 +206,9 @@ function creaMaiale(){
  const pts=[];for(let i=0;i<=24;i++){const a=i/24*Math.PI*3,r=.06*(1-i/34);pts.push(new THREE.Vector3(-.62-i*.006,.62+Math.sin(a)*r,Math.cos(a)*r))}
  g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),40,.016,8,false),rosa));
  g.traverse(o=>{if(o.isMesh)o.castShadow=true});
- const perno=new THREE.Group();g.position.y=-.5;perno.add(g);perno.userData={zampe,orecchie,occhi,corpo:g};return perno}
+ const stelle=new THREE.Group();stelle.position.set(.62,1.08,0);for(let i=0;i<3;i++){const st=new THREE.Mesh(new THREE.OctahedronGeometry(.055),new THREE.MeshStandardMaterial({color:0xffd23a,emissive:0x7a5a00,roughness:.4}));
+  const a=i/3*Math.PI*2;st.position.set(Math.cos(a)*.24,0,Math.sin(a)*.24);stelle.add(st)}stelle.visible=false;g.add(stelle);
+ const perno=new THREE.Group();g.position.y=-.5;perno.add(g);perno.userData={zampe,orecchie,occhi,corpo:g,stelle};return perno}
 const maiale=creaMaiale();scene.add(maiale);
 
 /* ======================= RAGAZZO CHE CALCIA ======================= */
@@ -199,19 +216,61 @@ function osso(a,b,r1,r2,mat){const v=new THREE.Vector3().subVectors(b,a),len=v.l
  m.position.copy(a).addScaledVector(v,.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());m.castShadow=true;return m}
 function creaRagazzo(){
  const g=new THREE.Group(),V=(x,y,z)=>new THREE.Vector3(x,y,z);
- const jeans=Mat(0x2f4f86,.85),maglia=Mat(0x2e7d46,.85),pelle=Mat(0xe9bf9a,.7),stivale=Mat(0x2a2a2a,.5),cap=Mat(0xb8312a,.7),capelli=Mat(0x4a3220,.9);
- g.add(osso(V(0,.95,.12),V(0,.08,.14),.085,.07,jeans));const s1=new THREE.Mesh(new THREE.BoxGeometry(.28,.14,.13),stivale);s1.position.set(.06,.07,.14);s1.castShadow=true;g.add(s1);
- const anca=new THREE.Group();anca.position.set(0,.95,-.12);g.add(anca);
- anca.add(osso(V(0,0,0),V(0,-.87,0),.085,.07,jeans));const s2=new THREE.Mesh(new THREE.BoxGeometry(.28,.14,.13),stivale);s2.position.set(.06,-.88,0);s2.castShadow=true;anca.add(s2);
- const busto=osso(V(0,.92,0),V(0,1.45,0),.17,.2,maglia);busto.scale.set(1,1,1.25);g.add(busto);
- for(const z of [-.27,.27]){g.add(osso(V(0,1.42,z),V(.05,1.0,z*1.25),.055,.045,maglia));const m=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),pelle);m.position.set(.06,.97,z*1.27);g.add(m)}
- g.add(osso(V(0,1.45,0),V(0,1.55,0),.06,.06,pelle));
- const t=new THREE.Mesh(new THREE.SphereGeometry(.13,18,14),pelle);t.position.set(0,1.66,0);t.castShadow=true;g.add(t);
- const cp=new THREE.Mesh(new THREE.SphereGeometry(.135,18,10,0,Math.PI*2,0,Math.PI/2),cap);cp.position.set(0,1.69,0);g.add(cp);
- const vis=new THREE.Mesh(new THREE.BoxGeometry(.16,.02,.2),cap);vis.position.set(.15,1.7,0);g.add(vis);
- const ca=new THREE.Mesh(new THREE.SphereGeometry(.128,14,10),capelli);ca.position.set(-.03,1.65,0);ca.scale.set(.9,.9,1);g.add(ca);
- g.userData.anca=anca;return g}
-const ragazzo=creaRagazzo();ragazzo.position.set(-.85,0,0);scene.add(ragazzo);
+ const jeans=Mat(0x2f4a78,.85),maglia=Mat(0x2f7d4a,.8),pelle=Mat(0xe6b896,.65),scarpa=Mat(0xf2f2f2,.6),suola=Mat(0x333333,.6),cap=Mat(0xb8312a,.7),capelli=Mat(0x3d2a1a,.9),scuro=Mat(0x1d1d1d,.4);
+ const J={};
+ // bacino e busto (si inclinano insieme)
+ const bacino=new THREE.Group();bacino.position.y=.92;g.add(bacino);J.bacino=bacino;
+ const fianchi=new THREE.Mesh(new THREE.SphereGeometry(.16,16,12),jeans);fianchi.scale.set(.85,.7,1.25);bacino.add(fianchi);
+ const busto=new THREE.Group();busto.position.y=.06;bacino.add(busto);J.busto=busto;
+ const pancia=osso(V(0,0,0),V(0,.3,0),.15,.17,maglia);pancia.scale.set(.85,1,1.2);busto.add(pancia);
+ const torace=new THREE.Mesh(new THREE.SphereGeometry(.2,18,14),maglia);torace.scale.set(.72,.9,1.15);torace.position.y=.38;torace.castShadow=true;busto.add(torace);
+ const collo=osso(V(0,.52,0),V(0,.6,0),.055,.05,pelle);busto.add(collo);
+ const testa=new THREE.Group();testa.position.y=.72;busto.add(testa);J.testa=testa;
+ const cranio=new THREE.Mesh(new THREE.SphereGeometry(.115,20,16),pelle);cranio.scale.set(1,1.12,.95);cranio.castShadow=true;testa.add(cranio);
+ const naso=new THREE.Mesh(new THREE.ConeGeometry(.022,.05,8),pelle);naso.rotation.z=-Math.PI/2;naso.position.set(.118,-.01,0);testa.add(naso);
+ for(const z of [-.04,.04]){const o=new THREE.Mesh(new THREE.SphereGeometry(.013,8,6),scuro);o.position.set(.1,.03,z);testa.add(o)}
+ for(const z of [-.11,.11]){const o=new THREE.Mesh(new THREE.SphereGeometry(.028,8,6),pelle);o.scale.set(.6,1,.4);o.position.set(0,0,z);testa.add(o)}
+ const cap_=new THREE.Mesh(new THREE.SphereGeometry(.122,20,10,0,Math.PI*2,0,Math.PI/2),cap);cap_.position.y=.035;testa.add(cap_);
+ const vis=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.012,20,1,false,-Math.PI/2,Math.PI),cap);vis.position.set(.07,.04,0);testa.add(vis);
+ const ciuffo=new THREE.Mesh(new THREE.SphereGeometry(.118,14,10),capelli);ciuffo.position.set(-.025,.01,0);ciuffo.scale.set(.95,.95,1);testa.add(ciuffo);
+ // braccia: spalla e gomito
+ J.braccia=[];for(const z of [-.2,.2]){const sp=new THREE.Group();sp.position.set(0,.47,z);busto.add(sp);
+  sp.add(osso(V(0,0,0),V(0,-.27,0),.05,.043,maglia));const gom=new THREE.Group();gom.position.y=-.27;sp.add(gom);
+  gom.add(osso(V(0,0,0),V(0,-.24,0),.038,.032,pelle));const mano=new THREE.Mesh(new THREE.SphereGeometry(.04,10,8),pelle);mano.scale.set(.8,1.2,.6);mano.position.y=-.27;gom.add(mano);
+  sp.rotation.x=z<0?.12:-.12;J.braccia.push({sp,gom})}
+ // gambe: anca, ginocchio, caviglia
+ J.gambe=[];for(const z of [-.09,.09]){const an=new THREE.Group();an.position.set(0,.92,z);g.add(an);
+  an.add(osso(V(0,0,0),V(0,-.44,0),.075,.06,jeans));const gi=new THREE.Group();gi.position.y=-.44;an.add(gi);
+  gi.add(osso(V(0,0,0),V(0,-.42,0),.058,.045,jeans));const ca=new THREE.Group();ca.position.y=-.43;gi.add(ca);
+  const sc=new THREE.Mesh(new THREE.BoxGeometry(.25,.075,.1),scarpa);sc.position.set(.06,-.03,0);sc.castShadow=true;ca.add(sc);
+  const so=new THREE.Mesh(new THREE.BoxGeometry(.26,.022,.105),suola);so.position.set(.06,-.07,0);ca.add(so);
+  J.gambe.push({an,gi,ca})}
+ g.userData=J;return g}
+// posa del ragazzo: t in secondi dall'inizio del calcio (-1 = fermo in attesa)
+const X0=-3.1,XP=-.62;
+function posaRagazzo(t,dt){const J=ragazzo.userData,[gs,gd]=J.gambe,[bs,bd]=J.braccia;  // gd = gamba che calcia (lato +z)
+ const L=(o,pr,v,k)=>{o[pr]+=(v-o[pr])*Math.min(1,dt*(k||16))};
+ let x=X0,bob=0,lean=0,a1=0,k1=0,a2=0,k2=0,sa1=0,sa2=0,gom=-.25;
+ if(t<0){const r=performance.now()/1000;bob=Math.sin(r*2)*.006;sa1=.05;sa2=-.05;k1=.05;k2=.05}
+ else if(t<.62){// rincorsa: 3 passi
+  const u=t/.62;x=X0+(XP-X0)*(u*u*(3-2*u));const ph=t*15;
+  a1=Math.sin(ph)*.55;a2=-Math.sin(ph)*.55;k1=Math.max(0,-Math.cos(ph))*.9+.1;k2=Math.max(0,Math.cos(ph))*.9+.1;
+  sa1=-Math.sin(ph)*.6;sa2=Math.sin(ph)*.6;bob=Math.abs(Math.sin(ph))*.04;lean=-.12;gom=-.9}
+ else if(t<.74){// piede d'appoggio piantato, gamba che calcia indietro e ginocchio piegato
+  const u=(t-.62)/.12;x=XP;a1=.15;k1=.25;a2=-.75*u;k2=.4+1.3*u;sa1=.5;sa2=-.9;lean=-.05-.12*u;gom=-.6}
+ else if(t<.84){// colpo: la coscia va avanti e la gamba si distende
+  const u=(t-.74)/.1;x=XP;a1=.15;k1=.2;a2=-.75+2.05*u;k2=1.7*(1-u)+.05;sa1=.6;sa2=-1.1;lean=-.17-.1*u;gom=-.5}
+ else if(t<1.35){// accompagnamento: gamba alta, busto indietro, braccia larghe
+  const u=Math.min(1,(t-.84)/.25);x=XP+.15*u;a1=.15;k1=.2;a2=1.3+.35*u;k2=.1;sa1=.7;sa2=-1.2;lean=-.27-.08*u;gom=-.4}
+ else{x=XP+.15;a1=0;k1=.05;a2=0;k2=.05;sa1=.05;sa2=-.05;lean=0;gom=-.25}
+ const hard=t>=.6&&t<1.0;const K=hard?40:12;
+ ragazzo.position.x+=(x-ragazzo.position.x)*Math.min(1,dt*(t<0?4:30));
+ L(J.bacino.position,'y',.92+bob-(t>.62&&t<.9?.04:0),K);L(J.busto.rotation,'z',lean,K);
+ L(gs.an.rotation,'z',a1,K);L(gs.gi.rotation,'z',-k1,K);L(gd.an.rotation,'z',a2,K);L(gd.gi.rotation,'z',-k2,K);
+ L(gs.ca.rotation,'z',k1*.3,K);L(gd.ca.rotation,'z',t>.74&&t<1.2?.5:k2*.3,K);
+ L(bs.sp.rotation,'z',sa1,K);L(bd.sp.rotation,'z',sa2,K);L(bs.gom.rotation,'z',gom*-1,K);L(bd.gom.rotation,'z',gom*-1,K);
+ L(bs.sp.rotation,'x',t>.62&&t<1.3?.55:.12,K);L(bd.sp.rotation,'x',t>.62&&t<1.3?-.55:-.12,K)}
+const ragazzo=creaRagazzo();ragazzo.position.set(X0,0,.12);scene.add(ragazzo);ragazzo.traverse(o=>{if(o.isMesh)o.castShadow=true});
 
 // tee di fango, fieno, fango
 const tee=new THREE.Mesh(new THREE.CylinderGeometry(.35,.5,.12,20),Mat(0x6b4a2a,.95));tee.position.set(0,.06,0);tee.receiveShadow=true;scene.add(tee);
@@ -219,11 +278,12 @@ let ost=[],ostMesh=[];
 function nuovoCampo(){for(const m of ostMesh)scene.remove(m);ostMesh=[];ost=[];let x=24+Math.random()*12;
  const fieno=Mat(0xd8b65a,.95),fango=new THREE.MeshStandardMaterial({color:0x4f3420,roughness:.35});
  while(x<300){const tipo=Math.random()<.5?'fieno':'fango';
-  if(tipo==='fieno'){const r=.75,m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,1.3,22),fieno);m.rotation.x=Math.PI/2;m.position.set(x,r,0);m.castShadow=m.receiveShadow=true;scene.add(m);ostMesh.push(m);
-   ost.push({tipo,x,w:1.6})}
-  else{const w=4+Math.random()*3,m=new THREE.Mesh(new THREE.CircleGeometry(1,32),fango);m.rotation.x=-Math.PI/2;m.scale.set(w/2,2.4,1);m.position.set(x,.02,0);m.receiveShadow=true;scene.add(m);ostMesh.push(m);
-   ost.push({tipo,x,w})}
-  x+=20+Math.random()*28}}
+  const z=(Math.random()*2-1)*7;
+  if(tipo==='fieno'){const r=.75,m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,1.3,22),fieno);m.rotation.x=Math.PI/2;m.position.set(x,r,z);m.castShadow=m.receiveShadow=true;scene.add(m);ostMesh.push(m);
+   ost.push({tipo,x,z,w:1.7,lz:1.1})}
+  else{const w=4+Math.random()*3,m=new THREE.Mesh(new THREE.CircleGeometry(1,32),fango);m.rotation.x=-Math.PI/2;m.scale.set(w/2,2.4,1);m.position.set(x,.02,z);m.receiveShadow=true;scene.add(m);ostMesh.push(m);
+   ost.push({tipo,x,z,w,lz:2.3})}
+  x+=12+Math.random()*18}}
 // linea che mostra l'angolo
 const linea=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(1,1,0)]),new THREE.LineDashedMaterial({color:0xffffff,dashSize:.3,gapSize:.2}));linea.visible=false;scene.add(linea);
 // schizzi
@@ -237,10 +297,10 @@ function messaggio(t,d){const m=$('#msg');m.textContent=t;m.style.opacity=1;S.ms
 function nuovaPartita(){leggiNomi();
  S={gioc:nomi.slice(0,nGioc).map(n=>({nome:n,tiri:[]})),turno:0,tiro:0,fase:'pronto',t:0,pot:0,ang:0,calcio:0,msgT:0};
  nuovoCampo();['#menu','#fine'].forEach(s=>$(s).classList.add('hidden'));['#hud','#tabella'].forEach(s=>$(s).classList.remove('hidden'));nuovoTiro()}
-function nuovoTiro(){S.fase='potenza';S.t=0;S.pot=0;S.ang=0;S.calcio=0;
+function nuovoTiro(){S.fase='potenza';S.t=0;S.tk=-1;ragazzo.position.x=X0;S.pot=0;S.ang=0;S.calcio=0;
  S.vento=Math.round((Math.random()*2-1)*6*10)/10;
  S.p={x:0,y:.62,z:0,vx:0,vy:0,vz:0,rot:0,vr:0,stato:'tee',fango:false,spin:0};
- maiale.position.set(0,S.p.y,0);maiale.rotation.set(0,0,0);
+ maiale.position.set(0,S.p.y,0);maiale.rotation.set(0,0,0);{const u=maiale.userData;u.zampe.forEach(z=>z.rotation.set(0,0,0));u.corpo.scale.set(1,1,1);u.corpo.rotation.set(0,0,0);u.stelle.visible=false;u.occhi.forEach(o=>o.scale.set(1,1,1))}
  const p=S.gioc[S.turno];messaggio(`Tocca a ${p.nome}! Calcio ${S.tiro+1} di ${TIRI}`,2);aggiornaHud()}
 function aggiornaHud(){const p=S.gioc[S.turno];$('#hTurno').textContent=`${p.nome} · calcio ${Math.min(S.tiro+1,TIRI)}/${TIRI}`;
  const v=S.vento;$('#hVento').textContent='🌬️ '+(v===0?'nessun vento':(v>0?'vento a favore ➡️ ':'vento contro ⬅️ ')+Math.abs(v).toFixed(1).replace('.',',')+' m/s');
@@ -249,11 +309,16 @@ function tocca(){audio();if(!S.gioc)return;
  if(S.fase==='potenza'){S.fase='angolo';S.t=0;tono(500,700,.08,'triangle',.12)}
  else if(S.fase==='angolo'){S.fase='calcio';S.t=0;tono(700,900,.08,'triangle',.12)}
  else if(S.fase==='fermo'&&S.t>.6)prossimo()}
-cv.addEventListener('pointerdown',e=>{e.preventDefault();tocca()});
+const D={on:false,id:null,x0:0,y0:0,ix:0,iy:0},KS={sx:false,dx:false,su:false,giu:false};
+cv.addEventListener('pointerdown',e=>{e.preventDefault();if(S.fase==='volo'){audio();D.on=true;D.id=e.pointerId;D.x0=e.clientX;D.y0=e.clientY;D.ix=D.iy=0;try{cv.setPointerCapture(e.pointerId)}catch(_){}}else tocca()});
+cv.addEventListener('pointermove',e=>{if(!D.on||e.pointerId!==D.id)return;D.ix=Math.max(-1,Math.min(1,(e.clientX-D.x0)/70));D.iy=Math.max(-1,Math.min(1,(e.clientY-D.y0)/70))});
+const fineD=e=>{if(e.pointerId===D.id){D.on=false;D.ix=D.iy=0}};cv.addEventListener('pointerup',fineD);cv.addEventListener('pointercancel',fineD);
+addEventListener('keydown',e=>{const c=e.code;if(c==='ArrowLeft')KS.sx=true;else if(c==='ArrowRight')KS.dx=true;else if(c==='ArrowUp')KS.su=true;else if(c==='ArrowDown')KS.giu=true;else return;e.preventDefault()});
+addEventListener('keyup',e=>{const c=e.code;if(c==='ArrowLeft')KS.sx=false;else if(c==='ArrowRight')KS.dx=false;else if(c==='ArrowUp')KS.su=false;else if(c==='ArrowDown')KS.giu=false});
 addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='Enter'){if(!$('#menu').classList.contains('hidden')||!$('#fine').classList.contains('hidden'))return;e.preventDefault();if(!e.repeat)tocca()}});
 function calcia(){const p=S.p;const v=11+S.pot*27,a=(12+S.ang*58)*Math.PI/180;
  p.vx=v*Math.cos(a);p.vy=v*Math.sin(a);p.vz=(Math.random()-.5)*1.2;p.vr=-(3+S.pot*7);p.spin=(Math.random()-.5)*3;p.stato='vola';
- S.fase='volo';S.t=0;oink(false);rumore(.12,1800,.35);
+ S.fase='volo';S.t=0;S.energia=1;S.guidaAvviso=false;oink(false);rumore(.12,1800,.35);
  S.strillo=.35;messaggio(['Che calcio!','Aiutooo! 🐷','Rosolino ha paura!','Bel tiro!'][Math.floor(Math.random()*4)],1.2)}
 function prossimo(){S.turno++;if(S.turno>=S.gioc.length){S.turno=0;S.tiro++}if(S.tiro>=TIRI){fine();return}nuovoTiro()}
 function fine(){S.fase='fine';$('#metro').classList.add('hidden');
@@ -274,45 +339,60 @@ function aggiorna(dt){if(!S.gioc)return;S.t+=dt;
  else metro.classList.add('hidden');
  linea.visible=S.fase==='angolo';if(linea.visible){const a=(12+S.ang*58)*Math.PI/180,L=4;
   linea.geometry.setFromPoints([new THREE.Vector3(.3,.6,0),new THREE.Vector3(.3+Math.cos(a)*L,.6+Math.sin(a)*L,0)]);linea.computeLineDistances()}
- const anca=ragazzo.userData.anca;
- if(S.fase==='calcio'){S.calcio=Math.min(1,S.t/.32);const k=S.calcio;anca.rotation.z=k<.45?-k/.45*.9:-.9+(k-.45)/.55*2.3;if(S.t>=.32&&S.p.stato==='tee')calcia()}
- else if(S.fase==='volo')anca.rotation.z+=(0-anca.rotation.z)*Math.min(1,dt*3);
- else if(S.fase==='potenza')anca.rotation.z=0;
+ if(S.fase==='calcio'&&S.tk<0)S.tk=0;
+ if(S.tk>=0){S.tk+=dt;if(S.tk>=.79&&S.p.stato==='tee')calcia();if(S.tk>2.2&&S.fase!=='calcio')S.tk=-1}
+ posaRagazzo(S.tk,dt);
  const p=S.p;
  if(p.stato==='vola'||p.stato==='rotola'){
   const passi=4,h=dt/passi;
   for(let i=0;i<passi;i++){
    if(p.stato==='vola'){const rvx=p.vx-S.vento,sp=Math.hypot(rvx,p.vy),k=.011;
-    p.vx+=(-k*sp*rvx)*h;p.vy+=(-G-k*sp*p.vy)*h;p.vz*=1-.2*h;p.x+=p.vx*h;p.y+=p.vy*h;p.z+=p.vz*h;p.rot+=p.vr*h;
-    if(p.y<=.5){p.y=.5;const o=ost.find(o=>Math.abs(p.x-o.x)<o.w/2&&Math.abs(p.z)<2);
+    const gx=Math.max(-1,Math.min(1,D.ix+(KS.dx?1:0)-(KS.sx?1:0))),gy=Math.max(-1,Math.min(1,D.iy+(KS.giu?1:0)-(KS.su?1:0)));
+    if((gx||gy)&&S.energia>0){S.energia=Math.max(0,S.energia-h*.3*Math.max(Math.abs(gx),Math.abs(gy)));
+     p.vz+=gx*7*h;if(gy<0&&p.vy<3)p.vy+=-gy*5.5*h;if(gy>0)p.vy-=gy*7*h}
+    p.vz=Math.max(-8,Math.min(8,p.vz));
+    p.vx+=(-k*sp*rvx)*h;p.vy+=(-G-k*sp*p.vy)*h;p.vz*=1-.15*h;
+    if(Math.abs(p.z)>15.2){p.z=Math.sign(p.z)*15.2;p.vz=-p.vz*.4;versetto()}p.x+=p.vx*h;p.y+=p.vy*h;p.z+=p.vz*h;p.rot+=p.vr*h;
+    if(p.y<=.5){p.y=.5;const o=ost.find(o=>Math.abs(p.x-o.x)<o.w/2&&Math.abs(p.z-o.z)<o.lz);
      if(o&&o.tipo==='fango'){p.stato='fermo';p.fango=true;squittio();rumore(.3,500,.6);schizzi(p.x,0x4f3420,26);messaggio('SPLASH! Dritto nel fango',2);break}
      if(o&&o.tipo==='fieno'){p.vy=Math.max(9,Math.abs(p.vy)*.9);p.vx*=.95;p.y=1.6;oink(true);rumore(.15,900,.3);schizzi(p.x,0xe8c14a,14);messaggio('Rimbalzo sul fieno!',1);continue}
      if(Math.abs(p.vy)>3){p.vy=-p.vy*.4;p.vx*=.7;p.vr*=.7;versetto();rumore(.2,400,.5);schizzi(p.x,0x5f9a3c,8)}else{p.stato='rotola';p.vy=0}}}
    else{p.vx-=Math.sign(p.vx)*3.2*h;p.x+=p.vx*h;p.rot-=p.vx/.5*h;
-    const o=ost.find(o=>Math.abs(p.x-o.x)<o.w/2&&Math.abs(p.z)<2);
+    const o=ost.find(o=>Math.abs(p.x-o.x)<o.w/2&&Math.abs(p.z-o.z)<o.lz);
     if(o&&o.tipo==='fango'){p.stato='fermo';p.fango=true;squittio();schizzi(p.x,0x4f3420,18);messaggio('SPLASH! Fermo nel fango',1.6);break}
     if(Math.abs(p.vx)<.25){p.stato='fermo';break}}}
-  if(p.stato==='fermo'){S.fase='fermo';S.t=0;p.rot=0;const d=Math.max(0,p.x);S.gioc[S.turno].tiri.push(d);if(!p.fango)oink(true);
+  if(p.stato==='fermo'){S.fase='fermo';S.t=0;p.rot=0;rumore(.35,300,.8);if(!p.fango)schizzi(p.x,0x5f9a3c,14);const d=Math.max(0,p.x);S.gioc[S.turno].tiri.push(d);if(!p.fango)oink(true);
    const best=Math.max(...S.gioc[S.turno].tiri);messaggio(`${f1(d)}! ${d>=best&&S.gioc[S.turno].tiri.length>1?'Il tuo migliore! ':''}Tocca per continuare`,99);aggiornaHud()}}
  maiale.position.set(p.x,p.y+.12,p.z);
- {const u=maiale.userData,t=performance.now()/1000,paura=p.stato==='vola';
-  u.zampe.forEach((z,i)=>{z.rotation.z=paura?Math.sin(t*24+i*1.9)*.95:z.rotation.z*.8;z.rotation.x=paura?Math.sin(t*19+i)*.35:z.rotation.x*.8});
-  u.orecchie.forEach((o,i)=>{o.rotation.x=paura?o.userData.base+Math.sin(t*32+i*3)*.7:o.userData.base});
-  u.occhi.forEach(o=>{const k=paura?1.9:1;o.scale.set(k,k,k)});
-  u.corpo.rotation.x=paura?Math.sin(t*17)*.18:0;u.corpo.position.z=paura?Math.sin(t*23)*.03:0;
-  if(paura){S.strillo=(S.strillo||0)-dt;if(S.strillo<=0){S.strillo=.55+Math.random()*.4;strillo(p.y)}}}
- if(p.stato==='vola'||p.stato==='rotola'){maiale.rotation.z=p.rot;maiale.rotation.y=p.spin*S.t*.3}
- else if(p.stato==='fermo'){maiale.rotation.z*=.8;maiale.rotation.y*=.9;maiale.rotation.x=Math.sin(S.t*18)*.12*Math.max(0,1-S.t*1.2);if(p.fango)maiale.position.y=.45}
- $('#hDist').classList.toggle('hidden',p.stato==='tee');$('#hDist').textContent='📏 '+f1(Math.max(0,p.x));
+ {const u=maiale.userData,t=performance.now()/1000,k=Math.min(1,dt*14),paura=p.stato==='vola',rotola=p.stato==='rotola',fermo=p.stato==='fermo';
+  const L=(o,prop,v,kk)=>{o[prop]+=(v-o[prop])*(kk||k)};
+  u.zampe.forEach((z,i)=>{const front=i<2,lato=i%2?1:-1;let tz=0,tx=0;
+   if(paura||rotola){const f=[10.5,13.2,11.8,14.4][i],env=.55+.45*Math.sin(t*1.6+i*2.1)*Math.sin(t*.85+i*1.3),a=(paura?1:.45)*(.55+.65*env);
+    tz=(Math.sin(t*f+i*1.9)*.7+Math.sin(t*f*1.73+i)*.3)*a;tx=(Math.sin(t*f*.77+i*2.7)*.35+.18*(-lato))*a}
+   else if(fermo){const sp=S.t,tw=Math.sin(t*21+i*2)*.1*Math.exp(-sp*1.5);tz=(front?1.25:-1.25)+tw;tx=(lato<0?1.15:-1.15)+tw*.6}
+   L(z.rotation,'z',tz,fermo?Math.min(1,dt*22):k);L(z.rotation,'x',tx,fermo?Math.min(1,dt*22):k)});
+  u.orecchie.forEach((o,i)=>{const b=o.userData.base,v=paura?b+Math.sin(t*14+i*3)*.5+Math.sin(t*22.5+i)*.25:fermo?b+(i?-.7:.7):b;L(o.rotation,'x',v)});
+  u.occhi.forEach(o=>{const s_=paura?1.9:fermo?1.4:1;o.scale.set(s_,fermo?.45:s_,s_)});
+  L(u.corpo.rotation,'x',paura?Math.sin(t*5.3)*.16+Math.sin(t*8.1)*.08:0);L(u.corpo.rotation,'y',paura?Math.sin(t*3.7)*.14:0);
+  // schiacciato all'atterraggio, come nei cartoni
+  let sy=1;if(fermo){const sp=S.t;sy=sp<.1?1-.5*(sp/.1):.62+.16*(1-Math.exp(-(sp-.1)*4))+Math.sin(sp*26)*.06*Math.exp(-sp*5)}
+  u.corpo.scale.set(1/Math.sqrt(sy),sy,1/Math.sqrt(sy));
+  u.stelle.visible=fermo&&S.t>.25;if(u.stelle.visible){u.stelle.rotation.y=t*4}
+  if(paura){S.strillo=(S.strillo||0)-dt;if(S.strillo<=0){S.strillo=.5+Math.random()*.6;strillo(p.y)}}}
+ if(p.stato==='vola'||p.stato==='rotola'){maiale.rotation.z=p.rot;maiale.rotation.y=p.spin*S.t*.3;maiale.rotation.x=0}
+ else if(p.stato==='fermo'){const kk=Math.min(1,dt*18);maiale.rotation.z+=(0-maiale.rotation.z)*kk;maiale.rotation.x=0;maiale.position.y=p.fango?.3:.38}
+ $('#hDist').classList.toggle('hidden',p.stato==='tee');
+ {const he=$('#hEnergia'),vis=p.stato==='vola';he.classList.toggle('hidden',!vis);if(vis){const n=Math.round((S.energia||0)*10);he.textContent='👆 guida '+'■'.repeat(n)+'□'.repeat(10-n)}
+  if(vis&&!S.guidaAvviso&&S.t>.4){S.guidaAvviso=true;messaggio('👆 Trascina il dito per guidare Rosolino!',1.8)}}$('#hDist').textContent='📏 '+f1(Math.max(0,p.x));
  for(const m of schizziG){m.userData.t-=dt;m.userData.v.y-=12*dt;m.position.addScaledVector(m.userData.v,dt);if(m.position.y<.03){m.position.y=.03;m.userData.v.set(0,0,0)}}
  for(let i=schizziG.length-1;i>=0;i--)if(schizziG[i].userData.t<=0){scene.remove(schizziG[i]);schizziG.splice(i,1)}}
 
 /* ======================= CAMERA ======================= */
 const camP=new THREE.Vector3(-4,2.2,6.5),camL=new THREE.Vector3(1,.7,0);
 function aggiornaCamera(dt){let want,look;const p=S.p;
- if(!S.gioc||S.fase==='potenza'||S.fase==='angolo'||S.fase==='calcio'){const t=performance.now()/1000;const port=innerWidth<innerHeight;want=new THREE.Vector3(port?-4.2:-3.6,port?2.3:1.9,(port?8:5.6)+(S.gioc?0:Math.sin(t*.3)*.6));look=new THREE.Vector3(port?.2:.8,.75,0)}
- else{want=new THREE.Vector3(p.x-5,Math.max(2.2,p.y*.55+1.8),8+Math.min(6.5,p.y*.4));look=new THREE.Vector3(p.x+(innerWidth<innerHeight?.8:3),Math.max(.6,p.y*.8),0);
-  if(S.fase==='fermo'){want=new THREE.Vector3(p.x-3.4,1.7,5.6);look=new THREE.Vector3(p.x,.5,0)}}
+ if(!S.gioc||S.fase==='potenza'||S.fase==='angolo'||S.fase==='calcio'){const t=performance.now()/1000;const port=innerWidth<innerHeight;want=new THREE.Vector3(port?-5.2:-4.6,port?2.4:2.0,(port?8.5:6.4)+(S.gioc?0:Math.sin(t*.3)*.6));look=new THREE.Vector3(port?-.9:-.6,.8,0)}
+ else{want=new THREE.Vector3(p.x-8.5,Math.max(2.4,p.y*.7+2.4),p.z*.7+3.2);look=new THREE.Vector3(p.x+5,Math.max(.6,p.y*.85),p.z);
+  if(S.fase==='fermo'){want=new THREE.Vector3(p.x+1.2,2.4,p.z+4.6);look=new THREE.Vector3(p.x+.2,.3,p.z)}}
  const a=Math.min(1,dt*3.2);camP.lerp(want,a);camL.lerp(look,Math.min(1,dt*5));camera.position.copy(camP);camera.lookAt(camL);
  sole.position.set(camL.x-30,60,40);sole.target.position.set(camL.x,0,0)}
 function ridimensiona(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<h?62:48;camera.updateProjectionMatrix()}
