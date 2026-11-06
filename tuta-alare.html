@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Volo in Tuta Alare</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#9fcbea;font-family:'Baloo 2','Trebuchet MS',sans-serif;user-select:none;-webkit-user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#hud{position:fixed;top:max(8px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;z-index:5;pointer-events:none;width:calc(100% - 150px)}
+.pill{background:rgba(15,30,50,.62);color:#fff;border-radius:14px;padding:3px 11px;font-size:clamp(14px,2.4vw,19px);font-weight:700;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+@media (max-width:600px){#hud{top:calc(max(8px,env(safe-area-inset-top)) + 40px);width:96%}.pill{font-size:14px;padding:2px 8px}}
+.pill.warn{background:rgba(214,40,40,.85)}
+.pill.hot{background:rgba(242,128,0,.88)}
+#home,#audio{position:fixed;top:max(8px,env(safe-area-inset-top));z-index:6;background:rgba(255,255,255,.88);border-radius:14px;padding:4px 12px;font-weight:800;color:#1f2a44;text-decoration:none;font-size:17px;border:0;font-family:inherit;cursor:pointer}
+#home{left:8px}#audio{right:8px}
+#msg{position:fixed;top:17%;left:0;right:0;text-align:center;z-index:5;pointer-events:none;color:#fff;font-weight:800;font-size:clamp(26px,6vw,54px);text-shadow:0 3px 0 rgba(0,0,0,.35),0 0 18px rgba(0,0,0,.35);transition:opacity .3s}
+#chute{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:6;width:86px;height:86px;border-radius:50%;border:4px solid #fff;background:#e8437a;color:#fff;font-size:38px;box-shadow:0 6px 0 #9c1f4a;cursor:pointer;display:none}
+#chute small{display:block;font-size:12px;font-weight:800;margin-top:-6px;font-family:'Baloo 2',sans-serif}
+#chute:active{transform:translateY(4px);box-shadow:0 2px 0 #9c1f4a}
+#joy{position:fixed;width:130px;height:130px;border-radius:50%;border:3px solid rgba(255,255,255,.7);background:rgba(255,255,255,.14);z-index:4;pointer-events:none;display:none;transform:translate(-50%,-50%)}
+#knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(255,255,255,.85)}
+#hint{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));text-align:center;color:#fff;font-weight:700;font-size:15px;text-shadow:0 1px 3px rgba(0,0,0,.7);z-index:4;pointer-events:none;padding:0 110px}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,28,48,.55);z-index:10;padding:14px;overflow:auto}
+.hidden{display:none!important}
+.card{background:#fffdf5;border-radius:24px;box-shadow:0 10px 0 #1e4f7a,0 20px 40px rgba(0,0,0,.35);padding:18px 22px;max-width:640px;width:100%;border:4px solid #2a6aa0;margin:auto}
+h1{margin:0 0 4px;font-size:clamp(28px,5vw,44px);color:#1e4f7a;text-align:center;line-height:1.05}
+h1 span{color:#e8437a}
+.sub{text-align:center;color:#555;margin:0 0 12px;font-size:17px;line-height:1.3}
+.comandi{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+@media (max-width:520px){.comandi{grid-template-columns:1fr}}
+.box{background:#eef6ff;border-radius:14px;padding:8px 12px;font-size:15px;line-height:1.35;color:#24324d}
+.box b{color:#1e4f7a}
+.btn{display:block;margin:12px auto 4px;background:#e8437a;color:#fff;border:0;border-radius:18px;padding:10px 34px;font-size:26px;font-weight:800;font-family:inherit;box-shadow:0 6px 0 #9c1f4a;cursor:pointer}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #9c1f4a}
+.record{text-align:center;color:#1e4f7a;font-weight:700;font-size:16px}
+.ris{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.ris div{background:#eef6ff;border-radius:12px;padding:6px 10px;text-align:center;font-size:15px;color:#24324d}
+.ris b{display:block;font-size:24px;color:#1e4f7a}
+.tit{margin:12px 0 6px;text-align:center;color:#1e4f7a;font-size:20px}
+#tute{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:8px}
+@media (max-width:560px){#tute{grid-template-columns:repeat(3,1fr)}}
+.tb{border:3px solid #b9cde0;background:#fff;border-radius:12px;padding:4px 2px;font-family:inherit;font-size:12px;font-weight:700;color:#24324d;cursor:pointer;line-height:1.15}
+.tb i{display:block;width:34px;height:16px;margin:2px auto 3px;border-radius:50% 50% 8px 8px;font-style:normal}
+.tb.sel{border-color:#e8437a;background:#fff0f5}
+.tb[disabled]{opacity:.45;cursor:not-allowed}
+.stelle{color:#f2a900;letter-spacing:1px}
+.link{text-align:center;font-size:15px;margin-top:8px}
+.link a{color:#1e6fd9;font-weight:700}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<a id="home" href="index.html" aria-label="Torna ai giochi">🏠 Giochi</a>
+<button id="audio" aria-label="Audio">🔊</button>
+<div id="hud" class="hidden">
+  <span class="pill" id="hVel">0 km/h</span>
+  <span class="pill" id="hAlt">0 m</span>
+  <span class="pill" id="hDist">0 m</span>
+  <span class="pill" id="hPunti">⭐ 0</span>
+  <span class="pill" id="hAnelli">💛 0</span>
+</div>
+<div id="msg"></div>
+<div id="hint"></div>
+<div id="joy"><div id="knob"></div></div>
+<button id="chute" aria-label="Apri il paracadute">🪂<small>PARACADUTE</small></button>
+
+<div id="menu" class="overlay">
+  <div class="card">
+    <h1>Volo in <span>Tuta Alare</span></h1>
+    <p class="sub">Salta dalla scogliera e plana tra le montagne come un uccello!<br>Passa negli anelli gialli, vola basso per fare più punti e atterra con il paracadute.</p>
+    <div class="comandi">
+      <div class="box"><b>📱 Telefono e tablet</b><br>Appoggia il dito sullo schermo e trascinalo: <b>su</b> per salire, <b>giù</b> per scendere, <b>destra e sinistra</b> per girare. Tocca 🪂 per atterrare.</div>
+      <div class="box"><b>⌨️ Computer</b><br><b>↑ ↓</b> sali e scendi · <b>← →</b> giri<br><b>Spazio</b> apri il paracadute</div>
+    </div>
+    <div class="box">💡 <b>Come si vola davvero:</b> per andare veloce devi scendere. Se tiri su troppo a lungo rallenti, e se vai troppo piano la tuta non ti regge più (<b>stallo</b>): punta il naso in giù per riprendere velocità!</div>
+    <h3 class="tit">🪽 Scegli le ali</h3>
+    <div id="tute"></div>
+    <div class="box" id="tutaInfo"></div>
+    <p class="record" id="record"></p>
+    <button class="btn" id="via">Salta! ▶</button>
+  </div>
+</div>
+
+<div id="fine" class="overlay hidden">
+  <div class="card">
+    <h1 id="fTitolo">Atterrato!</h1>
+    <p class="sub" id="fSub"></p>
+    <div class="ris">
+      <div>Distanza<b id="fDist">0 m</b></div>
+      <div>Anelli<b id="fAnelli">0</b></div>
+      <div>Velocità massima<b id="fVmax">0</b></div>
+      <div>Punti<b id="fPunti">0</b></div>
+    </div>
+    <p class="record" id="fRecord"></p>
+    <button class="btn" id="ancora">Vola ancora ▶</button>
+    <p class="link"><a href="index.html">🏠 Altri giochi</a> · <a href="libri.html">📚 I libri di Teo e Leo</a></p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+
+/* ======================= RUMORE E TERRENO ======================= */
+function hash(i,j){let h=(Math.imul(i,374761393)+Math.imul(j,668265263))|0;h=Math.imul(h^(h>>>13),1274126177);h^=h>>>16;return (h>>>0)/4294967296}
+function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+ const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}
+function fbm(x,y){let s=0,a=1,f=1,n=0;for(let o=0;o<4;o++){s+=a*vnoise(x*f,y*f);n+=a;a*=.5;f*=2.03}return s/n}
+function smooth(a,b,x){const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)}
+
+const START_Y=620, PENDENZA=.31;
+let SEME=0;
+function centro(d){return 130*Math.sin(d/720+SEME)+55*Math.sin(d/270+1.3+SEME*2)+18*Math.sin(d/95+.4)}
+function largh(d){return 95+35*Math.sin(d/900+.7+SEME)}
+function base(d){return -PENDENZA*d}
+let CRESTE=[];
+function preparaCreste(){CRESTE=[];const s=Math.floor(SEME*1000);
+ for(let k=0;k<80;k++){const dk=1150+k*1000+(hash(k,7+s)-.5)*300;
+  CRESTE.push({d:dk,o:(hash(k,11+s)-.5)*1.1,h:140+hash(k,13+s)*90+Math.min(80,k*8)})}}
+function quota(x,d){
+ const c=centro(d),w=largh(d),dx=Math.abs(x-c);
+ let h=base(d)+(fbm(x*.008+3,d*.008)-.5)*26;
+ const muro=smooth(w,w+210,dx);
+ h+=muro*(290+170*fbm(x*.004+9,d*.004))+Math.max(0,dx-w-210)*.55;
+ h+=muro*(fbm(x*.018,d*.018)-.5)*70;
+ for(let i=0;i<CRESTE.length;i++){const r=CRESTE[i],dd=d-r.d;
+  if(dd>-170&&dd<170){const g=Math.exp(-(dd*dd)/(2*52*52)),ox=c+r.o*w,gap=Math.exp(-((x-ox)*(x-ox))/(2*24*24));
+   h+=r.h*g*(1-gap*.97)*(1-muro)}}
+ if(d<45){const t=smooth(45,6,d);h=h*(1-t)+(START_Y-1.6+(fbm(x*.05,d*.05)-.5)*3)*t}
+ return h}
+
+/* ======================= SCENA ======================= */
+const cv=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
+const scene=new THREE.Scene();
+const NEBBIA=0xcfe2f1;
+scene.fog=new THREE.Fog(NEBBIA,260,1750);
+{const g=document.createElement('canvas');g.width=2;g.height=256;const x=g.getContext('2d');
+ const gr=x.createLinearGradient(0,0,0,256);gr.addColorStop(0,'#3d7fc4');gr.addColorStop(.55,'#9cc8ea');gr.addColorStop(1,'#d6e8f4');
+ x.fillStyle=gr;x.fillRect(0,0,2,256);scene.background=new THREE.CanvasTexture(g)}
+const camera=new THREE.PerspectiveCamera(70,1,.5,2300);
+scene.add(new THREE.HemisphereLight(0xcfe6ff,0x4a5a3a,.75));
+const sole=new THREE.DirectionalLight(0xfff2dc,.95);sole.position.set(-.5,1,.35);scene.add(sole);
+
+const matTerreno=new THREE.MeshLambertMaterial({vertexColors:true});
+const matRoccia=new THREE.MeshLambertMaterial({color:0x6f6a63,flatShading:true});
+const matAlbero=new THREE.MeshLambertMaterial({color:0x2f5a2c,flatShading:true});
+const matAnello=new THREE.MeshLambertMaterial({color:0xffd12a,emissive:0x8a6400});
+const matAnelloPreso=new THREE.MeshLambertMaterial({color:0x9aa3ad,transparent:true,opacity:.45});
+const geoAlbero=new THREE.ConeGeometry(3.2,11,6);geoAlbero.translate(0,5.5,0);
+const geoAnello=new THREE.TorusGeometry(13,1,8,30);
+
+const L=300,W=1800,SX=90,SZ=30;
+const chunks=new Map();
+let guglie=[],anelli=[];
+function colore(x,d,h,out,i){
+ const rel=h-base(d),n=hash(Math.floor(x/9)+500,Math.floor(d/9)),m=fbm(x*.03,d*.03);
+ let r,g,b;
+ if(rel>250+n*45+m*40){const s=.88+n*.08;r=s;g=s+.02;b=s+.05}
+ else if(rel>75+n*30+m*30){r=.42+n*.09;g=.40+n*.08;b=.37+n*.07}
+ else{r=.25+n*.07+m*.06;g=.42+n*.09+m*.05;b=.19+n*.04}
+ out[i]=r;out[i+1]=g;out[i+2]=b}
+function creaChunk(k){
+ const geo=new THREE.PlaneGeometry(W,L,SX,SZ);geo.rotateX(-Math.PI/2);
+ const p=geo.attributes.position,col=new Float32Array(p.count*3),alt=new Float32Array(p.count);
+ const z0=-(k*L+L/2);
+ for(let i=0;i<p.count;i++){const x=p.getX(i),d=-(p.getZ(i)+z0),h=quota(x,d);p.setY(i,h);alt[i]=h;colore(x,d,h,col,i*3)}
+ geo.setAttribute('color',new THREE.BufferAttribute(col,3));geo.computeVertexNormals();
+ const grp=new THREE.Group();
+ const mesh=new THREE.Mesh(geo,matTerreno);mesh.position.z=z0;grp.add(mesh);
+ const ch={k,grp,alt,z0,guglie:[],anelli:[]};
+ // alberi sul fondovalle
+ const N=170,alberi=new THREE.InstancedMesh(geoAlbero,matAlbero,N),M=new THREE.Matrix4(),q=new THREE.Quaternion(),s=new THREE.Vector3(),v=new THREE.Vector3();
+ let n=0;
+ for(let t=0;t<N*3&&n<N;t++){const d=k*L+hash(k*977+t,3)*L;const c=centro(d),w=largh(d);
+  const x=c+(hash(k*977+t,5)-.5)*2*(w+150);const h=quota(x,d);if(h-base(d)>70||d<60)continue;
+  const sc=.7+hash(k*977+t,9)*.8;s.set(sc,sc*(.8+hash(t,k)*.5),sc);v.set(x,h-.5,-d);M.compose(v,q,s);alberi.setMatrixAt(n++,M)}
+ alberi.count=n;grp.add(alberi);
+ // guglie di roccia nella valle
+ if(k>=2){const ng=2+Math.floor(hash(k,21)*3);
+  for(let j=0;j<ng;j++){const d=k*L+hash(k,30+j)*L;if(CRESTE.some(r=>Math.abs(r.d-d)<140))continue;
+   const c=centro(d),w=largh(d),x=c+(hash(k,40+j)-.5)*1.5*w,y0=quota(x,d)-6;
+   const alt=70+hash(k,50+j)*110,rag=9+hash(k,60+j)*9;
+   const gm=new THREE.Mesh(new THREE.ConeGeometry(rag,alt,7),matRoccia);gm.position.set(x,y0+alt/2,-d);gm.rotation.y=hash(k,70+j)*6;grp.add(gm);
+   const g={x,d,y0,alt,rag,mesh:gm};ch.guglie.push(g);guglie.push(g)}}
+ // un anello per chunk
+ if(k>=1){const d=k*L+L*.55;if(!CRESTE.some(r=>Math.abs(r.d-d)<90)){
+  const x=centro(d)+(hash(k,80)-.5)*largh(d)*.6;const y=quota(x,d)+32+hash(k,81)*38;
+  const am=new THREE.Mesh(geoAnello,matAnello);am.position.set(x,y,-d);
+  const dc=centro(d+5)-centro(d-5);am.rotation.y=Math.atan2(dc,10);grp.add(am);
+  const a={x,y,d,mesh:am,preso:false};ch.anelli.push(a);anelli.push(a)}}
+ scene.add(grp);chunks.set(k,ch);return ch}
+function togliChunk(ch){scene.remove(ch.grp);ch.grp.traverse(o=>{if(o.isMesh&&o.geometry!==geoAlbero&&o.geometry!==geoAnello)o.geometry.dispose()});
+ guglie=guglie.filter(g=>!ch.guglie.includes(g));anelli=anelli.filter(a=>!ch.anelli.includes(a));chunks.delete(ch.k)}
+function aggiornaChunk(d,tutti){const k0=Math.max(0,Math.floor((d-350)/L)),k1=Math.floor((d+1900)/L);
+ for(const [k,ch] of chunks)if(k<k0||k>k1)togliChunk(ch);
+ let fatti=0;for(let k=k0;k<=k1;k++)if(!chunks.has(k)){creaChunk(k);if(!tutti&&++fatti>=1)break}}
+// altezza del terreno come disegnato (stessa griglia dei triangoli)
+function suolo(x,d){const k=Math.floor(d/L),ch=chunks.get(k);if(!ch)return quota(x,d);
+ const z=-d-ch.z0;const fx=(x+W/2)/(W/SX),fz=(z+L/2)/(L/SZ);
+ const ix=Math.min(SX-1,Math.max(0,Math.floor(fx))),iz=Math.min(SZ-1,Math.max(0,Math.floor(fz))),tx=fx-ix,tz=fz-iz,R=SX+1;
+ const a=ch.alt[ix+R*iz],b=ch.alt[ix+1+R*iz],c=ch.alt[ix+R*(iz+1)],e=ch.alt[ix+1+R*(iz+1)];
+ return (a*(1-tx)+b*tx)*(1-tz)+(c*(1-tx)+e*tx)*tz}
+
+/* ======================= TUTE (livelli) ======================= */
+// glide = efficienza (metri avanti per metro di discesa), v0 = velocità di planata (m/s)
+const TUTE=[
+ {nome:'Ali di pelle rattoppate',glide:1.65,v0:36,tuta:0x6b4a2b,ala:0x8a6a45,riga:0x4a3420,strappi:true,traballa:.5,giro:.75,meta:1000,
+  info:'Vecchie ali di pelle, mezze rotte e piene di toppe: scendono in fretta e traballano col vento.'},
+ {nome:'Ali di tela cucite a mano',glide:2.0,v0:39,tuta:0x7b6d4c,ala:0xc9b48a,riga:0x8c3b2a,strappi:false,traballa:.3,giro:.85,meta:2000,
+  info:'Tela robusta e cuciture nuove: niente più buchi, ma sono ancora pesanti.'},
+ {nome:'Tuta da allievo',glide:2.4,v0:42,tuta:0x2d7d46,ala:0x3fa35f,riga:0xffffff,strappi:false,traballa:.15,giro:.95,meta:3000,
+  info:'La prima vera tuta alare: plana bene e si guida con precisione.'},
+ {nome:'Tuta sportiva',glide:2.8,v0:46,tuta:0xff6a13,ala:0x1e4f9c,riga:0xffd12a,strappi:false,traballa:.07,giro:1,meta:4500,
+  info:'Ali più grandi e tessuto leggero: voli lontano e più veloce.'},
+ {nome:'Tuta da campione',glide:3.15,v0:50,tuta:0xd81b3c,ala:0x1b1b2a,riga:0xffc400,strappi:false,traballa:.03,giro:1.05,meta:6000,
+  info:'La tuta delle gare: tantissima planata e virate strette.'},
+ {nome:'Tuta da record',glide:3.5,v0:54,tuta:0xf2f2f2,ala:0x00a6d6,riga:0xff2d7a,strappi:false,traballa:0,giro:1.1,meta:0,
+  info:'La migliore del mondo: vola più lontano che puoi e batti il tuo record!'},
+];
+let livello=1,scelta=0;
+try{livello=Math.max(1,Math.min(TUTE.length,+localStorage.getItem('tutaLivello')||1))}catch(e){}
+scelta=livello-1;
+
+/* ======================= PILOTA ======================= */
+function creaPilota(T){
+ T=T||TUTE[0];
+ const g=new THREE.Group();
+ const tuta=new THREE.MeshLambertMaterial({color:T.tuta});
+ const ala=new THREE.MeshLambertMaterial({color:T.ala,side:THREE.DoubleSide});
+ const strisce=new THREE.MeshLambertMaterial({color:T.riga,side:THREE.DoubleSide});
+ const corpo=new THREE.Mesh(new THREE.CylinderGeometry(.2,.16,1.55,10),tuta);corpo.rotation.x=Math.PI/2;g.add(corpo);
+ const testa=new THREE.Mesh(new THREE.SphereGeometry(.19,14,10),new THREE.MeshLambertMaterial({color:0xffffff}));testa.position.set(0,.04,-.92);g.add(testa);
+ const visiera=new THREE.Mesh(new THREE.SphereGeometry(.14,12,8,0,Math.PI*2,0,Math.PI/2.4),new THREE.MeshLambertMaterial({color:0x162133}));visiera.position.set(0,.02,-1.0);visiera.rotation.x=-Math.PI/2.2;g.add(visiera);
+ let pts=[[0,-.62],[-1.0,-.48],[-.32,.55],[-.28,.98],[0,.55],[.28,.98],[.32,.55],[1.0,-.48]];
+ if(T.strappi){// bordi mangiati e strappati
+  pts=[[0,-.62],[-.92,-.45],[-.8,-.2],[-.62,-.1],[-.66,.12],[-.45,.22],[-.32,.55],[-.28,.9],[0,.5],[.28,.9],[.32,.55],[.5,.3],[.42,.12],[.7,.02],[.62,-.18],[.95,-.44]];
+  const toppa=new THREE.MeshLambertMaterial({color:0xb08a5a,side:THREE.DoubleSide});
+  const tp=[-.55,.012,-.32,-.35,.012,-.36,-.42,.012,-.12, .3,.012,.05,.5,.012,-.05,.45,.012,.2];
+  const tg=new THREE.BufferGeometry();tg.setAttribute('position',new THREE.Float32BufferAttribute(tp,3));tg.computeVertexNormals();g.add(new THREE.Mesh(tg,toppa))}
+ const pos=[];const cx=0,cz=.15;
+ for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];pos.push(cx,0,cz,a[0],0,a[1],b[0],0,b[1])}
+ const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));wg.computeVertexNormals();
+ g.add(new THREE.Mesh(wg,ala));
+ const sp=[];for(const sgn of [-1,1])sp.push(.35*sgn,.01,-.5,.85*sgn,.01,-.42,.42*sgn,.01,-.3);
+ const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));sg.computeVertexNormals();g.add(new THREE.Mesh(sg,strisce));
+ g.rotation.order='YXZ';g.scale.setScalar(1.35);
+ // vela del paracadute
+ const vela=new THREE.Group();
+ const cupola=new THREE.Mesh(new THREE.SphereGeometry(4.2,18,8,0,Math.PI*2,0,Math.PI/2.6),new THREE.MeshLambertMaterial({color:0xe8437a,side:THREE.DoubleSide}));
+ cupola.scale.set(1.3,.55,.8);cupola.position.y=6.5;vela.add(cupola);
+ const fili=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(-4.6,5.6,0),new THREE.Vector3(0,0,0),new THREE.Vector3(4.6,5.6,0),new THREE.Vector3(0,0,0),new THREE.Vector3(0,5.8,2.6),new THREE.Vector3(0,0,0),new THREE.Vector3(0,5.8,-2.6)]),new THREE.LineBasicMaterial({color:0x333333}));
+ vela.add(fili);vela.visible=false;
+ return {g,vela}}
+let P=creaPilota(TUTE[scelta]);scene.add(P.g);scene.add(P.vela);
+function cambiaPilota(i){scene.remove(P.g);scene.remove(P.vela);P=creaPilota(TUTE[i]);scene.add(P.g);scene.add(P.vela)}
+
+/* ======================= AUDIO ======================= */
+let AC=null,ventoG=null,ventoF=null,muto=false;
+try{muto=localStorage.getItem('tutaMuto')==='1'}catch(e){}
+$('#audio').textContent=muto?'🔇':'🔊';
+function audio(){if(AC)return;try{AC=new (window.AudioContext||window.webkitAudioContext)();
+ const buf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate),d=buf.getChannelData(0);let l=0;for(let i=0;i<d.length;i++){l=(l+.02*(Math.random()*2-1))/1.02;d[i]=l*3.5}
+ const src=AC.createBufferSource();src.buffer=buf;src.loop=true;ventoF=AC.createBiquadFilter();ventoF.type='bandpass';ventoF.Q.value=.7;ventoF.frequency.value=400;
+ ventoG=AC.createGain();ventoG.gain.value=0;src.connect(ventoF);ventoF.connect(ventoG);ventoG.connect(AC.destination);src.start()}catch(e){AC=null}}
+function suono(f1,f2,dur,tipo,vol){if(!AC||muto)return;const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=tipo||'sine';
+ o.frequency.setValueAtTime(f1,t);o.frequency.exponentialRampToValueAtTime(f2,t+dur);g.gain.setValueAtTime(vol||.2,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+dur)}
+$('#audio').addEventListener('click',()=>{muto=!muto;$('#audio').textContent=muto?'🔇':'🔊';try{localStorage.setItem('tutaMuto',muto?'1':'0')}catch(e){}});
+
+/* ======================= COMANDI ======================= */
+const K={su:false,giu:false,sx:false,dx:false};
+const J={on:false,id:null,x0:0,y0:0,ix:0,iy:0};
+addEventListener('keydown',e=>{const c=e.code;
+ if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(c))e.preventDefault();
+ if(c==='ArrowUp'||c==='KeyW')K.su=true;else if(c==='ArrowDown'||c==='KeyS')K.giu=true;
+ else if(c==='ArrowLeft'||c==='KeyA')K.sx=true;else if(c==='ArrowRight'||c==='KeyD')K.dx=true;
+ else if((c==='Space'||c==='Enter')&&!e.repeat){if(S&&S.stato==='volo')apri();else if(!$('#menu').classList.contains('hidden'))parti();else if(!$('#fine').classList.contains('hidden'))parti()}});
+addEventListener('keyup',e=>{const c=e.code;
+ if(c==='ArrowUp'||c==='KeyW')K.su=false;else if(c==='ArrowDown'||c==='KeyS')K.giu=false;
+ else if(c==='ArrowLeft'||c==='KeyA')K.sx=false;else if(c==='ArrowRight'||c==='KeyD')K.dx=false});
+addEventListener('blur',()=>{K.su=K.giu=K.sx=K.dx=false;J.on=false;$('#joy').style.display='none'});
+const R=62;
+cv.addEventListener('pointerdown',e=>{audio();if(J.on)return;J.on=true;J.id=e.pointerId;J.x0=e.clientX;J.y0=e.clientY;J.ix=J.iy=0;
+ const j=$('#joy');j.style.left=e.clientX+'px';j.style.top=e.clientY+'px';j.style.display=e.pointerType==='mouse'?'none':'block';$('#knob').style.transform='';try{cv.setPointerCapture(e.pointerId)}catch(_){}});
+cv.addEventListener('pointermove',e=>{if(!J.on||e.pointerId!==J.id)return;let dx=e.clientX-J.x0,dy=e.clientY-J.y0;const l=Math.hypot(dx,dy);if(l>R){dx*=R/l;dy*=R/l}
+ J.ix=dx/R;J.iy=dy/R;$('#knob').style.transform=`translate(${dx}px,${dy}px)`});
+function fineJ(e){if(e.pointerId!==J.id)return;J.on=false;J.ix=J.iy=0;$('#joy').style.display='none'}
+cv.addEventListener('pointerup',fineJ);cv.addEventListener('pointercancel',fineJ);
+$('#chute').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();audio();apri()});
+
+/* ======================= VOLO ======================= */
+const G=9.81,DEG=Math.PI/180;
+let T=TUTE[scelta],V0=T.v0,GLIDE=Math.atan(1/T.glide),VSTALLO=T.v0*.45;
+function usaTuta(i){scelta=i;T=TUTE[i];V0=T.v0;GLIDE=Math.atan(1/T.glide);VSTALLO=T.v0*.45;cambiaPilota(i)}
+let S=null;
+let record=0;try{record=+localStorage.getItem('tutaRecord')||0}catch(e){}
+function mostraRecord(){$('#record').textContent=record?`🏆 Il tuo record: ${record} punti`:''}
+mostraRecord();
+const hex=c=>'#'+c.toString(16).padStart(6,'0');
+function stelle(t){const n=Math.round((t.glide-1.3)/.4);return '★'.repeat(n)+'☆'.repeat(Math.max(0,6-n))}
+function disegnaTute(){const box=$('#tute');box.innerHTML='';
+ TUTE.forEach((t,i)=>{const b=document.createElement('button');b.className='tb'+(i===scelta?' sel':'');b.disabled=i>=livello;
+  b.innerHTML=`<i style="background:${hex(t.ala)};border:2px solid ${hex(t.tuta)}"></i>${i>=livello?'🔒 ':''}Livello ${i+1}`;
+  b.addEventListener('click',()=>{usaTuta(i);disegnaTute()});box.appendChild(b)});
+ const t=TUTE[scelta];
+ $('#tutaInfo').innerHTML=`<b>${t.nome}</b> <span class="stelle">${stelle(t)}</span><br>${t.info}<br>`+
+  (t.meta?`🎯 <b>Obiettivo:</b> vola per almeno <b>${distanza(t.meta)}</b> e atterra con il paracadute${scelta===livello-1?' per sbloccare le ali nuove!':'.'}`:'🎯 <b>Obiettivo:</b> il volo più lungo che riesci!')}
+disegnaTute();
+let msgT=0;
+function messaggio(t,dur){const m=$('#msg');m.textContent=t;m.style.opacity=1;msgT=dur||1.6}
+function nuovo(){
+ SEME=Math.random()*6.28;preparaCreste();
+ for(const [,ch] of chunks)togliChunk(ch);guglie=[];anelli=[];
+ aggiornaChunk(0,true);
+ const x0=centro(4);
+ S={stato:'pronto',t:0,x:x0,y:START_Y+.1,d:4,V:3,gam:0,psi:Math.atan2(centro(40)-centro(4),36),phi:0,
+   punti:0,vicino:0,anelli:0,vmax:0,stallo:false,aperto:0,crash:false,fine:false,yApertura:0,suggerito:false,dPrima:4};
+ P.g.visible=true;P.vela.visible=false;
+}
+function parti(){audio();if(AC&&AC.state==='suspended')AC.resume();
+ $('#menu').classList.add('hidden');$('#fine').classList.add('hidden');$('#hud').classList.remove('hidden');
+ nuovo();S.stato='conto';S.t=0;$('#chute').style.display='none';$('#hint').textContent='';}
+function apri(){if(!S||S.stato!=='volo'||S.t<2.5)return;const agl=S.y-suolo(S.x,S.d);
+ S.stato='para';S.yApertura=agl;P.vela.visible=true;P.vela.scale.set(.15,.15,.15);suono(220,90,.5,'sawtooth',.12);
+ $('#chute').style.display='none';$('#hint').textContent='';messaggio(agl<45?'Troppo basso!':'Paracadute aperto!',1.4)}
+function schianto(){S.stato='fine';S.crash=true;suono(160,40,.6,'square',.25);messaggio('💥 Schianto!',2);P.g.visible=false;P.vela.visible=false;
+ if(ventoG)ventoG.gain.value=0;setTimeout(()=>finePartita(),1500)}
+function atterra(){S.stato='fine';let bonus=0,titolo='Atterrato!',sub='';
+ if(S.yApertura>=90){bonus=500;sub='Paracadute aperto alla quota giusta: atterraggio perfetto! +500 punti'}
+ else if(S.yApertura>=45){bonus=250;sub='Atterraggio un po\' veloce, ma tutto bene! +250 punti'}
+ else{bonus=0;titolo='Atterraggio duro!';sub='La prossima volta apri il paracadute più in alto (sopra i 90 m).'}
+ S.punti+=bonus;
+ if(T.meta&&S.d>=T.meta){
+  if(scelta===livello-1&&livello<TUTE.length){livello++;try{localStorage.setItem('tutaLivello',livello)}catch(e){}
+   S.sblocco=TUTE[livello-1];usaTuta(livello-1);titolo='🎉 Livello superato!'}
+  else titolo='🎯 Obiettivo raggiunto!'}
+ else if(T.meta)sub+=(sub?' ':'')+`Per superare il livello devi arrivare a ${distanza(T.meta)}: ne hai fatti ${distanza(S.d)}.`;
+ suono(520,880,.35,'triangle',.18);messaggio('🎉 '+titolo,1.8);S.titolo=titolo;S.sub=sub;if(ventoG)ventoG.gain.value=0;setTimeout(()=>finePartita(),1500)}
+function finePartita(){
+ const p=Math.round(S.punti);
+ $('#fTitolo').textContent=S.crash?'💥 Schianto!':S.titolo;
+ $('#fSub').textContent=S.crash?'Hai toccato la montagna. Tieniti un po\' più alto e apri il paracadute prima di arrivare a terra!':S.sub;
+ $('#fDist').textContent=distanza(S.d);$('#fAnelli').textContent=S.anelli;$('#fVmax').textContent=Math.round(S.vmax*3.6)+' km/h';$('#fPunti').textContent=p;
+ let nuovoRec=false;if(p>record){record=p;nuovoRec=true;try{localStorage.setItem('tutaRecord',p)}catch(e){}}
+ $('#fRecord').textContent=nuovoRec?'🏆 Nuovo record!':`🏆 Record: ${record} punti`;mostraRecord();
+ if(S.sblocco){$('#fSub').innerHTML=`Hai sbloccato: <b>${S.sblocco.nome}</b>! <span class="stelle">${stelle(S.sblocco)}</span><br>${S.sblocco.info}`}
+ $('#ancora').textContent=S.sblocco?'Prova le ali nuove ▶':'Vola ancora ▶';disegnaTute();
+ $('#fine').classList.remove('hidden');$('#hud').classList.add('hidden');$('#chute').style.display='none';$('#hint').textContent=''}
+function distanza(d){return d<1000?Math.round(d)+' m':(d/1000).toFixed(2).replace('.',',')+' km'}
+
+function fisica(dt){
+ const s=S;
+ let pitch=(K.su?1:0)-(K.giu?1:0)-J.iy;pitch=Math.max(-1,Math.min(1,pitch));
+ let roll=(K.dx?1:0)-(K.sx?1:0)+J.ix;roll=Math.max(-1,Math.min(1,roll));
+ if(s.stato==='para'){
+  const a=Math.min(1,dt*1.4);s.V+=(7-s.V)*a;const vz=-8.5;
+  s.gam=Math.atan2(vz,s.V);s.psi+=roll*.55*dt;s.phi+=(roll*.25-s.phi)*Math.min(1,dt*3);
+  s.x+=s.V*Math.sin(s.psi)*dt;s.d+=s.V*Math.cos(s.psi)*dt;s.y+=vz*dt*Math.min(1,s.aperto*1.5+.25);
+  s.aperto=Math.min(1,s.aperto+dt*1.6);
+  return}
+ // angolo di traiettoria voluto
+ const neutro=-GLIDE-3*DEG;
+ if(T.traballa){s.raff=(s.raff||0)+(((Math.random()-.5)*2*T.traballa)-(s.raff||0)*.8)*dt*3;roll=Math.max(-1,Math.min(1,roll+s.raff));pitch+=s.raff*.4}
+ let target=pitch>=0?neutro+pitch*(40*DEG):neutro+pitch*(35*DEG);
+ if(s.V<VSTALLO&&s.t>2.5){target=-55*DEG;if(!s.stallo){s.stallo=true;messaggio('STALLO! Scendi per riprendere velocità',1.8);suono(300,200,.3,'square',.1)}}
+ else if(s.V>26)s.stallo=false;
+ const autorita=Math.min(1.4,.35+s.V/V0);
+ s.gam+=(target-s.gam)*Math.min(1,dt*1.6*autorita);
+ const phiT=roll*55*DEG*T.giro*(s.stallo?.3:1);s.phi+=(phiT-s.phi)*Math.min(1,dt*2.6);
+ const drag=G*Math.sin(GLIDE)*(s.V/V0)*(s.V/V0)/Math.max(.5,Math.cos(s.phi));
+ s.V+=(-G*Math.sin(s.gam)-drag)*dt;s.V=Math.max(2,s.V);
+ s.psi+=G*Math.tan(s.phi)/Math.max(8,s.V)*dt;
+ const ch=Math.cos(s.gam);
+ s.x+=s.V*ch*Math.sin(s.psi)*dt;s.d+=s.V*ch*Math.cos(s.psi)*dt;s.y+=s.V*Math.sin(s.gam)*dt;
+}
+
+function aggiorna(dt){
+ const s=S;s.t+=dt;
+ if(s.stato==='conto'){const n=3-Math.floor(s.t);if(n>0){if($('#msg').textContent!==String(n)){messaggio(String(n),.9);suono(440,440,.12,'sine',.15)}}
+  else{s.stato='volo';s.t=0;s.V=12;s.gam=-50*DEG;messaggio('SALTA! 🪂',1.2);suono(660,990,.25,'sine',.18);$('#chute').style.display='block'}
+  return}
+ if(s.stato!=='volo'&&s.stato!=='para')return;
+ s.dPrima=s.d;
+ const passi=3;for(let i=0;i<passi;i++)fisica(dt/passi);
+ s.vmax=Math.max(s.vmax,s.V);
+ aggiornaChunk(s.d,false);
+ const terra=suolo(s.x,s.d),agl=s.y-terra;
+ if(s.stato==='para'){if(agl<=.4){s.y=terra+.4;atterra()}return}
+ if(agl<.9){schianto();return}
+ for(const g of guglie){if(Math.abs(g.d-s.d)>g.rag+2)continue;const yr=s.y-g.y0;if(yr>g.alt)continue;
+  const r=g.rag*(1-Math.max(0,yr)/g.alt)+.6;if(Math.hypot(g.x-s.x,g.d-s.d)<r){schianto();return}}
+ for(const a of anelli){if(a.preso)continue;if(s.dPrima<a.d&&s.d>=a.d){if(Math.hypot(s.x-a.x,s.y-a.y)<12.5){a.preso=true;a.mesh.material=matAnelloPreso;s.anelli++;s.punti+=150;messaggio('💛 +150',1);suono(880,1320,.25,'triangle',.2)}}}
+ // punti: distanza + volo radente
+ s.punti+=Math.max(0,s.d-s.dPrima);
+ if(agl<45&&s.V>25){const f=(45-agl)/45;s.vicino=f;s.punti+=f*s.V*dt*2}else s.vicino=0;
+ if(!s.suggerito&&s.t>8&&agl<170){s.suggerito=true;$('#hint').textContent='Stai arrivando in basso: tocca 🪂 o premi Spazio per aprire il paracadute!'}
+ if(agl>200&&s.suggerito){$('#hint').textContent=''}
+}
+
+/* ======================= CAMERA E HUD ======================= */
+const camPos=new THREE.Vector3(),camLook=new THREE.Vector3();let camInit=false;
+function disegna(dt){
+ if(!S){renderer.render(scene,camera);return}
+ const s=S;
+ const fwd=new THREE.Vector3(Math.sin(s.psi)*Math.cos(s.gam),Math.sin(s.gam),-Math.cos(s.psi)*Math.cos(s.gam));
+ const pos=new THREE.Vector3(s.x,s.y,-s.d);
+ P.g.position.copy(pos);P.g.rotation.y=-s.psi;P.g.rotation.x=s.stato==='para'?-1.25:s.gam+.12;P.g.rotation.z=-s.phi;
+ if(s.stato==='para'){P.vela.visible=true;P.vela.position.copy(pos);P.vela.rotation.y=-s.psi;const k=.15+.85*Math.min(1,s.aperto);P.vela.scale.set(k,k,k);P.g.position.y+=.2}
+ const hfwd=new THREE.Vector3(Math.sin(s.psi),0,-Math.cos(s.psi));
+ const dist=s.stato==='para'?16:9.5,alto=s.stato==='para'?6:2.8;
+ const want=pos.clone().addScaledVector(hfwd,-dist).add(new THREE.Vector3(0,alto-fwd.y*3,0));
+ const terraCam=suolo(want.x,-want.z);if(want.y<terraCam+2)want.y=terraCam+2;
+ const look=pos.clone().addScaledVector(fwd,18).add(new THREE.Vector3(0,s.stato==='para'?2:3.2,0));
+ if(!camInit||s.stato==='conto'){camPos.copy(want);camLook.copy(look);camInit=true}
+ if(s.stato!=='fine'||!s.crash){const a=Math.min(1,dt*5);camPos.lerp(want,a);camLook.lerp(look,Math.min(1,dt*8))}
+ camera.position.copy(camPos);camera.lookAt(camLook);camera.rotateZ(-s.phi*.35);
+ camera.fov+=((s.stato==='para'?60:62+Math.min(30,(s.V-30)*.45))-camera.fov)*Math.min(1,dt*2);camera.updateProjectionMatrix();
+ renderer.render(scene,camera);
+ // HUD
+ if(s.stato==='volo'||s.stato==='para'){
+  const agl=Math.max(0,s.y-suolo(s.x,s.d));
+  $('#hVel').textContent='💨 '+Math.round(s.V*3.6)+' km/h';
+  const ha=$('#hAlt');ha.textContent='⬇ '+Math.round(agl)+' m';ha.className='pill'+(agl<30&&s.stato==='volo'?' warn':'');
+  $('#hDist').textContent='📏 '+distanza(s.d)+(T.meta?' / '+distanza(T.meta)+(s.d>=T.meta?' ✅':''):'');
+  const hp=$('#hPunti');hp.textContent='⭐ '+Math.round(s.punti)+(s.vicino>.05?' 🔥':'');hp.className='pill'+(s.vicino>.05?' hot':'');
+  $('#hAnelli').textContent='💛 '+s.anelli}
+ if(ventoG&&AC){const v=(s.stato==='volo'?s.V:s.stato==='para'?s.V*.5:0);ventoG.gain.setTargetAtTime(muto?0:Math.min(.5,v/110),AC.currentTime,.1);ventoF.frequency.setTargetAtTime(250+v*16,AC.currentTime,.1)}
+}
+
+function ridimensiona(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+addEventListener('resize',ridimensiona);ridimensiona();
+
+// scena di sfondo nel menu
+nuovo();S.stato='menu';
+let last=performance.now(),menuT=0;
+function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;
+ if(msgT>0){msgT-=dt;if(msgT<=0)$('#msg').style.opacity=0}
+ if(S.stato==='menu'){menuT+=dt;S.psi=Math.atan2(centro(40)-centro(4),36)+Math.sin(menuT*.25)*.5;S.gam=-.15}
+ else aggiorna(dt);
+ disegna(dt);requestAnimationFrame(loop)}
+$('#via').addEventListener('click',parti);$('#ancora').addEventListener('click',parti);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
