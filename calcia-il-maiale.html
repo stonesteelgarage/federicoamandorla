@@ -21,7 +21,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#a9d4f0;font-family:'B
 #metro{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(420px,92vw);background:rgba(20,28,22,.72);border-radius:18px;padding:10px 14px 12px;z-index:6;color:#fff;font-weight:800;font-size:16px;touch-action:none}
 #metro label{display:flex;align-items:center;gap:10px;margin:2px 0 8px}
 #metro label span.t{width:92px;flex:none;text-align:left}
-#metro label b{width:46px;flex:none;text-align:right;font-size:18px}
+#metro label b{width:52px;flex:none;text-align:right;font-size:18px}
 #metro input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:18px;border-radius:9px;background:linear-gradient(90deg,#7ed957,#ffd54a 60%,#e23b2e);outline:none;margin:0}
 #metro input#rAng{background:linear-gradient(90deg,#9fd3ff,#5aa0e8)}
 #metro input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;border-radius:50%;background:#fff;border:3px solid #5b7a3a;box-shadow:0 2px 4px rgba(0,0,0,.5);cursor:pointer}
@@ -57,7 +57,7 @@ td.n{text-align:left;font-weight:800}
 <div id="tabella" class="hidden"></div>
 <div id="msg"></div>
 <div id="metro" class="hidden">
- <label><span class="t">💪 Forza</span><input type="range" id="rPot" min="0" max="100" step="1" value="60" aria-label="Forza del calcio"><b id="vPot">60%</b></label>
+ <label><span class="t">💪 Forza</span><input type="range" id="rPot" min="0" max="1000" step="1" value="60" aria-label="Forza del calcio, da 0 a 1000"><b id="vPot">60</b></label>
  <label><span class="t">📐 Angolo</span><input type="range" id="rAng" min="12" max="70" step="1" value="40" aria-label="Angolo del calcio"><b id="vAng">40°</b></label>
  <button id="bCalcia">⚽ CALCIA!</button>
 </div>
@@ -163,13 +163,13 @@ const Mat=(c,r=.85,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,met
 function texPrato(){const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d');
  for(let i=0;i<8;i++){x.fillStyle=i%2?'#5f9a3c':'#69a643';x.fillRect(i*64,0,64,512)}
  for(let i=0;i<9000;i++){const v=Math.random();x.fillStyle=`rgba(${v<.5?40:120},${v<.5?80:170},${v<.5?20:60},.25)`;x.fillRect(Math.random()*512,Math.random()*512,1.5,3)}
- const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(60,8);t.anisotropy=8;t.encoding=THREE.sRGBEncoding;return t}
-const prato=new THREE.Mesh(new THREE.PlaneGeometry(1200,160),new THREE.MeshStandardMaterial({map:texPrato(),roughness:.95}));
-prato.rotation.x=-Math.PI/2;prato.position.set(500,0,0);prato.receiveShadow=true;scene.add(prato);
+ const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(120,8);t.anisotropy=8;t.encoding=THREE.sRGBEncoding;return t}
+const prato=new THREE.Mesh(new THREE.PlaneGeometry(2400,160),new THREE.MeshStandardMaterial({map:texPrato(),roughness:.95}));
+prato.rotation.x=-Math.PI/2;prato.position.set(1100,0,0);prato.receiveShadow=true;scene.add(prato);
 // colline lontane
-{const g=new THREE.PlaneGeometry(1600,600,80,30);g.rotateX(-Math.PI/2);const p=g.attributes.position;
+{const g=new THREE.PlaneGeometry(2800,600,140,30);g.rotateX(-Math.PI/2);const p=g.attributes.position;
  for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i);const d=Math.max(0,Math.abs(z)-90);p.setY(i,d>0?(Math.sin(x/60)*8+Math.sin(x/23+z/40)*4+12)*Math.min(1,d/60)-.5:-.5)}
- g.computeVertexNormals();const m=new THREE.Mesh(g,Mat(0x6f9a4a,1));m.position.x=500;scene.add(m)}
+ g.computeVertexNormals();const m=new THREE.Mesh(g,Mat(0x6f9a4a,1));m.position.x=1100;scene.add(m)}
 
 // alberi (abeti e latifoglie) ai lati
 function unisci(parti){const pos=[],nor=[],col=[];
@@ -180,13 +180,13 @@ const T_=(g,x,y,z)=>{g.translate(x,y,z);return g};
 const geoLatif=unisci([[T_(new THREE.CylinderGeometry(.25,.42,3.4,7),0,1.7,0),0x5e4128],[T_(new THREE.IcosahedronGeometry(2.1,1),0,4.9,0),0x3d7634],[T_(new THREE.IcosahedronGeometry(1.6,1),1.3,4.2,.5),0x47843b],[T_(new THREE.IcosahedronGeometry(1.7,1),-1.2,4.4,-.6),0x417c37],[T_(new THREE.IcosahedronGeometry(1.4,1),.2,6.3,.2),0x4d8c40]]);
 const geoAbete=unisci([[T_(new THREE.CylinderGeometry(.25,.4,2.6,7),0,1.3,0),0x5b3b22],[T_(new THREE.ConeGeometry(2.8,3.8,10),0,3.7,0),0x1f4325],[T_(new THREE.ConeGeometry(2.2,3.4,10),0,5.6,0),0x26502b],[T_(new THREE.ConeGeometry(1.5,3,9),0,7.4,0),0x2d5c31]]);
 {const mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.9});
- for(const [geo,N] of [[geoLatif,90],[geoAbete,70]]){const im=new THREE.InstancedMesh(geo,mat,N);const M=new THREE.Matrix4(),q=new THREE.Quaternion(),s=new THREE.Vector3(),v=new THREE.Vector3(),c=new THREE.Color();
-  for(let i=0;i<N;i++){const lato=Math.random()<.5?-1:1,x=-40+Math.random()*560,z=lato*(24+Math.random()*45),k=.8+Math.random()*.7;
+ for(const [geo,N] of [[geoLatif,270],[geoAbete,210]]){const im=new THREE.InstancedMesh(geo,mat,N);const M=new THREE.Matrix4(),q=new THREE.Quaternion(),s=new THREE.Vector3(),v=new THREE.Vector3(),c=new THREE.Color();
+  for(let i=0;i<N;i++){const lato=Math.random()<.5?-1:1,x=-40+Math.random()*1600,z=lato*(24+Math.random()*45),k=.8+Math.random()*.7;
    q.setFromEuler(new THREE.Euler(0,Math.random()*6.3,0));s.set(k,k*(.9+Math.random()*.3),k);v.set(x,0,z);M.compose(v,q,s);im.setMatrixAt(i,M);const l=.8+Math.random()*.35;c.setRGB(l,l,l);im.setColorAt(i,c)}
   im.castShadow=true;scene.add(im)}}
 // staccionate lungo il campo
 {const legno=Mat(0x8a6a48,.9);const geoPalo=new THREE.BoxGeometry(.14,1.2,.14),geoAsse=new THREE.BoxGeometry(3,.12,.06);
- const N=170,pali=new THREE.InstancedMesh(geoPalo,legno,N*2),assi=new THREE.InstancedMesh(geoAsse,legno,N*4);const M=new THREE.Matrix4();let a=0,b=0;
+ const N=530,pali=new THREE.InstancedMesh(geoPalo,legno,N*2),assi=new THREE.InstancedMesh(geoAsse,legno,N*4);const M=new THREE.Matrix4();let a=0,b=0;
  for(let i=0;i<N;i++)for(const z of [-16,16]){const x=-20+i*3;M.makeTranslation(x,.6,z);pali.setMatrixAt(a++,M);for(const y of [.45,.95]){M.makeTranslation(x+1.5,y,z);assi.setMatrixAt(b++,M)}}
  pali.castShadow=assi.castShadow=true;scene.add(pali);scene.add(assi)}
 // fienile rosso
@@ -200,7 +200,7 @@ function cartello(m){const c=document.createElement('canvas');c.width=128;c.heig
  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;const g=new THREE.Group();
  const tab=new THREE.Mesh(new THREE.PlaneGeometry(1.6,.8),new THREE.MeshStandardMaterial({map:t,roughness:.8,side:THREE.DoubleSide}));tab.position.y=1.3;g.add(tab);
  const pal=new THREE.Mesh(new THREE.BoxGeometry(.1,1,.1),Mat(0x6b5038));pal.position.y=.5;g.add(pal);g.position.set(m,0,-7.5);g.rotation.y=.25;g.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(g)}
-for(let m=10;m<=300;m+=10)cartello(m);
+for(let m=10;m<=300;m+=10)cartello(m);for(let m=350;m<=1500;m+=50)cartello(m);
 
 /* ======================= MAIALE ======================= */
 function creaMaiale(){
@@ -288,7 +288,7 @@ const tee=new THREE.Mesh(new THREE.CylinderGeometry(.35,.5,.12,20),Mat(0x6b4a2a,
 let ost=[],ostMesh=[];
 function nuovoCampo(){for(const m of ostMesh)scene.remove(m);ostMesh=[];ost=[];let x=24+Math.random()*12;
  const fieno=Mat(0xd8b65a,.95),fango=new THREE.MeshStandardMaterial({color:0x4f3420,roughness:.35});
- while(x<300){const tipo=Math.random()<.5?'fieno':'fango';
+ while(x<1000){const tipo=Math.random()<.5?'fieno':'fango';
   const z=(Math.random()*2-1)*7;
   if(tipo==='fieno'){const r=.75,m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,1.3,22),fieno);m.rotation.x=Math.PI/2;m.position.set(x,r,z);m.castShadow=m.receiveShadow=true;scene.add(m);ostMesh.push(m);
    ost.push({tipo,x,z,w:1.7,lz:1.1})}
@@ -319,7 +319,7 @@ function aggiornaHud(){const p=S.gioc[S.turno];$('#hTurno').textContent=`${p.nom
 function tocca(){audio();if(!S.gioc)return;
  if(S.fase==='fermo'&&S.t>.6)prossimo()}
 // mira: two fixed sliders (forza, angolo) and the CALCIA! button; the values stay for the next kick
-function leggiMira(){const rp=$('#rPot'),ra=$('#rAng');S.pot=rp.value/100;S.ang=(ra.value-12)/58;$('#vPot').textContent=rp.value+'%';$('#vAng').textContent=ra.value+'°'}
+function leggiMira(){const rp=$('#rPot'),ra=$('#rAng');S.pot=rp.value/100;S.ang=(ra.value-12)/58;$('#vPot').textContent=rp.value;$('#vAng').textContent=ra.value+'°'}
 ['#rPot','#rAng'].forEach(id=>{const el=$(id);el.addEventListener('input',()=>{audio();leggiMira()});el.addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='Enter'){e.preventDefault();e.stopPropagation();calciaOra()}})});
 function calciaOra(){audio();if(!S.gioc||S.fase!=='mira')return;leggiMira();S.fase='calcio';S.t=0;tono(700,900,.08,'triangle',.12);$('#metro').classList.add('hidden')}
 $('#bCalcia').addEventListener('click',e=>{e.preventDefault();calciaOra()});
@@ -332,8 +332,8 @@ addEventListener('keydown',e=>{const c=e.code;
  if(c==='ArrowLeft')KS.sx=true;else if(c==='ArrowRight')KS.dx=true;else if(c==='ArrowUp')KS.su=true;else if(c==='ArrowDown')KS.giu=true;else return;e.preventDefault()});
 addEventListener('keyup',e=>{const c=e.code;if(c==='ArrowLeft')KS.sx=false;else if(c==='ArrowRight')KS.dx=false;else if(c==='ArrowUp')KS.su=false;else if(c==='ArrowDown')KS.giu=false});
 addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='Enter'){if(!$('#menu').classList.contains('hidden')||!$('#fine').classList.contains('hidden'))return;e.preventDefault();if(!e.repeat){if(S.fase==='mira')calciaOra();else tocca()}}});
-function calcia(){const p=S.p;const v=11+S.pot*27,a=(12+S.ang*58)*Math.PI/180;
- p.vx=v*Math.cos(a);p.vy=v*Math.sin(a);p.vz=(Math.random()-.5)*1.2;p.vr=-(3+S.pot*7);p.spin=(Math.random()-.5)*3;p.stato='vola';
+function calcia(){const p=S.p;const v=11+27*Math.pow(S.pot,S.pot>1?.55:1),a=(12+S.ang*58)*Math.PI/180;
+ p.vx=v*Math.cos(a);p.vy=v*Math.sin(a);p.vz=(Math.random()-.5)*1.2;p.vr=-(3+Math.min(S.pot,1.6)*7);p.spin=(Math.random()-.5)*3;p.stato='vola';
  S.fase='volo';S.t=0;S.energia=1;S.guidaAvviso=false;oink(false);rumore(.12,1800,.35);
  S.strillo=.35;messaggio(['Che calcio!','Aiutooo! 🐷','Rosolino ha paura!','Bel tiro!'][Math.floor(Math.random()*4)],1.2)}
 function prossimo(){S.turno++;if(S.turno>=S.gioc.length){S.turno=0;S.tiro++}if(S.tiro>=TIRI){fine();return}nuovoTiro()}
@@ -359,7 +359,7 @@ function aggiorna(dt){if(!S.gioc)return;S.t+=dt;
  if(p.stato==='vola'||p.stato==='rotola'){
   const passi=4,h=dt/passi;
   for(let i=0;i<passi;i++){
-   if(p.stato==='vola'){const rvx=p.vx-S.vento,sp=Math.hypot(rvx,p.vy),k=.011;
+   if(p.stato==='vola'){const rvx=p.vx-S.vento,sp=Math.hypot(rvx,p.vy),k=.011/Math.pow(Math.max(1,S.pot),1.6);
     const gx=Math.max(-1,Math.min(1,D.ix+(KS.dx?1:0)-(KS.sx?1:0))),gy=Math.max(-1,Math.min(1,D.iy+(KS.giu?1:0)-(KS.su?1:0)));
     if((gx||gy)&&S.energia>0){S.energia=Math.max(0,S.energia-h*.3*Math.max(Math.abs(gx),Math.abs(gy)));
      p.vz+=gx*7*h;if(gy<0&&p.vy<3)p.vy+=-gy*5.5*h;if(gy>0)p.vy-=gy*7*h}
