@@ -2129,9 +2129,14 @@ function testoBordo(t,x,y,size,col,bordo='#fff'){ctx.font=`800 ${size}px "Baloo 
 function hud(){
  const p=S.p;ctx.textBaseline='alphabetic';
  // pannello soldato
- ctx.fillStyle='rgba(255,253,245,.9)';rr(ctx,12,10,262,76,16);ctx.fill();ctx.strokeStyle='#3c7a3c';ctx.lineWidth=3;ctx.stroke();
- ctx.textAlign='left';ctx.fillStyle='#2e5d2e';ctx.font='800 19px "Baloo 2",sans-serif';ctx.fillText('🎖️ '+GRADI[S.grado].n+' '+prof.nome,24,36);
- ctx.font='20px serif';for(let i=0;i<p.max;i++)ctx.fillText(i<p.vita?'❤️':'🤍',24+i*27,70);
+ // grado e nome: se non stanno su una riga vanno a capo (il riquadro si allunga e i cuori restano sotto, sempre visibili)
+ ctx.font='800 19px "Baloo 2",sans-serif';const tg='🎖️ '+GRADI[S.grado].n,tn=prof.nome,PW=262,TW=PW-26;
+ let righe=[tg+' '+tn];if(ctx.measureText(righe[0]).width>TW)righe=[tg,tn];
+ let fs=19;while(fs>13&&righe.some(r=>{ctx.font=`800 ${fs}px "Baloo 2",sans-serif`;return ctx.measureText(r).width>TW}))fs--;
+ const ph=76+(righe.length-1)*22;
+ ctx.fillStyle='rgba(255,253,245,.9)';rr(ctx,12,10,PW,ph,16);ctx.fill();ctx.strokeStyle='#3c7a3c';ctx.lineWidth=3;ctx.stroke();
+ ctx.textAlign='left';ctx.fillStyle='#2e5d2e';ctx.font=`800 ${fs}px "Baloo 2",sans-serif`;righe.forEach((r,i)=>ctx.fillText(r,24,36+i*22));
+ ctx.font='20px serif';const yc=70+(righe.length-1)*22;for(let i=0;i<p.max;i++)ctx.fillText(i<p.vita?'❤️':'🤍',24+i*27,yc);
  if(p.doppio>0){const w=178;ctx.fillStyle=p.doppio<5&&Math.floor(S.t*6)%2?'rgba(245,127,23,.6)':'rgba(245,127,23,.92)';rr(ctx,VW-w-12,64,w,30,12);ctx.fill();
   ctx.fillStyle='#fff';ctx.font='800 16px "Baloo 2",sans-serif';ctx.textAlign='left';ctx.fillText(`👟 Salto doppio ${Math.ceil(p.doppio)}s`,VW-w,85)}
  // punti
@@ -2145,8 +2150,8 @@ function hud(){
  let pillR=0;
  // meteo: per qualche secondo il nome («🌙 Notte · 🌧️ Pioggia»), poi solo le icone
  {const ban=MET.banner>0,txt=ban?MET.txt:ORE[MET.ora].e+' '+iconaTempo();ctx.font='800 16px "Baloo 2",sans-serif';ctx.textAlign='left';
-  const w=Math.min(VW-24,ctx.measureText(txt).width+20);ctx.fillStyle=ban?'rgba(255,243,196,.95)':'rgba(255,253,245,.9)';rr(ctx,12,92,w,28,12);ctx.fill();
-  ctx.strokeStyle='#3c7a3c';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#2e5d2e';ctx.fillText(txt,22,112,w-20);pillR=12+w;ctx.textAlign='center'}
+  const w=Math.min(VW-24,ctx.measureText(txt).width+20);ctx.fillStyle=ban?'rgba(255,243,196,.95)':'rgba(255,253,245,.9)';rr(ctx,12,16+ph,w,28,12);ctx.fill();
+  ctx.strokeStyle='#3c7a3c';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#2e5d2e';ctx.fillText(txt,22,36+ph,w-20);pillR=12+w;ctx.textAlign='center'}
  if(S.boss){const m=S.boss,w=Math.min(440,VW-40),x=VW/2-w/2,y=172;
   ctx.fillStyle='rgba(40,0,0,.78)';rr(ctx,x-8,y-28,w+16,52,12);ctx.fill();
   ctx.textAlign='center';ctx.font='800 17px "Baloo 2",sans-serif';ctx.fillStyle='#fff';ctx.fillText(`👹 ${m.n} · mancano ${Math.ceil(m.hp)} colpi`,VW/2,y-8,w);
@@ -2283,15 +2288,27 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{const c=e.code;
  if(c==='ArrowLeft'||c==='KeyA')K.sx=false;else if(c==='ArrowRight'||c==='KeyD')K.dx=false;else if(c==='Space'||c==='KeyX'||c==='KeyJ'||c==='Enter')K.fuoco=false});
-addEventListener('blur',()=>{K.sx=K.dx=K.fuoco=false});
+addEventListener('blur',()=>{K.sx=K.dx=K.fuoco=false;if(typeof rilasciaTutti==='function')rilasciaTutti()});
 cv.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&giocando){audio();K.fuoco=true}});
 addEventListener('pointerup',e=>{if(e.pointerType==='mouse')K.fuoco=false});
+// Pulsanti touch: ogni pulsante ricorda quale dito lo tiene premuto. Su alcuni tablet il «pointerup» arriva
+// alla finestra e non al pulsante (dito scivolato via, due dita insieme, gesto di sistema): per questo il rilascio
+// è ascoltato anche sulla finestra, e tutto si sblocca se la pagina perde il focus o va in secondo piano.
+const TASTI=new Map();// pointerId -> {b,k}
+function rilascia(id){const t=TASTI.get(id);if(!t)return;TASTI.delete(id);
+ if(![...TASTI.values()].some(o=>o.b===t.b)){t.b.classList.remove('on');if(t.k in K)K[t.k]=false}}
+function rilasciaTutti(){for(const id of [...TASTI.keys()])rilascia(id);document.querySelectorAll('#touch [data-k].on').forEach(b=>b.classList.remove('on'));K.sx=K.dx=K.fuoco=false}
 document.querySelectorAll('#touch [data-k]').forEach(b=>{const k=b.dataset.k;
- b.addEventListener('pointerdown',e=>{e.preventDefault();audio();b.classList.add('on');if(k==='salta')salta();else if(k==='cerca')cerca();else K[k]=true});
- const off=()=>{b.classList.remove('on');if(k in K)K[k]=false};
- ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,off));
+ b.addEventListener('pointerdown',e=>{e.preventDefault();audio();try{b.setPointerCapture(e.pointerId)}catch(_){}
+  TASTI.set(e.pointerId,{b,k});b.classList.add('on');if(k==='salta')salta();else if(k==='cerca')cerca();else K[k]=true});
+ ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,e=>rilascia(e.pointerId)));
  b.addEventListener('contextmenu',e=>e.preventDefault());
 });
+['pointerup','pointercancel'].forEach(ev=>addEventListener(ev,e=>rilascia(e.pointerId),true));
+addEventListener('touchend',e=>{if(!e.touches||e.touches.length===0)rilasciaTutti()},true);
+addEventListener('touchcancel',rilasciaTutti,true);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)rilasciaTutti()});
+addEventListener('pagehide',rilasciaTutti);
 
 // ======================= LOOP =======================
 const pv=$('#anteprima'),pctx=pv.getContext('2d');

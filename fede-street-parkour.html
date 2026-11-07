@@ -789,107 +789,321 @@ function partUpdate(dt){for(let i=0;i<PS.length;i++){const p=PS[i];if(p.l<=0)con
 </script>
 <script>
 'use strict';
-/* ======================= POSE (scheletro con articolazioni) =======================
-   Angoli in radianti: 0 = verso il basso, positivo = in avanti (verso dove guarda Fede).
-   t = coscia, s = stinco, u = braccio, f = avambraccio; 1 = arti davanti, 2 = arti dietro. */
-const PT={lean:0,hy:-22,hx:0,t1:0,s1:0,t2:0,s2:0,u1:0,f1:0,u2:0,f2:0,rot:0,auto:1,piv:0,board:0};
-const PD={lean:0,hy:-22,hx:0,t1:0,s1:0,t2:0,s2:0,u1:0,f1:0,u2:0,f2:0,rot:0,piv:0,board:0};
-const PK=['lean','hy','hx','t1','s1','t2','s2','u1','f1','u2','f2','rot'];
-function ps(lean,t1,s1,t2,s2,u1,f1,u2,f2){PT.lean=lean;PT.t1=t1;PT.s1=s1;PT.t2=t2;PT.s2=s2;PT.u1=u1;PT.f1=f1;PT.u2=u2;PT.f2=f2;PT.auto=1}
-function poseTarget(){const st=P.st,sp=Math.abs(P.vx),T=LV?LV.T:0,dir=(K.r?1:0)-(K.l?1:0);
- PT.rot=0;PT.hx=0;PT.piv=0;PT.board=P.board&&(st==='ride'||st==='bair'||st==='grind'||st==='tog')?1:0;
- switch(st){
- case 'run':{
-  if(P.hardT>0){ps(.55,1.25,-.55,.95,-1.05,.9,1.3,.6,1.0);break}
-  if(P.landT>0){ps(.35,.9,-.55,.6,-.9,.5,1.0,-.3,.2);break}
-  if(sp<8){const b=Math.sin(T*2.2)*.03;
-   if(P.edgeT>0){const w=Math.sin(T*18);ps(-.12+w*.08,.15,0,-.1,0,2.2+w*.5,2.6+w*.4,1.9-w*.5,2.3);break}
-   ps(.04+b,.08,.02,-.08,-.02,.15+b,.35,-.12,.05);break}
-  if(K.s&&sp<=WALK+5){const p=P.ph,a1=.5*.75*Math.sin(p),a2=-a1;
-   ps(.02,a1,a1-.25-.4*Math.max(0,Math.cos(p)),a2,a2-.25-.4*Math.max(0,-Math.cos(p)),.95,1.35,.75,1.1);break}
-  if(P.skidT>0&&sp>60){ps(-.25,.6,.5,-.1,-.6,1.3,1.6,.9,1.3);break}
-  const a=clamp(sp/RUN,.3,1),p=P.ph,t1=a*.95*Math.sin(p),t2=-t1;
-  const b1=.2+a*(.3+.95*Math.max(0,Math.cos(p))),b2=.2+a*(.3+.95*Math.max(0,-Math.cos(p)));
-  const u1=-a*.95*Math.sin(p);
-  ps(.06+.2*a,t1,t1-b1,t2,t2-b2,u1,u1+.5+.9*a,-u1,-u1+.5+.9*a);break}
- case 'turn':{const k=P.t/.26;ps(k<.55?-.35:.15,.75,.65,-.25,-.75,1.3,1.7,-.4,-.1);break}
- case 'crouch':{const w=Math.sin(P.ph)*.25*Math.min(1,sp/CRAWL);ps(1.0,1.25+w,-.75,1.0-w,-1.05,1.0+w,1.4,.7-w,1.1);break}
- case 'slide':ps(-.55,1.45,1.5,.9,-.7,.6,1.0,-1.7,-1.6);PT.auto=0;PT.hy=-9;break;
- case 'roll':ps(1.1,2.1,-.5,1.9,-.7,1.3,2.4,1.1,2.2);PT.auto=0;PT.hy=-13;PT.piv=1;PT.rot=TAU*Math.min(1,P.t/.45);break;
- case 'hurt':case 'slip':ps(st==='slip'?-.6:-.25,1.45,1.5,1.35,1.2,-.5,-.3,-.6,-.4);PT.auto=0;PT.hy=-6;PT.board=0;break;
- case 'tog':ps(.9,1.2,-.9,.8,-1.2,.3,.2,-.2,.1);PT.board=0;break;
- case 'air':
-  if(P.wallT>0&&dir===P.wallSide&&P.vy>0)ps(.1,1.1,.2,.25,-.4,2.4,2.2,2.6,2.6);
-  else if(P.vy<0){if(P.jvx>150)ps(.3,1.15,-.1,-.4,-1.05,-.8,-.2,1.1,1.9);else ps(.1,.9,-.3,.45,-.6,2.5,2.8,2.3,2.7)}
-  else ps(.05,.5,.05,-.15,-.55,1.9,2.3,1.5,2.0);
-  PT.auto=0;PT.hy=-23;break;
- case 'hang':{const w=Math.sin(T*3)*.1*Math.exp(-P.t*1.2);ps(-.05,.35+w,.12+w,.05+w,-.12+w,Math.PI-.12,Math.PI-.04,Math.PI-.22,Math.PI-.1);PT.auto=0;PT.hy=-22;break}
- case 'bar':{const m=Math.sin(P.ph)*.28,w=Math.sin(T*3)*.08;ps(0,.2+w,.05+w,-.1+w,-.25+w,Math.PI-.1+m,Math.PI-.05+m,Math.PI-.1-m,Math.PI-.05-m);PT.auto=0;PT.hy=-22;break}
- case 'tween':{const k=Math.min(1,P.t/P.dur);
-  if(P.tk==='climb'){if(k<.5)ps(.45,1.7,-.3,.3,-.5,.4,.1,.3,.05);else ps(.3,.9,-.6,.4,-.9,.6,1,.2,.4);PT.auto=k>.6?1:0;PT.hy=-22}
-  else if(P.tk==='lower'||P.tk==='lowbar'){if(k<.45)ps(.5,1.6,-.4,.4,-.5,.4,.1,.3,.05);else ps(-.05,.3,.1,0,-.1,Math.PI-.12,Math.PI-.05,Math.PI-.2,Math.PI-.1);PT.auto=0;PT.hy=-22}
-  else if(P.tk==='vault'){ps(1.1,1.7,.4,1.5,.1,.15,.05,1.2,1.5);PT.auto=0;PT.hy=-20}
-  else ps(.6,1.5,-.4,.5,-.8,.4,.3,.2,.2);
-  break}
- case 'ride':{const b=Math.min(1,sp/BMAX);
-  if(K.d)ps(.6,.95,-.65,.35,-1.25,1.3,1.6,-1.0,-1.3);else ps(.15+b*.15,.5,-.3,-.05,-.8,1.3,1.6,-.9,-1.2);
-  if(sp<260&&dir===P.f&&dir){const q=Math.sin(P.push);PT.t2=-.15+.55*q;PT.s2=PT.t2-.15;PT.lean=.3;PT.u1=.4-.5*q;PT.f1=.8;PT.u2=-.4+.5*q;PT.f2=-.1}
-  if(P.bumpT>0){PT.u1=2.4;PT.u2=2.4;PT.lean=-.2}
-  if(P.ramp)PT.rot=Math.atan(rampSlope(P.ramp,P.x)*P.f);
-  break}
- case 'bair':ps(.3,1.15,-.55,.55,-1.15,1.6,2.0,-1.2,-.8);if(P.qp){PT.u1=.7;PT.f1=1.0}break;
- case 'grind':ps(.45,.7,-.4,.2,-.9,1.6,1.6,-1.6,-1.6);break;
- }
- if(PT.auto){const l1=10*Math.cos(PT.t1)+10.5*Math.cos(PT.s1),l2=10*Math.cos(PT.t2)+10.5*Math.cos(PT.s2);PT.hy=-(PT.board?l1:Math.max(l1,l2))-2-(PT.board?6:0)}}
-function poseUpdate(dt){poseTarget();const k=1-Math.exp(-dt*(P.st==='run'?26:18));
- if(P.st!=='roll'&&PD.rot>Math.PI)PD.rot-=TAU;
- for(let i=0;i<PK.length;i++){const n=PK[i];PD[n]+=(PT[n]-PD[n])*k}
- if(P.st==='roll')PD.rot=PT.rot;PD.piv=PT.piv;PD.board=PT.board}
+/* ======================= RIG E ANIMAZIONE =======================
+   Scheletro con proporzioni reali (circa 7 teste): bacino, colonna, collo, testa, cosce, stinchi, piedi,
+   braccia, avambracci, mani. Coordinate locali: origine ai piedi, x in avanti (dove guarda), y in basso.
+   Angoli: 0 = verso il basso, positivo = in avanti; ginocchio e gomito = flessione (>= 0).
+   Le pose sono fotogrammi chiave presi dalla biomeccanica (contatto, carico, passaggio, spinta) e
+   interpolati nel tempo (Catmull-Rom, passo fisso: indipendente dai fotogrammi al secondo). Tra uno stato
+   e l'altro c'è una dissolvenza di 0,05-0,2 s. IK a due ossa: i piedi restano fermi a terra (anche su
+   scalini e rampe) e sullo skate, le mani prendono esattamente il bordo o il tubo. Nessuna allocazione
+   per fotogramma: tutto vive in array preallocati. */
+const THL=11.4,SHL=11.2,ANK=2,SPL=14.2,SHO=12.6,NKL=4.6,UAL=8.4,FAL=7.1;
+const NCH=16,C_X=0,C_Y=1,C_SP=2,C_HD=3,C_T1=4,C_K1=5,C_A1=6,C_T2=7,C_K2=8,C_A2=9,C_U1=10,C_E1=11,C_U2=12,C_E2=13,C_PR=14,C_BR=15;
+const sstep=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
+function mkActor(pal){return{pal,cur:new Float32Array(NCH),tg:new Float32Array(NCH),sn:new Float32Array(NCH),J:new Float32Array(32),ik:new Float32Array(12),
+ key:'',bt:1,bd:.15,T:0,ph:0,bph:0,bmv:0,phx:0,pw:0,rot:0,piv:-11,bOn:0,bWas:0,bx:0,by:-3.6,ba:0,bf:0,
+ comp:0,compV:0,lastVy:0,wasAir:false,acc:0,pvx:0,pY:0,pVy:0,hem:0,hemV:0,str:0,strV:0}}
+function setP(c,x,y,sp,hd,t1,k1,a1,t2,k2,a2,u1,e1,u2,e2){c[0]=x;c[1]=y;c[2]=sp;c[3]=hd;c[4]=t1;c[5]=k1;c[6]=a1;c[7]=t2;c[8]=k2;c[9]=a2;c[10]=u1;c[11]=e1;c[12]=u2;c[13]=e2;c[14]=0;c[15]=0}
+function mixP(o,a,b,w){for(let j=0;j<NCH;j++)o[j]=a[j]+(b[j]-a[j])*w}
+// tabelle di fotogrammi chiave: [t, x,y,colonna,testa, coscia1,ginocchio1,piede1, coscia2,ginocchio2,piede2, braccio1,gomito1, braccio2,gomito2]
+function KT(rows){return rows.map(r=>{const f=new Float32Array(NCH+1);f.set(r);return f})}
+function samp(tab,k,out){const n=tab.length;
+ if(k<=tab[0][0]){for(let j=0;j<NCH;j++)out[j]=tab[0][j+1];return}
+ if(k>=tab[n-1][0]){for(let j=0;j<NCH;j++)out[j]=tab[n-1][j+1];return}
+ let i=0;while(i<n-2&&k>tab[i+1][0])i++;
+ const a=tab[i>0?i-1:0],b=tab[i],c=tab[i+1],d=tab[i+2<n?i+2:n-1],u=(k-b[0])/(c[0]-b[0]),u2=u*u,u3=u2*u;
+ for(let j=1;j<=NCH;j++){const p0=a[j],p1=b[j],p2=c[j],p3=d[j];out[j-1]=.5*(2*p1+(p2-p0)*u+(2*p0-5*p1+4*p2-p3)*u2+(3*p1-p0-3*p2+p3)*u3)}}
+const ST=[0,-24.3,.04,0, .06,.06,0, -.05,.06,0, .1,.2,-.05,.15];
+const HG=[3.6,-24.6,.07,-.15, .15,.3,-.5, -.05,.4,-.6, 3,.1,3,.1];
+const KT_CLIMB=KT([[0,...HG],[.22,3.0,-21.8,.15,-.3, .8,1.4,-.3, .35,.9,-.5, 3,.5,3,.5],[.5,3.4,-17.6,.85,-.5, 1.9,2.4,0, .25,.6,-.5, 2.6,1.2,2.6,1.2],
+ [.75,1.0,-19.6,.7,-.4, 1.2,1.6,0, 1.2,1.9,-.2, .7,.9,.5,.9],[1,...ST]]);
+const KT_MANTLE=KT([[0,0,-23.6,.2,-.1, .4,.5,0, -.2,.4,0, 1.6,.6,1.4,.6],[.35,2.2,-20.5,.8,-.45, 1.7,2.3,0, .5,1.1,-.4, 2.2,1.2,2.2,1.2],
+ [.7,.5,-20.5,.6,-.3, 1.1,1.5,0, 1.2,1.9,-.2, 1.0,1.0,1.0,1.0],[1,...ST]]);
+const KT_VAULT=KT([[0,0,-22.5,.35,-.1, .7,.8,0, -.4,.6,-.3, 1.6,.4,.8,.6],[.3,1,-20,.6,-.3, 1.6,2.0,.2, 1.3,1.8,.1, 2.0,.2,2.4,.5],
+ [.6,0,-19,.45,-.2, 1.7,1.6,.3, 1.5,1.3,.2, .8,.3,2.6,.4],[1,0,-22.5,.3,-.1, .9,.6,.1, .2,.8,-.1, 1.4,.6,.9,.6]]);
+const KT_LOWER=KT([[0,...ST],[.3,1,-14,.9,-.3, 1.6,2.4,0, 1.3,2.2,-.1, .9,.3,.9,.3],[.45,2.5,-19.5,.45,-.3, 1.0,1.6,-.3, .6,1.2,-.4, 2.6,.9,2.6,.9],
+ [.72,3.4,-23,.2,-.2, .4,.6,-.5, .1,.6,-.6, 3,.4,3,.4],[1,...HG]]);
+const KT_ROLL=KT([[0,1,-14,1.1,.3, 1.4,1.8,0, .9,1.5,-.2, .9,.2,.9,.2],[.2,0,-11,1.6,.5, 2.1,2.5,.2, 1.9,2.4,.1, 1.8,1.2,1.6,1.3],
+ [.8,0,-11,1.6,.5, 2.1,2.5,.2, 1.9,2.4,.1, 1.8,1.2,1.6,1.3],[1,0,-15,.7,.1, 1.2,1.4,.1, .6,1.2,0, 1.0,.6,.6,.6]]);
+const KT_HURT=KT([[0,0,-23,-.5,-.3, .4,.3,.2, -.2,.4,0, 2.4,.4,2.0,.5],[.25,-1,-9,-.3,-.2, 1.4,1.1,.4, 1.2,1.6,.2, -.4,.3,-.6,.3],
+ [.6,0,-11,.6,0, 1.5,2.3,0, 1.2,2.2,0, .6,.4,.3,.4],[1,...ST]]);
+const KT_SLIP=KT([[0,0,-20,-.7,-.4, 1.2,.2,.6, .6,.3,.3, 2.6,.3,2.2,.4],[.3,-1,-8,-.4,-.2, 1.5,.6,.4, 1.3,1.2,.3, -.5,.2,-.7,.2],
+ [.65,0,-11,.6,0, 1.5,2.3,0, 1.2,2.2,0, .6,.4,.3,.4],[1,...ST]]);
+const KT_TOG=KT([[0,...ST],[.5,1,-15,.95,-.3, 1.5,2.3,0, 1.1,2.1,0, .7,.2,.3,.3],[1,0,-23,.15,-.1, .2,.3,0, -.1,.3,0, .4,.4,-.3,.3]]);
+const PA=new Float32Array(NCH),PB=new Float32Array(NCH);
 
-/* ======================= DISEGNO DEL PERSONAGGIO ======================= */
-const PAL_F={helmet:'#ff5a36',stripe:'#ffffff',hood:'#2f7de1',hoodB:'#2160b0',pants:'#33415c',pantsB:'#262f45',pad:'#1d1d1d',padH:'#666',shoe:'#ffffff',sole:'#e23b2e',skin:'#f5c9a0',deck:'#ffcf33',grip:'#3a3a3a',wheel:'#e8f0ff',tail:0};
-const PAL_N={helmet:'#9b5de5',stripe:'#ffe066',hood:'#ff70a6',hoodB:'#d9508a',pants:'#3d3d6b',pantsB:'#2c2c52',pad:'#1d1d1d',padH:'#666',shoe:'#ffffff',sole:'#00bbf9',skin:'#e8b088',deck:'#00bbf9',grip:'#333',wheel:'#ffffff',tail:1};
+function limbFK(J,i,a1,a2,l1,l2){J[i+2]=J[i]+l1*Math.sin(a1);J[i+3]=J[i+1]+l1*Math.cos(a1);J[i+4]=J[i+2]+l2*Math.sin(a2);J[i+5]=J[i+3]+l2*Math.cos(a2)}
+// J: bacino 0, anca/ginocchio/caviglia vicina 2-7, lontana 8-13, base del collo 14, spalla/gomito/polso vicino 16-21, lontano 22-27, testa 28
+function fk(c,J){const px=c[0],py=c[1],sp=c[2],ss=Math.sin(sp),cs=Math.cos(sp),pr=c[14],br=c[15];
+ J[0]=px;J[1]=py;J[2]=px+pr;J[3]=py;J[8]=px-pr;J[9]=py-.2;
+ limbFK(J,2,c[4],c[4]-c[5],THL,SHL);limbFK(J,8,c[7],c[7]-c[8],THL,SHL);
+ J[14]=px+ss*SPL+cs*.5;J[15]=py-cs*SPL+ss*.5;
+ const sx=px+ss*(SHO+br*.3),sy=py-cs*(SHO+br*.3);
+ J[16]=sx-pr*.7;J[17]=sy;J[22]=sx+pr*.7;J[23]=sy-.2;
+ limbFK(J,16,c[10],c[10]+c[11],UAL,FAL);limbFK(J,22,c[12],c[12]+c[13],UAL,FAL);
+ const nk=sp*.5+c[3]*.35;J[28]=J[14]+Math.sin(nk)*NKL;J[29]=J[15]-Math.cos(nk)*NKL}
+// IK a due ossa (legge del coseno): risultato in IKa (primo osso) e IKb (secondo osso), angoli assoluti
+let IKa=0,IKb=0;
+function ik2(rx,ry,tx,ty,a,b,sg){const dx=tx-rx,dy=ty-ry,d0=Math.sqrt(dx*dx+dy*dy)||.001,d=clamp(d0,Math.abs(a-b)+.2,a+b-.03);
+ const ux=dx/d0,uy=dy/d0,al=Math.acos(clamp((a*a+d*d-b*b)/(2*a*d),-1,1)),t=Math.atan2(ux,uy)+sg*al;
+ const kx=rx+a*Math.sin(t),ky=ry+a*Math.cos(t);IKa=t;IKb=Math.atan2(rx+ux*d-kx,ry+uy*d-ky)}
+function unw(a,ref){return a+TAU*Math.round((ref-a)/TAU)}
+function solveIK(A){const c=A.tg,J=A.J,q=A.ik;fk(c,J);
+ for(let i=0;i<4;i++){const w=q[i*3];if(w<=0)continue;const tx=q[i*3+1],ty=q[i*3+2];
+  if(i<2){const h=i?8:2,ti=i?C_T2:C_T1;ik2(J[h],J[h+1],tx,ty,THL,SHL,1);const t=unw(IKa,A.cur[ti]),k=unw(IKa-IKb,0);c[ti]+=(t-c[ti])*w;c[ti+1]+=(k-c[ti+1])*w}
+  else{const h=i===2?16:22,ui=i===2?C_U1:C_U2;ik2(J[h],J[h+1],tx,ty,UAL,FAL,-1);const u=unw(IKa,A.cur[ui]),e=unw(IKb-IKa,0);c[ui]+=(u-c[ui])*w;c[ui+1]+=(e-c[ui+1])*w}}}
+function ikSet(A,i,x,y,w){A.ik[i*3]=w;A.ik[i*3+1]=x;A.ik[i*3+2]=y}
+function handsAt(A,cx,cy,w,over){if(w<=0)return;if(over){ikSet(A,2,cx,cy,w);ikSet(A,3,-cx,cy,w)}else{ikSet(A,2,cx-.8,cy,w);ikSet(A,3,cx-1.7,cy-.2,w)}}
+// altezza del terreno sotto un piede (senza toccare le variabili globali della fisica)
+function gOff(lx,f){if(!LV)return 0;const x=P.x+f*lx,y0=P.y;let best=1e9;const S=LV.S;
+ for(let i=0;i<S.length;i++){const s=S[i];if(s.bar||s.h<=.5||x<s.x||x>s.x+s.w)continue;const t=s.y;if(t>=y0-STEP&&t<=y0+12&&t<best)best=t}
+ const R=LV.R;for(let i=0;i<R.length;i++){const r=R[i];if(x>=r.x&&x<=r.x+r.w){const t=rampY(r,x);if(t>=y0-STEP-4&&t<=y0+12&&t<best)best=t}}
+ return best<1e9?best-y0:0}
+function vn(t,s){const i=Math.floor(t),f=t-i,u=f*f*(3-2*f),a=rnd(i+s*57.3),b=rnd(i+1+s*57.3);return a+(b-a)*u-.5}
+
+// camminata e corsa: i piedi seguono traiettorie a terra; in appoggio scorrono indietro esattamente alla velocità del corpo
+function loco(A,c,sp,dt,cr){const f=P.f,w=cr?0:clamp((sp-WALK)/(RUN-WALK),0,1);
+ const C=cr?clamp(8+sp*.3,8,24):(w>0?lerp(38,86,w):clamp(14+sp*.33,14,38));
+ A.ph=(A.ph+sp*dt/C)%1;
+ const D=cr?.62:lerp(.62,.36,w),half=D*C*.5,fw=cr?.5:lerp(.3,1.0,w),amp=Math.min(1,sp/40);
+ const lift=(cr?2.2:lerp(2.4,10,w))*amp,hs=lerp(.25,.05,w),to=lerp(.55,.8,w);let dmax=0;
+ for(let i=0;i<2;i++){const p=(A.ph+i*.5)%1;let fx,fy,pt;
+  if(p<D){const s=p/D;fx=fw+half*(1-2*s);fy=0;pt=s<.18?hs*(1-s/.18):s>.62?-(s-.62)/.38*to:0}
+  else{const s=(p-D)/(1-D),e=s*s*(3-2*s);fx=fw+half*(2*e-1);fy=-lift*Math.sin(Math.PI*Math.pow(s,lerp(1,.6,w)));pt=lerp(-to,hs,sstep(.2,1,s))-.5*w*Math.sin(Math.PI*s)}
+  pt*=amp;const g=gOff(fx,f);if(g>dmax)dmax=g;const hl=pt<0?-pt:0;
+  ikSet(A,i,fx-hl*1.2,g+fy-ANK-hl*3.2,1);c[i?C_A2:C_A1]=pt}
+ const L=lerp(.06,.18,w),b2=Math.cos(TAU*2*(A.ph-L));
+ const base=cr?13.5:lerp(ANK+(THL+SHL)*.965,ANK+(THL+SHL)*.9,w),ac=clamp(A.acc*.00035,-.18,.18);
+ c[C_X]=cr?.8:lerp(0,.6,w);c[C_Y]=-base+lerp(.7,1.6,w)*amp*b2+Math.max(0,dmax-1)*.7;
+ c[C_SP]=(cr?.8:lerp(.05,.26,w))+ac+.03*w*b2;c[C_HD]=-c[C_SP]*.55;
+ const sw=Math.cos(TAU*A.ph),ua=(cr?.25:lerp(.35,.85,w))*amp,ub=cr?.5:lerp(0,.15,w),eb=cr?.7:lerp(.3,1.45,w),ex=lerp(.15,.35,w);
+ c[C_U1]=ub-ua*sw;c[C_U2]=ub+ua*sw;c[C_E1]=eb+ex*Math.max(0,-sw);c[C_E2]=eb+ex*Math.max(0,sw);
+ c[C_PR]=lerp(.5,.9,w)*amp*sw;c[C_BR]=0;c[C_T1]=c[C_T2]=.1;c[C_K1]=c[C_K2]=.2}
+// in piedi: respiro, piccoli spostamenti di peso e sguardo che si muove (rumore lento: sembra vivo)
+function idle(A,c,T){const n1=vn(T*.23,1),n2=vn(T*.31,2),b=Math.sin(T*2.1);
+ setP(c,n1*1.2,-(ANK+(THL+SHL)*.975)+b*.12+Math.abs(n1)*.4,.03+b*.012+n2*.03,n2*.35-.03, .06,.06,0,-.05,.06,0, .05+b*.025+n1*.05,.2,-.04+b*.02-n1*.04,.14);
+ c[C_BR]=b*.5;c[C_PR]=n1*.6;
+ const g1=gOff(2.6,P.f),g2=gOff(-2,P.f);ikSet(A,0,2.6,g1-ANK,1);ikSet(A,1,-2,g2-ANK,1);c[C_Y]+=Math.max(0,Math.max(g1,g2)-1)*.7}
+// frenata con il peso indietro: piede davanti puntato che slitta, braccia per l'equilibrio
+function skid(A,c,k){setP(c,-1.8,-21,-.3*k,.25, .1,.2,.35,.1,.2,0, 1.1,.6,.2,.5);c[C_PR]=.5;ikSet(A,0,8,gOff(8,P.f)-ANK,1);ikSet(A,1,-.8,gOff(-.8,P.f)-ANK,1)}
+// skate
+let BPX=0,BPY=0;
+function bPt(A,x,y){const ca=Math.cos(A.ba),sa=Math.sin(A.ba);BPX=A.bx+x*ca-y*sa;BPY=A.by+x*sa+y*ca}
+function boardSet(A,x,y,ba,dt){const k=A.bWas?1-Math.exp(-dt*22):1;A.bOn=1;A.bx+=(x-A.bx)*k;A.by+=(y-A.by)*k;A.ba+=(ba-A.ba)*k}
+function boardFeet(A,fl,f1,f2){bPt(A,f1,-.6-ANK-fl);ikSet(A,0,BPX,BPY,1);bPt(A,f2,-.6-ANK-fl);ikSet(A,1,BPX,BPY,1)}
+function ridePose(A,c,cr,sp,T){const b=Math.min(1,sp/BMAX);
+ setP(c,.3,lerp(-25.2,-18.8,cr)+Math.sin(T*7.3)*.2*b,lerp(.14+.1*b,.55,cr),lerp(-.15,-.45,cr), .3,.5,-A.ba,-.2,.5,-A.ba, lerp(.45,1.1,cr),lerp(.5,.7,cr),lerp(-.5,-.9,cr),lerp(.35,.6,cr));
+ c[C_PR]=-.5;boardFeet(A,0,5.8,-5.6)}
+function boardAir(A,c,tw,fl){setP(c,0,-26.3+tw*.5,.2+.1*tw,-.2, .5,.8,-A.ba,0,.8,-A.ba, 1.3+fl*.12,.5,-1.0-fl*.08,.45);c[C_PR]=-.5}
+// fine del calcolo: IK, dissolvenza tra stati, moto secondario (orlo della felpa, lacci del cappuccio)
+function finishPose(A,key,bd,dt,wy,axL){solveIK(A);
+ if(key!==A.key){A.key=key;A.sn.set(A.cur);A.bt=0;A.bd=bd;A.phx=P.hox}
+ A.bt+=dt;const e=A.bt>=A.bd?1:ease(A.bt/A.bd),c=A.tg,o=A.cur,s=A.sn;
+ for(let j=0;j<NCH;j++)o[j]=s[j]+(c[j]-s[j])*e;
+ A.bWas=A.bOn;
+ const py=wy+o[C_Y],vy=clamp((py-A.pY)/dt,-900,900),ay=clamp((vy-A.pVy)/dt,-9000,9000);A.pY=py;A.pVy=vy;
+ A.hemV+=(-220*A.hem-12*A.hemV+ay*.0011)*dt;A.hem=clamp(A.hem+A.hemV*dt,-1.6,1.6);
+ A.strV+=(-70*Math.sin(A.str)-4.5*A.strV-clamp(axL,-3000,3000)*.006)*dt;A.str=clamp(A.str+A.strV*dt,-1.2,1.2)}
+
+const PAL_F=mkPal({helmet:'#c4512f',hood:'#33648f',pants:'#4f545e',pad:'#2a2c31',shoe:'#ddd8cd',sole:'#8f897e',skin:'#d9a27c',hair:'#3b2a1f',str:'#e6e1d6',grip:'#26272a',deck:'#c8a463',gfx:'#b5452f',truck:'#9ba1a8',wheel:'#e7e0cc',pony:0});
+const PAL_N=mkPal({helmet:'#ddd8ca',hood:'#76436d',pants:'#30333a',pad:'#232428',shoe:'#4a4b50',sole:'#d9d4c8',skin:'#c68c64',hair:'#2a1c14',str:'#d9d4c8',grip:'#26272a',deck:'#c8a463',gfx:'#2f87a8',truck:'#9ba1a8',wheel:'#f1ede2',pony:1});
+function shd(hex,k){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;
+ if(k<1){r*=k;g*=k;b*=k}else{const t=k-1;r+=(255-r)*t;g+=(255-g)*t;b+=(255-b)*t}return 'rgb('+(r|0)+','+(g|0)+','+(b|0)+')'}
+// per ogni colore: [lato vicino illuminato, lato vicino in ombra, lato lontano illuminato, lato lontano in ombra]
+function mkPal(o){const p={};for(const k in o){const v=o[k];p[k]=typeof v==='string'?[shd(v,1.1),shd(v,.8),shd(v,.76),shd(v,.6)]:v}return p}
+const AF=mkActor(PAL_F),AN=mkActor(PAL_N),PD=AF.cur;
+
+function poseUpdate(dt){const A=AF,c=A.tg,st=P.st,sp=Math.abs(P.vx),dir=(K.r?1:0)-(K.l?1:0),f=P.f;
+ if(LV&&LV.race)ninaPose(dt);
+ A.T+=dt;const T=A.T;
+ const ax=clamp((P.vx-A.pvx)/dt,-4000,4000);A.pvx=P.vx;A.acc+=(ax*f-A.acc)*(1-Math.exp(-dt*10));
+ const air=st==='air'||st==='bair';
+ if(air)A.lastVy=P.vy;else if(A.wasAir&&(st==='run'||st==='ride'||st==='crouch'))A.compV+=clamp(A.lastVy*.11,0,110);
+ A.wasAir=air;
+ A.compV+=(-260*(A.comp-(P.hardT>0?7.5:0))-17.6*A.compV)*dt;A.comp=clamp(A.comp+A.compV*dt,-2,9);
+ for(let i=0;i<12;i+=3)A.ik[i]=0;A.bOn=0;A.rot=0;A.bf=0;
+ let key='idle',bd=.15;
+ if(LV&&LV.done){key='win';idle(A,c,T);const b=Math.sin(T*8);c[C_U1]=2.75+b*.12;c[C_E1]=.35;c[C_U2]=2.5-b*.1;c[C_E2]=.5;c[C_HD]=-.3;c[C_SP]=-.05}
+ else switch(st){
+ case 'run':
+  if(P.edgeT>0&&sp<8){key='edge';bd=.1;idle(A,c,T);const w=Math.sin(T*11);c[C_SP]=-.05+Math.sin(T*6.5)*.12;c[C_U1]=1.7+.9*w;c[C_E1]=.5;c[C_U2]=1.5-.9*w;c[C_E2]=.6;c[C_HD]=.35;break}
+  if(P.skidT>0&&sp>60&&!dir){key='skid';bd=.08;skid(A,c,.75);break}
+  if(sp<8){key='idle';bd=.2;idle(A,c,T)}else{if(A.key==='idle')A.ph=.55;key='loco';bd=.15;loco(A,c,sp,dt,false)}
+  // atterraggio: il bacino scende con una molla, le ginocchia si piegano (i piedi restano a terra con l'IK)
+  c[C_Y]+=A.comp;c[C_SP]+=A.comp*.05;c[C_U1]+=A.comp*.06;c[C_U2]+=A.comp*.05;c[C_HD]-=A.comp*.03;break;
+ case 'turn':if(P.t<.14){key='turn';bd=.08;skid(A,c,1)}else{key='turn2';bd=.08;setP(c,0,-22.5,.15,0, .1,.2,0,.1,.2,0, .7,.6,.3,.5);ikSet(A,0,2,gOff(2,f)-ANK,1);ikSet(A,1,-2,gOff(-2,f)-ANK,1)}break;
+ case 'crouch':key='crouch';bd=.12;loco(A,c,sp,dt,true);c[C_Y]+=Math.sin(T*2.1)*.15;break;
+ case 'slide':key='slide';bd=.08;setP(c,-1.5,-7.6+Math.min(1,P.t*4)*.6,-.62,.4, 1.45,.12,.5, .95,2.45,-.1, 1.0,.7,-1.4,.2);ikSet(A,3,-12,gOff(-12,f)-2,1);break;
+ case 'roll':{key='roll';bd=.06;const k=Math.min(1,P.t/.45);samp(KT_ROLL,k,c);A.rot=TAU*k;A.piv=-11;break}
+ case 'hurt':case 'slip':key=st;bd=.08;samp(st==='slip'?KT_SLIP:KT_HURT,Math.min(1,P.t/(st==='slip'?.75:.85)),c);break;
+ case 'tog':{key='tog';bd=.08;const k=Math.min(1,P.t/.28);samp(KT_TOG,k,c);const w=sstep(.15,.45,k)*(1-sstep(.6,.9,k));if(w>0)ikSet(A,2,7,gOff(7,f)-1.5,w);break}
+ case 'air':
+  if(P.wallT>0&&dir===P.wallSide&&P.vy>0){key='wall';bd=.1;setP(c,2.6,-24.2,.12,-.2, .7,1.0,0, .25,.6,-.3, 2.4,.6,2.7,.5);
+   ikSet(A,0,HW-3.2,-10,1);ikSet(A,1,HW-4,-3.5,1);ikSet(A,2,HW-1.2,-43,1);ikSet(A,3,HW-1.4,-48,1);break}
+  if(P.wjT>0){key='wjump';bd=.05;setP(c,0,-24,.35,-.15, 1.0,.7,.1, -.6,.15,-.7, 2.1,.4,1.5,.5);break}
+  {key='air';bd=.08;const fall=sstep(-150,300,P.vy);
+   if(P.jvx>150)setP(PA,0,-24,.25,-.15, 1.25,1.1,.1, -.45,.95,-.6, -.7,.9,1.1,1.0);
+   else setP(PA,0,-24.5,.12,-.1, 1.3,1.9,.1, 1.0,1.7,0, 2.1,.5,1.8,.6);
+   const fl=P.vy>450?Math.sin(T*9)*.25:0;
+   setP(PB,0,-24,.08,-.05, .55,.55,.15, .15,.7,-.1, 1.55+fl,.35,.35-fl,.55);mixP(c,PA,PB,fall);
+   // stacco: accosciata (anticipo) che si distende in pochi fotogrammi, braccia che passano da dietro ad avanti
+   const pu=P.vy<0?1-sstep(.04,.16,P.airT):0;
+   if(pu>0){setP(PA,.5,-19.5,.45,-.3, 1.1,1.6,0, .8,1.5,-.1, -.6,.8,-.5,.8);setP(PB,.5,-25,.3,-.2, .6,.3,0, -.35,.08,-.9, 1.7,.6,-.3,.4);mixP(PA,PA,PB,sstep(0,.07,P.airT));mixP(c,c,PA,pu*.85)}}
+  break;
+ case 'hang':{key='hang';bd=.1;const s=P.hs,t=P.t,sw=Math.sin(t*3.4)*Math.exp(-t*1.3)+Math.sin(T*1.3)*.12;
+  setP(c,3.6+sw*1.6,-24.6,.07+sw*.05,-.15, .15-sw*.15,.3,-.5, -.05-sw*.12,.4,-.6, 3,.1,3,.1);
+  handsAt(A,((f>0?s.x:s.x+s.w)-P.x)*f,s.y-P.y+1.1,1,false);break}
+ case 'bar':{key='bar';bd=.1;const s=P.hs,dh=Math.abs(P.hox-A.phx);A.phx=P.hox;A.bph=(A.bph+dh/14)%1;A.bmv=approach(A.bmv,dh>.01?1:0,dt*5);
+  const sw=Math.sin(A.bph*TAU)*.18*A.bmv+Math.sin(T*2.6)*.05,by=s.y+3-P.y+1.2;
+  setP(c,sw*2,-24.5,.02,-.1, .15+sw,.3,-.5, -.05-sw,.4,-.6, 3,.1,3,.1);
+  // mano dopo mano: una tiene (ferma nel mondo), l'altra si stacca e va avanti
+  for(let i=0;i<2;i++){const q=(A.bph+i*.5)%1,cx=q<.5?lerp(-3.5,3.5,ease(q/.5)):lerp(3.5,-3.5,(q-.5)/.5),cy=q<.5?-2*Math.sin(Math.PI*q/.5):0;
+   ikSet(A,2+i,lerp(i?-1.6:1.6,cx,A.bmv),by+cy*A.bmv,1)}break}
+ case 'tween':{const k=Math.min(1,P.t/P.dur),s=P.cs,tk=P.tk,over=!!(s.ow||s.bar);bd=.1;
+  let cx,cy;if(over){cx=1.5;cy=s.y-P.y+(s.bar?4.2:1.2)}else{cx=((f>0?s.x:s.x+s.w)-P.x)*f;cy=s.y-P.y+1.1}
+  if(tk==='climb'){key='climb';samp(KT_CLIMB,k,c);handsAt(A,cx,cy,1-sstep(.72,.86,k),over);
+   const wf=sstep(.3,.45,k),ws=sstep(.8,1,k);if(wf>0)ikSet(A,0,lerp(cx+3.2,2.4,ws),lerp(cy-1.1-ANK,-ANK,ws),wf);
+   const w2=sstep(.8,1,k);if(w2>0)ikSet(A,1,-2,-ANK,w2)}
+  else if(tk==='mantle'){key='mantle';samp(KT_MANTLE,k,c);handsAt(A,cx,cy,sstep(0,.1,k)*(1-sstep(.62,.75,k)),false);
+   const wf=sstep(.28,.4,k),ws=sstep(.78,1,k);if(wf>0)ikSet(A,0,lerp(cx+3,2.4,ws),lerp(cy-1.1-ANK,-ANK,ws),wf);
+   const w2=sstep(.82,1,k);if(w2>0)ikSet(A,1,-2,-ANK,w2)}
+  else if(tk==='vault'){key='vault';samp(KT_VAULT,k,c);const hx=((f>0?s.x:s.x+s.w)+f*Math.min(10,s.w*.45)-P.x)*f,w=sstep(.08,.22,k)*(1-sstep(.5,.62,k));if(w>0)ikSet(A,2,hx,cy,w)}
+  else{key='lower';samp(KT_LOWER,k,c);handsAt(A,tk==='lowbar'?1.6:cx,cy,sstep(.2,.35,k),tk==='lowbar')}
+  break}
+ case 'ride':{key='ride';bd=.12;boardSet(A,0,-3.6,P.ramp?Math.atan(rampSlope(P.ramp,P.x)*f):0,dt);ridePose(A,c,K.d?1:0,sp,T);
+  const pushing=sp<260&&dir===f&&dir!==0;A.pw=approach(A.pw,pushing?1:0,dt*6);
+  if(A.pw>0){// spinta: il piede dietro scende a terra e scorre indietro alla velocità dello skate (niente scivolamento)
+   const q=(P.push/TAU)%1,cf=clamp(18/(Math.max(sp,1)*.838),.08,.4),c1=.18,c2=c1+cf;bPt(A,-5.6,-.6-ANK);const dx=BPX,dy=BPY;let x,y,pd;
+   if(q<c1){const s=sstep(0,1,q/c1);x=lerp(dx,1.5,s);y=lerp(dy,gOff(1.5,f)-ANK,s)-2.5*Math.sin(Math.PI*s);pd=s}
+   else if(q<c2){x=1.5-sp*(q-c1)*.838;y=gOff(x,f)-ANK;pd=1}
+   else if(q<.75){const s=sstep(0,1,(q-c2)/(.75-c2)),x0=1.5-sp*cf*.838;x=lerp(x0,dx,s);y=lerp(gOff(x0,f)-ANK,dy,s)-3*Math.sin(Math.PI*s);pd=1-s}
+   else{x=dx;y=dy;pd=0}
+   const w=A.pw;A.ik[4]=lerp(dx,x,w);A.ik[5]=lerp(dy,y,w);c[C_Y]+=3.4*pd*w;c[C_SP]+=.2*w;c[C_U1]+=.3*w*pd;c[C_U2]-=.3*w*pd}
+  if(P.bumpT>0){c[C_U1]=2.4;c[C_U2]=2.2;c[C_SP]=-.2}
+  c[C_Y]+=A.comp*.8;break}
+ case 'bair':{key='bair';bd=.08;const pk=P.popT>0?1-P.popT/.18:1;let tw=sstep(0,.22,P.airT)*clamp(1-(P.vy-120)/380,.2,1);if(P.qp)tw=1;
+  // ollie: la coda batte (punta in su), il piede davanti scivola verso il naso, la tavola sale con i piedi
+  let ba=-.42*(1-pk)*(1-pk)+clamp(P.vy*.00025,-.12,.12),f1=5.8+(P.popT>0?2.2*Math.sin(Math.PI*pk):0),fl=0,by=-3.6-tw*5.2;
+  if(P.flipT>0){const k=1-P.flipT/.45;A.bf=TAU*k;fl=3.2*Math.sin(Math.PI*clamp((k-.02)/.9,0,1));if(k<.3)f1+=3*Math.sin(Math.PI*k/.3);by-=2.2*Math.sin(Math.PI*k)}
+  boardSet(A,0,by,ba,dt);boardAir(A,c,tw,fl);boardFeet(A,fl,f1,-5.6);
+  if(P.qp){bPt(A,3.5,1.6);ikSet(A,2,BPX,BPY,1)}break}
+ case 'grind':{key='grind';bd=.08;boardSet(A,0,-3.6,0,dt);const wb=Math.sin(T*5.3)*.06+Math.sin(T*8.1)*.03;
+  setP(c,.3+wb*4,-21+A.comp*.6,.38+wb,-.4, .3,.6,0,-.2,.6,0, 1.6+wb*3,.25,-1.55+wb*3,.25);c[C_PR]=-.5;boardFeet(A,0,5.8,-5.6);break}
+ }
+ finishPose(A,key,bd,dt,P.y,ax*f)}
+
+function ninaPose(dt){const R=LV.race,A=AN,c=A.tg;A.T+=dt;for(let i=0;i<12;i+=3)A.ik[i]=0;A.bf=0;let key;
+ if(R.gr){key='ride';boardSet(A,0,-3.6,0,dt);ridePose(A,c,0,R.go?R.spd:0,A.T)}
+ else{key='bair';const tw=clamp(1-(R.vy-100)/400,.2,1);boardSet(A,0,-3.6-tw*5,clamp(R.vy*.0003,-.15,.15),dt);boardAir(A,c,tw,0);boardFeet(A,0,5.8,-5.6)}
+ finishPose(A,key,.1,dt,R.y,0)}
+
+/* ======================= DISEGNO DEL PERSONAGGIO =======================
+   Arti come forme affusolate a due toni (lato in luce e lato in ombra, luce dall'alto a sinistra),
+   felpa con pieghe, tasca e lacci che oscillano, jeans larghi, ginocchiere, scarpe, casco.
+   Circa 60 tracciati per personaggio. */
+const HP=Math.PI/2;let LX=-.5,LY=-.86;
+function cap(x1,y1,r1,x2,y2,r2){const a=Math.atan2(y2-y1,x2-x1);ctx.beginPath();ctx.arc(x2,y2,r2,a-HP,a+HP);ctx.arc(x1,y1,r1,a+HP,a+3*HP);ctx.closePath()}
+function limb(x1,y1,r1,x2,y2,r2,cs,cl){cap(x1,y1,r1,x2,y2,r2);ctx.fillStyle=cs;ctx.fill();const o=(r1+r2)*.17;
+ cap(x1+LX*o,y1+LY*o,r1*.68,x2+LX*o,y2+LY*o,r2*.68);ctx.fillStyle=cl;ctx.fill()}
 function seg(x1,y1,x2,y2,c,w){ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
 function dot(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill()}
-function shoe(x,y,s,pal){const cx=Math.cos(s),sx=-Math.sin(s);seg(x-1.2*cx,y-1.2*sx,x+4.6*cx,y+4.6*sx,pal.shoe,4.2);
- const ox=Math.sin(s)*1.9,oy=Math.cos(s)*1.9;seg(x-1.2*cx+ox,y-1.2*sx+oy,x+4.6*cx+ox,y+4.6*sx+oy,pal.sole,1.5)}
-function board(cx,cy,ang,fs,pal){ctx.save();ctx.translate(cx,cy);ctx.rotate(ang);ctx.scale(1,fs);
- dot(-8,-2.4,2.4,pal.wheel);dot(8,-2.4,2.4,pal.wheel);
- ctx.lineCap='round';ctx.strokeStyle=fs<0?pal.grip:pal.deck;ctx.lineWidth=2.6;ctx.beginPath();ctx.moveTo(-15.5,-7.2);ctx.lineTo(-12,-5.4);ctx.lineTo(12,-5.4);ctx.lineTo(15.5,-7.2);ctx.stroke();
- ctx.strokeStyle=fs<0?pal.deck:pal.grip;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-12,-6.8);ctx.lineTo(12,-6.8);ctx.stroke();ctx.restore()}
-function drawSkater(px,py,sx,d,pal,carry,fs,pop,alpha){
- ctx.save();ctx.translate(px,py);ctx.scale(sx,1);if(alpha<1)ctx.globalAlpha=alpha;
- if(d.rot){if(d.piv){ctx.translate(d.hx,d.hy);ctx.rotate(d.rot);ctx.translate(-d.hx,-d.hy)}else ctx.rotate(d.rot)}
- ctx.lineCap='round';ctx.lineJoin='round';
- const hx=d.hx,hy=d.hy,L=d.lean,sL=Math.sin(L),cL=Math.cos(L);
- const k1x=hx+10*Math.sin(d.t1),k1y=hy+10*Math.cos(d.t1),f1x=k1x+10.5*Math.sin(d.s1),f1y=k1y+10.5*Math.cos(d.s1);
- const k2x=hx+10*Math.sin(d.t2),k2y=hy+10*Math.cos(d.t2),f2x=k2x+10.5*Math.sin(d.s2),f2y=k2y+10.5*Math.cos(d.s2);
- const shx=hx+12*sL,shy=hy-12*cL,nx=hx+15*sL,ny=hy-15*cL;
- const e1x=shx+8*Math.sin(d.u1),e1y=shy+8*Math.cos(d.u1),h1x=e1x+7.5*Math.sin(d.f1),h1y=e1y+7.5*Math.cos(d.f1);
- const e2x=shx+8*Math.sin(d.u2),e2y=shy+8*Math.cos(d.u2),h2x=e2x+7.5*Math.sin(d.f2),h2y=e2y+7.5*Math.cos(d.f2);
- const La=L*.6,hdx=nx+7.2*Math.sin(La),hdy=ny-7.2*Math.cos(La);
- if(d.board)board(-1,0,pop>0?-.3:0,fs,pal);
- // braccio e gamba dietro
- seg(shx,shy,e2x,e2y,pal.hoodB,4.2);seg(e2x,e2y,h2x,h2y,pal.hoodB,3.6);dot(h2x,h2y,1.9,pal.skin);
- seg(hx,hy,k2x,k2y,pal.pantsB,5.6);seg(k2x,k2y,f2x,f2y,pal.pantsB,4.6);shoe(f2x,f2y,d.s2,pal);dot(k2x,k2y,2.7,pal.pad);
- if(carry){ctx.save();ctx.translate((hx+shx)/2-cL*5.5,(hy+shy)/2-sL*5.5);ctx.rotate(L+Math.PI/2-.2);board(0,4,0,1,pal);ctx.restore()}
- // busto con felpa e cappuccio
- dot(nx-cL*3.2-sL*1,ny-sL*3.2+cL*1.5,3.6,pal.hoodB);
- seg(hx,hy-1,shx,shy,pal.hood,10);
- seg(hx+sL*2+cL*2.5,hy-2-cL*2+sL*2.5,hx+sL*6+cL*2.5,hy-6*cL+sL*2.5,pal.hoodB,2);
- // gamba davanti
- seg(hx,hy,k1x,k1y,pal.pants,5.6);seg(k1x,k1y,f1x,f1y,pal.pants,4.6);shoe(f1x,f1y,d.s1,pal);dot(k1x,k1y,2.8,pal.pad);dot(k1x+.6,k1y-.8,1,pal.padH);
- // testa e casco
- dot(hdx,hdy,5.6,pal.skin);
- if(pal.tail){ctx.fillStyle='#3b2416';ctx.beginPath();ctx.ellipse(hdx-6.5*Math.cos(La),hdy+2,3.2,2,-.5,0,TAU);ctx.fill()}
- ctx.fillStyle=pal.helmet;ctx.beginPath();ctx.arc(hdx,hdy-.6,6.9,Math.PI*.92+La,Math.PI*2.06+La);ctx.closePath();ctx.fill();
- ctx.strokeStyle=pal.stripe;ctx.lineWidth=1.3;ctx.beginPath();ctx.arc(hdx,hdy-.6,4.6,Math.PI*1.25+La,Math.PI*1.75+La);ctx.stroke();
- seg(hdx+5.2*Math.cos(La)-1*Math.sin(La),hdy-1.8,hdx+7.6*Math.cos(La),hdy-1.6+.6,pal.helmet,1.6);
- dot(hdx+3*Math.cos(La)+.6*Math.sin(La),hdy+.6,.9,'#1d2b4a');
- dot(hdx+1.8,hdy+2.8,1.1,'rgba(255,120,120,.45)');
- // braccio davanti
- seg(shx,shy,e1x,e1y,pal.hood,4.2);seg(e1x,e1y,h1x,h1y,pal.hood,3.6);dot(h1x,h1y,1.9,pal.skin);
+const SHOE=new Float32Array([-1.9,-1.3,-2.3,1.2,-1.9,2.1,4.7,2.1,5.5,1.3,5.0,.3,2.8,-.4,.8,-1.5]);
+function shoe(ax,ay,pt,p,s){const ca=Math.cos(-pt),sa=Math.sin(-pt);ctx.beginPath();
+ for(let i=0;i<16;i+=2){const x=SHOE[i],y=SHOE[i+1],X=ax+x*ca-y*sa,Y=ay+x*sa+y*ca;if(i)ctx.lineTo(X,Y);else ctx.moveTo(X,Y)}
+ ctx.closePath();ctx.fillStyle=p.shoe[s];ctx.fill();
+ ctx.beginPath();ctx.moveTo(ax-2.1*ca-1.75*sa,ay-2.1*sa+1.75*ca);ctx.lineTo(ax+5.1*ca-1.75*sa,ay+5.1*sa+1.75*ca);
+ ctx.moveTo(ax+.6*ca+.2*sa,ay+.6*sa-.2*ca);ctx.lineTo(ax+2.6*ca+.9*sa,ay+2.6*sa-.9*ca);ctx.strokeStyle=p.sole[s];ctx.lineWidth=.75;ctx.stroke()}
+function leg(J,i,pt,p,s){const hx=J[i],hy=J[i+1],kx=J[i+2],ky=J[i+3],ax=J[i+4],ay=J[i+5];
+ shoe(ax,ay,pt,p,s);
+ limb(kx,ky,2.3,ax,ay,2.1,p.pants[s+1],p.pants[s]);
+ limb(hx,hy,3.05,kx,ky,2.45,p.pants[s+1],p.pants[s]);
+ const d1x=(kx-hx)/THL,d1y=(ky-hy)/THL,d2x=(ax-kx)/SHL,d2y=(ay-ky)/SHL;let nx=d1y+d2y,ny=-d1x-d2x;const nl=Math.sqrt(nx*nx+ny*ny)||1;nx/=nl;ny/=nl;
+ // piega dietro al ginocchio e orlo arricciato sulla scarpa
+ ctx.beginPath();ctx.moveTo(kx-nx*1.7-d1x*1.6,ky-ny*1.7-d1y*1.6);ctx.lineTo(kx-nx*1.2+d2x*1.2,ky-ny*1.2+d2y*1.2);
+ ctx.moveTo(ax-d2x*2.6+d2y*1.6,ay-d2y*2.6-d2x*1.6);ctx.lineTo(ax-d2x*1.6-d2y*1.6,ay-d2y*1.6+d2x*1.6);
+ ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=.45;ctx.stroke();
+ // ginocchiera
+ ctx.fillStyle=p.pad[s];ctx.beginPath();ctx.ellipse(kx+nx*1.25,ky+ny*1.25,1.45,2.35,Math.atan2(ny,nx),0,TAU);ctx.fill();
+ ctx.fillStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.ellipse(kx+nx*1.5+LX*.6,ky+ny*1.5+LY*.6,.6,1.1,Math.atan2(ny,nx),0,TAU);ctx.fill()}
+function arm(J,i,p,s){const sx=J[i],sy=J[i+1],ex=J[i+2],ey=J[i+3],wx=J[i+4],wy=J[i+5],dx=(wx-ex)/FAL,dy=(wy-ey)/FAL;
+ ctx.fillStyle=p.skin[s?2:1];ctx.beginPath();ctx.ellipse(wx+dx*1.25,wy+dy*1.25,1.45,1.02,Math.atan2(dy,dx),0,TAU);ctx.fill();
+ limb(ex,ey,1.62,wx,wy,1.38,p.hood[s+1],p.hood[s]);
+ limb(sx,sy,2.05,ex,ey,1.68,p.hood[s+1],p.hood[s]);
+ ctx.beginPath();ctx.moveTo(wx-dx*.9+dy*1.3,wy-dy*.9-dx*1.3);ctx.lineTo(wx-dx*.9-dy*1.3,wy-dy*.9+dx*1.3);ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=.45;ctx.stroke()}
+const TOR=new Float32Array([-3.6,-2.4,-3.5,2,-3.25,6.5,-3.8,10.6,-3.0,13.6,-1.5,15.0,1.3,14.7,3.1,12.4,3.5,9.2,3.1,5.2,3.3,1.2,3.45,-2.2]),TP=new Float32Array(24);
+let TSX=0,TSY=0,TSS=0,TSC=1;
+const tvx=(v,u)=>TSX+v*TSC+u*TSS,tvy=(v,u)=>TSY+v*TSS-u*TSC;
+function torsoPath(A,k,ox,oy){const br=1+A.cur[C_BR]*.035;
+ for(let i=0;i<12;i++){let v=TOR[i*2],u=TOR[i*2+1];if(i===0)u+=A.hem*.8;else if(i===11)u+=A.hem;else if(i===7||i===8)v*=br;
+  v*=k;u=6.4+(u-6.4)*k;TP[i*2]=tvx(v,u)+ox;TP[i*2+1]=tvy(v,u)+oy}
+ ctx.beginPath();ctx.moveTo((TP[22]+TP[0])/2,(TP[23]+TP[1])/2);
+ for(let i=0;i<12;i++){const j=(i+1)%12;ctx.quadraticCurveTo(TP[i*2],TP[i*2+1],(TP[i*2]+TP[j*2])/2,(TP[i*2+1]+TP[j*2+1])/2)}ctx.closePath()}
+function torso(A,p){const c=A.cur;TSX=c[0];TSY=c[1];TSS=Math.sin(c[2]);TSC=Math.cos(c[2]);
+ torsoPath(A,1,0,0);ctx.fillStyle=p.hood[1];ctx.fill();
+ torsoPath(A,.8,LX*1.1,LY*1.1);ctx.fillStyle=p.hood[0];ctx.fill();
+ // cappuccio appoggiato sulla schiena
+ ctx.fillStyle=p.hood[1];ctx.beginPath();ctx.ellipse(tvx(-2.1,14.3),tvy(-2.1,14.3),2.5,1.75,c[2]+.5,0,TAU);ctx.fill();
+ ctx.fillStyle=p.hood[0];ctx.beginPath();ctx.ellipse(tvx(-2.1,14.3)+LX*.5,tvy(-2.1,14.3)+LY*.5,1.6,1.1,c[2]+.5,0,TAU);ctx.fill();
+ // tasca a marsupio, bordo in fondo, piega diagonale
+ ctx.beginPath();ctx.moveTo(tvx(3.3,6.1),tvy(3.3,6.1));ctx.quadraticCurveTo(tvx(1,5.6),tvy(1,5.6),tvx(1,1.4),tvy(1,1.4));
+ ctx.moveTo(tvx(-3.4,-1.2+A.hem*.8),tvy(-3.4,-1.2+A.hem*.8));ctx.lineTo(tvx(3.3,-1.1+A.hem),tvy(3.3,-1.1+A.hem));
+ ctx.moveTo(tvx(-1.6,10.6),tvy(-1.6,10.6));ctx.quadraticCurveTo(tvx(.2,9.2),tvy(.2,9.2),tvx(1.8,7.4),tvy(1.8,7.4));
+ ctx.strokeStyle=p.hood[3];ctx.lineWidth=.5;ctx.stroke();
+ // lacci del cappuccio (pendolo con molla)
+ const a=A.str,x1=tvx(1.3,13.9),y1=tvy(1.3,13.9),x2=tvx(2.1,13.4),y2=tvy(2.1,13.4);
+ ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1+Math.sin(a)*4.2,y1+Math.cos(a)*4.2);ctx.moveTo(x2,y2);ctx.lineTo(x2+Math.sin(a+.12)*3.8,y2+Math.cos(a+.12)*3.8);
+ ctx.strokeStyle=p.str[0];ctx.lineWidth=.42;ctx.stroke()}
+function head(A,p){const c=A.cur,J=A.J,hx=J[28],hy=J[29],ha=c[2]*.35+c[3];
+ limb(J[14],J[15],1.25,hx-.4,hy+1.7,1.1,p.skin[1],p.skin[0]);
+ ctx.save();ctx.translate(hx,hy);ctx.rotate(ha);const ch=Math.cos(-ha),sh=Math.sin(-ha),lx=LX*ch-LY*sh,ly=LX*sh+LY*ch;
+ if(p.pony){const a=-1.15+(A.str-c[2])*.5;limb(-3,.6,1.15,-3+Math.sin(a)*4.6,.6+Math.cos(a)*4.6,.55,p.hair[1],p.hair[0])}
+ ctx.fillStyle=p.hair[0];ctx.beginPath();ctx.ellipse(-1.5,1.0,1.9,1.6,.3,0,TAU);ctx.fill();
+ ctx.fillStyle=p.skin[1];ctx.beginPath();ctx.ellipse(0,0,3.0,3.45,0,0,TAU);ctx.fill();
+ ctx.fillStyle=p.skin[0];ctx.beginPath();ctx.ellipse(.8+lx*.5,.6+ly*.5,2.1,2.3,0,0,TAU);ctx.fill();
+ ctx.beginPath();ctx.ellipse(1.15,1.55,1.9,1.65,.2,0,TAU);ctx.fill();
+ ctx.fillStyle=p.skin[1];ctx.beginPath();ctx.moveTo(2.75,-.75);ctx.lineTo(3.55,.5);ctx.lineTo(2.85,.85);ctx.fill();
+ ctx.beginPath();ctx.ellipse(-.3,.35,.6,.85,0,0,TAU);ctx.fill();
+ ctx.fillStyle='#2a201c';ctx.beginPath();ctx.ellipse(1.95,-.4,.4,.28,0,0,TAU);ctx.fill();
+ ctx.strokeStyle='rgba(60,35,25,.8)';ctx.lineWidth=.36;ctx.beginPath();ctx.moveTo(1.35,-1.15);ctx.lineTo(2.55,-1.02);ctx.moveTo(2.2,1.78);ctx.lineTo(2.8,1.66);ctx.stroke();
+ // casco
+ ctx.fillStyle=p.helmet[1];ctx.beginPath();ctx.arc(-.15,-.5,3.95,Math.PI-.5,TAU-.22);ctx.closePath();ctx.fill();
+ ctx.fillStyle=p.helmet[0];ctx.beginPath();ctx.arc(-.15+lx*.55,-.6+ly*.55,3.05,Math.PI-.35,TAU-.3);ctx.closePath();ctx.fill();
+ ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=.45;ctx.beginPath();const la=Math.atan2(ly,lx);ctx.arc(-.15,-.5,3.2,la-.45,la+.35);ctx.stroke();
+ ctx.strokeStyle='rgba(15,15,20,.55)';ctx.lineWidth=.45;ctx.beginPath();ctx.moveTo(-3.6,1.38);ctx.lineTo(3.65,-1.35);ctx.moveTo(-.9,-3.9);ctx.lineTo(.2,-4.25);ctx.moveTo(.2,.5);ctx.lineTo(1.3,3.1);ctx.stroke();
  ctx.restore()}
+function drawBoard(bx,by,ba,bf,p){ctx.save();ctx.translate(bx,by);ctx.rotate(ba);const fy=Math.cos(bf);ctx.scale(1,Math.abs(fy)<.02?.02:fy);
+ ctx.fillStyle=p.truck[1];ctx.beginPath();ctx.moveTo(-9,.6);ctx.lineTo(-6,.6);ctx.lineTo(-6.8,1.9);ctx.lineTo(-8.2,1.9);ctx.closePath();ctx.moveTo(6,.6);ctx.lineTo(9,.6);ctx.lineTo(8.2,1.9);ctx.lineTo(6.8,1.9);ctx.closePath();ctx.fill();
+ ctx.fillStyle=p.wheel[1];ctx.beginPath();ctx.arc(-7.5,2,1.6,0,TAU);ctx.moveTo(9.1,2);ctx.arc(7.5,2,1.6,0,TAU);ctx.fill();
+ ctx.fillStyle=p.wheel[0];ctx.beginPath();ctx.arc(-7.8,1.7,.8,0,TAU);ctx.moveTo(8,1.7);ctx.arc(7.2,1.7,.8,0,TAU);ctx.fill();
+ ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-14.5,-1.9);ctx.quadraticCurveTo(-12.6,-.05,-10.5,0);ctx.lineTo(10.5,0);ctx.quadraticCurveTo(12.6,-.05,14.5,-1.9);
+ ctx.strokeStyle=fy<0?p.gfx[0]:p.deck[1];ctx.lineWidth=1.25;ctx.stroke();
+ ctx.beginPath();ctx.moveTo(-14.2,-2.4);ctx.quadraticCurveTo(-12.6,-.6,-10.5,-.55);ctx.lineTo(10.5,-.55);ctx.quadraticCurveTo(12.6,-.6,14.2,-2.4);
+ ctx.strokeStyle=fy<0?p.deck[0]:p.grip[0];ctx.lineWidth=.45;ctx.stroke();ctx.restore()}
+function boardAt(x,y,ang,pal){drawBoard(x,y-3.6,ang,0,pal)}
+// ombra di contatto sul terreno sotto i piedi
+function shadowAt(x,y,w){let gy=1e9;const S=LV.S;
+ for(let i=0;i<S.length;i++){const s=S[i];if(s.bar||s.h<=.5||x<s.x||x>s.x+s.w)continue;if(s.y>=y-1&&s.y<gy)gy=s.y}
+ const R=LV.R;for(let i=0;i<R.length;i++){const r=R[i];if(x>=r.x&&x<=r.x+r.w){const t=rampY(r,x);if(t>=y-3&&t<gy)gy=t}}
+ if(gy>=1e9)return;const d=gy-y,a=.3*(1-d/150);if(a<=.02)return;
+ ctx.globalAlpha=a;ctx.fillStyle='#10131c';ctx.beginPath();ctx.ellipse(x,gy+.3,w*(1-d/320),1.8,0,0,TAU);ctx.fill();ctx.globalAlpha=1}
+function drawActor(A,x,y,sx,alpha,carry){const c=A.cur,J=A.J,p=A.pal;fk(c,J);
+ ctx.save();ctx.translate(x,y);ctx.scale(sx,1);if(alpha<1)ctx.globalAlpha=alpha;
+ let lx=sx<0?.5:-.5,ly=-.86;
+ if(A.rot){ctx.translate(0,A.piv);ctx.rotate(A.rot);ctx.translate(0,-A.piv);const cr=Math.cos(-A.rot),sr=Math.sin(-A.rot),t=lx*cr-ly*sr;ly=lx*sr+ly*cr;lx=t}
+ LX=lx;LY=ly;ctx.lineCap='round';ctx.lineJoin='round';
+ if(A.bOn)drawBoard(A.bx,A.by,A.ba,A.bf,p);
+ if(carry)drawBoard(J[26]-1.2,J[27]+.5,-1.42,0,p);
+ arm(J,22,p,2);leg(J,8,c[C_A2],p,2);
+ torso(A,p);
+ leg(J,2,c[C_A1],p,0);
+ head(A,p);
+ arm(J,16,p,0);
+ ctx.restore()}
+// scie leggere sui movimenti veloci (sfocatura di movimento molto leggera)
+function smear(x,y,vx,f){const s=Math.abs(vx);if(s<290)return;const a=Math.min(.22,(s-290)/500),l=8+s*.05;
+ ctx.globalAlpha=a;ctx.strokeStyle='#ffffff';ctx.lineWidth=.8;ctx.beginPath();
+ for(let k=0;k<3;k++){const yy=y-12-k*11,x0=x-f*(9+k*2);ctx.moveTo(x0,yy);ctx.lineTo(x0-f*l*(1-k*.2),yy)}ctx.stroke();ctx.globalAlpha=1}
 
 /* ======================= SFONDI CON PARALLASSE ======================= */
 const THEMES={
@@ -1045,19 +1259,18 @@ function draw(){if(!LV)return;if(bgDirty)renderBG();const th=THEMES[LV.def.theme
  if(LV.ex>x0&&LV.ex<x1){const ex=LV.ex,ey=LV.ey;seg(ex,ey,ex,ey-80,'#e8e8e8',3);
   for(let r=0;r<3;r++)for(let c=0;c<5;c++){ctx.fillStyle=(r+c)%2?'#222':'#fff';ctx.fillRect(ex+1+c*7,ey-80+r*7+Math.sin(T*5+c)*1.5,7,7)}}
  // Nina
- if(LV.race){const R=LV.race;if(R.x>x0-30&&R.x<x1+30){NP.t1=.5;NP.s1=-.3;NP.t2=-.05;NP.s2=-.8;NP.lean=.25;NP.u1=1.3+Math.sin(R.ph)*.1;NP.f1=1.6;NP.u2=-.9;NP.f2=-1.2;
-   if(!R.gr){NP.t1=1.15;NP.s1=-.55;NP.t2=.55;NP.s2=-1.15}NP.hy=-(10*Math.cos(NP.t1)+10.5*Math.cos(NP.s1))-8;drawSkater(R.x,R.y,R.go?1:-1,NP,PAL_N,false,1,0,1)}}
+ if(LV.race){const R=LV.race;if(R.x>x0-30&&R.x<x1+30){shadowAt(R.x,R.y,15);drawActor(AN,R.x,R.y,R.go?1:-1,1,false)}}
  // Fede
- const flipK=P.flipT>0?Math.cos((1-P.flipT/.45)*TAU):1;
  let sx=P.f;if(P.st==='turn'){const k=P.t/.26;if(k>.55)sx=P.f*Math.cos(Math.PI*(k-.55)/.45)}else if(P.turnT>0)sx=-P.f*Math.cos(Math.PI*(1-P.turnT/.14));
  const alpha=P.inv>0&&Math.floor(P.inv*10)%2?.45:1;
- drawSkater(P.x,P.y,sx,PD,PAL_F,LV.board&&!P.board,flipK,P.popT,alpha);
- if(P.board&&(P.st==='hurt'||P.st==='tog'))board(P.x+P.f*16,P.y,0,1,PAL_F);
+ shadowAt(P.x,P.y,P.board?15:10);
+ smear(P.x,P.y,P.st==='roll'?400:P.vx,P.f);
+ drawActor(AF,P.x,P.y,sx,alpha,LV.board&&!P.board);
+ if(P.board&&(P.st==='hurt'||P.st==='tog'))boardAt(P.x+P.f*16,P.y,0,PAL_F);
  if(P.st==='hurt'){for(let k=0;k<3;k++){const a=T*5+k*2.1;ctx.fillStyle='#ffd23f';ctx.fillRect(P.x+Math.cos(a)*9-1.5,P.y-34+Math.sin(a)*3-1.5,3,3)}}
  // particelle
  for(let i=0;i<PS.length;i++){const p=PS[i];if(p.l<=0)continue;ctx.globalAlpha=Math.min(1,p.l/p.m*1.5);ctx.fillStyle=PCOL[p.c];ctx.fillRect(p.x-p.s/2,p.y-p.s/2,p.s,p.s)}
  ctx.globalAlpha=1}
-const NP={lean:0,hy:-22,hx:0,t1:0,s1:0,t2:0,s2:0,u1:0,f1:0,u2:0,f2:0,rot:0,piv:0,board:1};
 </script>
 <script>
 'use strict';
@@ -1124,13 +1337,24 @@ addEventListener('keydown',e=>{
  if(e.code==='KeyM'){SV.mus=!SV.mus;saveNow();syncAudioBtns();return}
  const k=KEYMAP[e.code];if(!k)return;if(playing){e.preventDefault();audio();if(!e.repeat&&!paused)press(k)}});
 addEventListener('keyup',e=>{const k=KEYMAP[e.code];if(k)release(k)});
-addEventListener('blur',()=>{for(const k in K)K[k]=0});
+addEventListener('blur',()=>{for(const k in K)K[k]=0;if(typeof rilasciaTutti==='function')rilasciaTutti()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&playing&&!paused)pause(true)});
+// Pulsanti touch: ogni pulsante ricorda il dito che lo tiene; il rilascio è ascoltato anche sulla finestra,
+// perché su alcuni tablet il «pointerup» non arriva al pulsante e la freccia resterebbe premuta.
+const TASTI=new Map();// pointerId -> {b,k}
+function rilascia(id){const t=TASTI.get(id);if(!t)return;TASTI.delete(id);
+ if(![...TASTI.values()].some(o=>o.b===t.b)){t.b.classList.remove('on');release(t.k)}}
+function rilasciaTutti(){for(const id of [...TASTI.keys()])rilascia(id);document.querySelectorAll('#tc .tb.on').forEach(b=>{b.classList.remove('on');release(b.dataset.k)})}
 document.querySelectorAll('#tc .tb').forEach(b=>{const k=b.dataset.k;
- b.addEventListener('pointerdown',e=>{e.preventDefault();audio();b.classList.add('on');if(!paused)press(k);try{b.setPointerCapture(e.pointerId)}catch(_){}} );
- const off=()=>{b.classList.remove('on');release(k)};
- ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,off));
+ b.addEventListener('pointerdown',e=>{e.preventDefault();audio();try{b.setPointerCapture(e.pointerId)}catch(_){}
+  TASTI.set(e.pointerId,{b,k});b.classList.add('on');if(!paused)press(k)});
+ ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,e=>rilascia(e.pointerId)));
  b.addEventListener('contextmenu',e=>e.preventDefault())});
+['pointerup','pointercancel'].forEach(ev=>addEventListener(ev,e=>rilascia(e.pointerId),true));
+addEventListener('touchend',e=>{if(!e.touches||e.touches.length===0)rilasciaTutti()},true);
+addEventListener('touchcancel',rilasciaTutti,true);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)rilasciaTutti()});
+addEventListener('pagehide',rilasciaTutti);
 
 /* ======================= CICLO PRINCIPALE ======================= */
 let last=performance.now(),acc=0;
