@@ -171,46 +171,48 @@ function smooth(a,b,x){const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3
 // The first six levels keep their original order and layout so old saves (sciSbloccati, sciRecord) still load.
 // porte:[from, to (negative = from the finish), step, side offset, half width]; kick:[[d,size]]; rails:[[d,offset,len]]; gobbe:[[from,to]]
 const DT=95; // trampolino: punto di stacco
+// speed tuning: slopes 1.55x steeper, gates further apart and wider, never below VMIN
+const PK=1.55,GSP=1.4,VMIN=10.5,VFRENO=7,VMAX=52,VRESP=16;
 const LIVELLI=[
- {nome:'Slalom',ico:'🚩',tipo:'tempo',fine:820,pend:12,larg:20,amp:14,seme:1.3,par:70,porte:[50,-35,27,4.2,2.5],monete:2,fiocchi:1,reti:1,
+ {nome:'Slalom',ico:'🚩',tipo:'tempo',fine:820,pend:12,larg:20,amp:14,seme:1.3,par:48,porte:[50,-35,27,4.2,2.5],monete:2,fiocchi:1,reti:1,
   desc:'Passa <b>dentro</b> ogni porta, tra le due bandierine rosse o blu. Porta mancata: <b>+5 secondi</b>!'},
- {nome:'Slalom gigante',ico:'⛳',tipo:'tempo',fine:1150,pend:15,larg:26,amp:24,seme:2.7,par:82,porte:[60,-40,46,7,3.6],monete:3,boost:2,fiocchi:1,reti:1,
+ {nome:'Slalom gigante',ico:'⛳',tipo:'tempo',fine:1150,pend:15,larg:26,amp:24,seme:2.7,par:55,porte:[60,-40,46,7,3.6],monete:3,boost:2,fiocchi:1,reti:1,
   desc:'Porte più larghe e più lontane: si va più veloci! Le frecce verdi 🚀 sulla pista ti danno il turbo.'},
- {nome:'Discesa libera',ico:'⚡',tipo:'tempo',fine:1900,pend:17,larg:32,amp:34,seme:4.1,par:92,porte:[120,-60,150,5,6.5],onde:.07,boost:4,monete:3,fiocchi:1,reti:1,
+ {nome:'Discesa libera',ico:'⚡',tipo:'tempo',fine:1900,pend:17,larg:32,amp:34,seme:4.1,par:68,porte:[120,-60,150,5,6.5],onde:.07,boost:4,monete:3,fiocchi:1,reti:1,
   desc:'La gara più veloce di tutte: stai nella <b>posizione a uovo</b> (⬇) e passa nelle porte larghe!'},
  {nome:'Snowpark',ico:'🤸',tipo:'punti',fine:900,pend:11,larg:30,amp:8,seme:5.5,kick:[[70,0],[195,1],[330,2],[465,1],[605,2],[745,3]],rails:[[130,7],[395,-7],[670,7]],monete:3,fiocchi:1,p2:1200,p3:2600,
   desc:'Trampolini e rail! In aria fai <b>salti mortali</b> (↑ ↓), <b>giravolte</b> (← →) e il <b>grab</b> (tieni premuto 🦘). Atterra dritto per tenere i punti!'},
  {nome:'Trampolino',ico:'🦅',tipo:'salto',fine:DT+215,pend:0,larg:10,amp:0,seme:6.2,m2:60,m3:78,
   desc:'Scendi accucciato (⬇), premi 🦘 proprio sul dente per lo stacco e in volo tieni ⬇ per planare a V. Vola lontanissimo!'},
- {nome:'Giro della montagna',ico:'⭐',tipo:'stelle',fine:2500,pend:14,larg:28,amp:30,seme:7.7,par:175,porte:[60,520,46,7,3.8],gobbe:[[570,890]],kick:[[980,1],[1100,2],[1220,1],[1340,2]],rails:[[1040,8],[1280,-8]],stelle:1,boost:3,fiocchi:2,villaggio:1,
+ {nome:'Giro della montagna',ico:'⭐',tipo:'stelle',fine:2500,pend:14,larg:28,amp:30,seme:7.7,par:131,porte:[60,520,46,7,3.8],gobbe:[[570,890]],kick:[[980,1],[1100,2],[1220,1],[1340,2]],rails:[[1040,8],[1280,-8]],stelle:1,boost:3,fiocchi:2,villaggio:1,
   desc:'Dalla cima fino al villaggio: porte, gobbe, trampolini e tante <b>stelle</b> da raccogliere!'},
- {nome:'Slalom notturno',ico:'🌙',tipo:'tempo',fine:950,pend:13,larg:20,amp:16,seme:8.3,par:80,porte:[50,-35,26,4.4,2.5],meteo:'notte',monete:3,fiocchi:1,reti:1,
+ {nome:'Slalom notturno',ico:'🌙',tipo:'tempo',fine:950,pend:13,larg:20,amp:16,seme:8.3,par:55,porte:[50,-35,26,4.4,2.5],meteo:'notte',monete:3,fiocchi:1,reti:1,
   desc:'Si scia di <b>notte</b> sotto i fari! Segui la pista illuminata e passa in tutte le porte.'},
- {nome:'Fondo nel bosco',ico:'🎿',tipo:'fondo',fine:1100,pend:5,larg:9,amp:22,seme:9.1,par:118,tronchi:8,pupazzi:10,monete:5,fiocchi:2,boost:2,spinta:9,
+ {nome:'Fondo nel bosco',ico:'🎿',tipo:'fondo',fine:1100,pend:5,larg:9,amp:22,seme:9.1,par:79,tronchi:8,pupazzi:10,monete:5,fiocchi:2,boost:2,spinta:9,
   desc:'Sci di fondo tra gli alberi: <b>salta</b> (🦘) i tronchi e <b>schiva</b> i pupazzi di neve!'},
- {nome:'Bufera di neve',ico:'🌨️',tipo:'tempo',fine:1250,pend:14,larg:26,amp:22,seme:10.4,par:92,porte:[60,-40,44,7,3.6],meteo:'bufera',monete:3,fiocchi:2,reti:1,
+ {nome:'Bufera di neve',ico:'🌨️',tipo:'tempo',fine:1250,pend:14,larg:26,amp:22,seme:10.4,par:63,porte:[60,-40,44,7,3.6],meteo:'bufera',monete:3,fiocchi:2,reti:1,
   desc:'Nevica fortissimo! Segui le <b>linee blu</b> e le <b>frecce</b> sulla pista per trovare le porte.'},
  {nome:'Snowpark pro',ico:'🛹',tipo:'punti',fine:1100,pend:12,larg:32,amp:10,seme:11.6,kick:[[70,1],[180,2],[290,1],[400,3],[520,2],[640,3],[760,2],[900,3]],rails:[[125,7],[345,-7],[580,7],[820,-7],[960,7]],monete:4,fiocchi:1,p2:2600,p3:5200,
   desc:'Il park dei campioni: tanti trampolini e rail. Fai trick uno dopo l\'altro: la <b>combo</b> 🔥 moltiplica i punti!'},
- {nome:'Super-G',ico:'💨',tipo:'tempo',fine:1700,pend:16,larg:32,amp:30,seme:12.9,par:84,porte:[100,-60,85,6,5],boost:3,monete:3,fiocchi:1,reti:1,
+ {nome:'Super-G',ico:'💨',tipo:'tempo',fine:1700,pend:16,larg:32,amp:30,seme:12.9,par:59,porte:[100,-60,85,6,5],boost:3,monete:3,fiocchi:1,reti:1,
   desc:'Velocità e curve larghe: un po\' discesa e un po\' gigante. Prendi i turbo 🚀!'},
- {nome:'Gobbe e stelle',ico:'🌟',tipo:'stelle',fine:1600,pend:14,larg:28,amp:24,seme:13.3,par:125,gobbe:[[300,560],[1000,1240]],kick:[[700,1],[820,2],[1350,1]],stelle:1,monete:2,fiocchi:2,boost:2,
+ {nome:'Gobbe e stelle',ico:'🌟',tipo:'stelle',fine:1600,pend:14,larg:28,amp:24,seme:13.3,par:90,gobbe:[[300,560],[1000,1240]],kick:[[700,1],[820,2],[1350,1]],stelle:1,monete:2,fiocchi:2,boost:2,
   desc:'Campi di <b>gobbe</b> e tante stelle: raccogli tutte le 🌟 per le tre stelle!'},
  {nome:'Trampolino gigante',ico:'🚀',tipo:'salto',fine:DT+250,pend:0,larg:10,amp:0,seme:14.1,inrun:35,landA:38,land:140,m2:85,m3:102,meteo:'tramonto',
   desc:'Il trampolino più alto della montagna, al tramonto! Stacco perfetto sul dente e volo a V (⬇) per superare i <b>100 metri</b>.'},
- {nome:'Discesa notturna',ico:'🌌',tipo:'tempo',fine:1800,pend:17,larg:30,amp:30,seme:14.7,par:90,porte:[120,-60,140,5,6.5],onde:.07,meteo:'notte',boost:3,monete:3,fiocchi:1,reti:1,
+ {nome:'Discesa notturna',ico:'🌌',tipo:'tempo',fine:1800,pend:17,larg:30,amp:30,seme:14.7,par:65,porte:[120,-60,140,5,6.5],onde:.07,meteo:'notte',boost:3,monete:3,fiocchi:1,reti:1,
   desc:'La discesa libera sotto le stelle e i fari. Posizione a uovo ⬇ e via!'},
- {nome:'Fondo delle cime',ico:'🏔️',tipo:'fondo',fine:1500,pend:6,larg:9,amp:30,seme:15.2,par:150,tronchi:14,pupazzi:16,monete:6,fiocchi:2,boost:3,spinta:9.5,meteo:'nuvole',
+ {nome:'Fondo delle cime',ico:'🏔️',tipo:'fondo',fine:1500,pend:6,larg:9,amp:30,seme:15.2,par:100,tronchi:14,pupazzi:16,monete:6,fiocchi:2,boost:3,spinta:9.5,meteo:'nuvole',
   desc:'Fondo lungo e pieno di ostacoli: <b>tronchi</b> da saltare e <b>pupazzi</b> da schivare. Attento alle vite!'},
- {nome:'Slalom nella bufera',ico:'❄️',tipo:'tempo',fine:1000,pend:13,larg:20,amp:18,seme:16.8,par:84,porte:[50,-35,25,4.4,2.5],meteo:'bufera',monete:3,fiocchi:2,reti:1,
+ {nome:'Slalom nella bufera',ico:'❄️',tipo:'tempo',fine:1000,pend:13,larg:20,amp:18,seme:16.8,par:57,porte:[50,-35,25,4.4,2.5],meteo:'bufera',monete:3,fiocchi:2,reti:1,
   desc:'Slalom stretto con la neve che soffia: le porte si vedono all\'ultimo, segui le frecce sulla pista!'},
  {nome:'Big Air notturno',ico:'🎆',tipo:'punti',fine:1000,pend:12,larg:32,amp:8,seme:17.4,kick:[[80,2],[220,3],[360,2],[500,3],[650,3],[800,3]],rails:[[150,-7],[430,7],[730,-7]],meteo:'notte',monete:3,fiocchi:1,p2:3000,p3:6000,
   desc:'Trampolini enormi sotto i fari: <b>doppi</b> salti mortali e giravolte per lo spettacolo!'},
- {nome:'Giro delle cime',ico:'🗻',tipo:'stelle',fine:3000,pend:15,larg:28,amp:34,seme:18.9,par:205,porte:[60,700,44,7,3.8],gobbe:[[1500,1800]],kick:[[900,1],[1050,2],[1200,1],[2200,2],[2400,1]],rails:[[980,8],[2300,-8]],stelle:1,boost:4,monete:3,fiocchi:2,villaggio:1,
+ {nome:'Giro delle cime',ico:'🗻',tipo:'stelle',fine:3000,pend:15,larg:28,amp:34,seme:18.9,par:154,porte:[60,700,44,7,3.8],gobbe:[[1500,1800]],kick:[[900,1],[1050,2],[1200,1],[2200,2],[2400,1]],rails:[[980,8],[2300,-8]],stelle:1,boost:4,monete:3,fiocchi:2,villaggio:1,
   desc:'Il giro più lungo: porte, trampolini, gobbe e tante stelle fino al villaggio.'},
- {nome:'Gigante dei campioni',ico:'🏅',tipo:'tempo',fine:1400,pend:16,larg:24,amp:28,seme:19.5,par:94,porte:[60,-40,40,7.5,3.4],meteo:'tramonto',boost:2,monete:3,fiocchi:1,reti:1,
+ {nome:'Gigante dei campioni',ico:'🏅',tipo:'tempo',fine:1400,pend:16,larg:24,amp:28,seme:19.5,par:66,porte:[60,-40,40,7.5,3.4],meteo:'tramonto',boost:2,monete:3,fiocchi:1,reti:1,
   desc:'Slalom gigante difficile: porte strette e vicine, al tramonto. Solo per veri campioni!'},
- {nome:'Campionato del mondo',ico:'🏆',tipo:'campionato',fine:2600,pend:15,larg:30,amp:30,seme:21.3,par:175,porte:[60,650,30,4.6,2.8],porte2:[1550,2450,90,6,4.5],kick:[[760,1],[880,2],[1000,3],[1120,2]],rails:[[820,8],[1060,-8]],gobbe:[[1250,1450]],stelle:1,boost:4,monete:3,fiocchi:2,reti:1,villaggio:1,p2:5000,p3:8000,
+ {nome:'Campionato del mondo',ico:'🏆',tipo:'campionato',fine:2600,pend:15,larg:30,amp:30,seme:21.3,par:126,porte:[60,650,30,4.6,2.8],porte2:[1550,2450,90,6,4.5],kick:[[760,1],[880,2],[1000,3],[1120,2]],rails:[[820,8],[1060,-8]],gobbe:[[1250,1450]],stelle:1,boost:4,monete:3,fiocchi:2,reti:1,villaggio:1,p2:5000,p3:8000,
   desc:'La finale! <b>Slalom, trampolini, gobbe e discesa</b> tutti insieme. Fai più punti che puoi per diventare campione!'},
 ];
 let LVI=0,LV=LIVELLI[0];
@@ -230,7 +232,7 @@ function grade(d){
   else if(d<DT+ld)g=a36;else if(d<DT+ld+60)g=mix(a36,0,smooth(DT+ld,DT+ld+60,d));else g=0;
   if(d>L.fine+95)g+=.4*smooth(L.fine+95,L.fine+130,d);
   return g}
- const a=Math.tan(L.pend*DEG),f=L.fine;
+ const a=Math.tan(Math.min(28,L.pend*PK)*DEG),f=L.fine;
  let g=-a*(1+.2*Math.sin(d/140+L.seme));
  if(L.onde)g+=L.onde*Math.cos(d/24);
  g=mix(-.03,g,smooth(-40,8,d));
@@ -240,14 +242,22 @@ function grade(d){
 function preparaProfilo(){
  const n=Math.ceil(LV.fine+460-P0);PROF=new Float32Array(n+1);const i0=-P0;PROF[i0]=0;
  for(let i=i0+1;i<=n;i++)PROF[i]=PROF[i-1]+grade(i+P0-.5);
- for(let i=i0-1;i>=0;i--)PROF[i]=PROF[i+1]-grade(i+P0+.5)}
+ for(let i=i0-1;i>=0;i--)PROF[i]=PROF[i+1]-grade(i+P0+.5);
+ // rollers: humps across the whole piste that throw Federico in the air at speed (kept away from gates, kickers, moguls, rails)
+ ROLL=[];const L=LV;if(['tempo','stelle','campionato'].includes(L.tipo)){const f=L.fine,gd=[];
+  for(const sp of [L.porte,L.porte2]){if(!sp)continue;let [d0,d1,pa]=sp;if(d1<0)d1=f+d1;for(let d=d0;d<d1;d+=pa*GSP)gd.push(d)}
+  const busy=d=>gd.some(g=>g>d-8&&g<d+46)||(L.kick||[]).some(([k])=>d>k-30&&d<k+45)||(L.gobbe||[]).some(([a,b])=>d>a-30&&d<b+20)||(L.rails||[]).some(([r])=>d>r-30&&d<r+40);
+  let last=-1e9;for(let d=110;d<f-130;d+=7){if(d-last<120||busy(d))continue;const r=hash(Math.round(d),Math.round(L.seme*100));
+   ROLL.push({d,L:20,H:1.4+r*1.1});last=d}
+  for(const r of ROLL)for(let i=Math.max(0,Math.floor(r.d-P0));i<=Math.min(n,Math.ceil(r.d+r.L-P0));i++){const u=(i+P0-r.d)/r.L;if(u<0||u>1)continue;const v=u<.62?.5*u/.62:.5+.5*(u-.62)/.38;PROF[i]+=r.H*Math.pow(Math.sin(Math.PI*v),2)}}}
+let ROLL=[];
 function prof(d){let f=d-P0;if(f<0)f=0;const n=PROF.length-1;if(f>=n)return PROF[n];const i=Math.floor(f),t=f-i;return PROF[i]+(PROF[i+1]-PROF[i])*t}
 function centro(d){const L=LV;if(!L.amp)return 0;const dd=clamp(d,0,L.fine);
  return L.amp*(Math.sin(dd/170+L.seme)-Math.sin(L.seme))+L.amp*.4*(Math.sin(dd/63+L.seme*2)-Math.sin(L.seme*2))}
 function dirPista(d){return Math.atan((centro(d+4)-centro(d-4))/8)}
 function largh(d){
  if(LV.tipo==='salto'){let w=d<DT?5:mix(5,18,smooth(DT,DT+30,d));return mix(w,20,smooth(LV.fine-60,LV.fine,d))}
- let w=LV.larg/2;w=mix(10,w,smooth(-30,15,d));return mix(w,Math.max(w,18),smooth(LV.fine-40,LV.fine+10,d))}
+ let w=LV.larg/2*(LV.tipo==='fondo'?1.25:1.15);w=mix(10,w,smooth(-30,15,d));return mix(w,Math.max(w,18),smooth(LV.fine-40,LV.fine+10,d))}
 function quotaBase(x,d){
  const c=centro(d),w=largh(d),dx=Math.abs(x-c);
  let h=prof(d);
@@ -275,8 +285,8 @@ function gnd(x,d){let h=quota(x,d);const r=railSotto(x,d);if(r){const rh=railH(r
 function generaLivello(){
  BK=new Map();PORTE=[];KICK=[];RAILS=[];GOBBE=[];STELLE=[];FOLLE=[];BOOST=[];MONETE=[];FIOCCHI=[];TRONCHI=[];OSTL=[];TORRI=[];LAMPI=[];SPARSI=[];
  const L=LV,f=L.fine,sm=Math.floor(L.seme*100),R=(i,j)=>hash(i+sm*31,j+sm*17);
- const porte=sp=>{if(!sp)return;let [d0,d1,passo,off,mezza]=sp;if(d1<0)d1=f+d1;let k=0;for(let d=d0;d<d1;d+=passo,k++){const side=k%2?1:-1;PORTE.push({d,x:centro(d)+side*off,h:mezza,col:k%2?1:0,stato:0})}};
- const kicker=(d,x,sz)=>{const k={t:'k',x,d,L:6.5+sz*2,H:1.3+sz*.75,w:7+sz,B:0};k.B=k.H*1.3;KICK.push(k);addFeat(k,d-1,d+k.L+k.B+1)};
+ const porte=sp=>{if(!sp)return;let [d0,d1,passo,off,mezza]=sp;passo*=GSP;off*=1.15;mezza*=1.2;if(d1<0)d1=f+d1;let k=0;for(let d=d0;d<d1;d+=passo,k++){const side=k%2?1:-1;PORTE.push({d,x:centro(d)+side*off,h:mezza,col:k%2?1:0,stato:0})}};
+ const kicker=(d,x,sz)=>{const k={t:'k',x,d,L:(6.5+sz*2)*1.15,H:(1.3+sz*.75)*1.12,w:8+sz,B:0};k.B=k.H*1.3;KICK.push(k);addFeat(k,d-1,d+k.L+k.B+1)};
  const rail=(d,x,len)=>{const r={t:'r',x,d,L:len,H:.7};RAILS.push(r);addFeat(r,d-1,d+len+1)};
  const gobbe=(d0,d1)=>{let row=0;for(let d=d0;d<d1;d+=5.6,row++){const w=largh(d)-2.5,c=centro(d);
   for(let x=-w+(row%2?2.8:0);x<w;x+=5.6){const m={t:'m',x:c+x+(R(row,Math.round(x))-.5)*1.4,d:d+(R(Math.round(x),row)-.5)*1.4,r:2.4,H:.55};GOBBE.push(m);addFeat(m,m.d-2.5,m.d+2.5)}}};
@@ -307,7 +317,7 @@ function generaLivello(){
  // pubblico lungo la pista (gruppetti) e all'arrivo
  SPETT=[];
  const persona=(x,d,cl,fl)=>{if(SPETT.length>=SP_MAX)return;const i=SPETT.length,sd=x<centro(d)?-1:1;
-  SPETT.push({x,d,y:quotaBase(x,d),ph:R(i,91)*6.28,col:i,fl:fl||R(i,92)<.2,cart:R(i,94)<.09,cap:Math.floor(R(i,95)*3),sc:R(i,96)<.18?.95:1.32+R(i,97)*.16,cl,
+  SPETT.push({x,d,y:quotaBase(x,d),ph:R(i,91)*6.28,col:i,fl:fl||R(i,92)<.2,cart:R(i,94)<.09,cap:Math.floor(R(i,95)*3),sc:R(i,96)<.2?.56+R(i,98)*.18:.9+R(i,97)*.16,cl,
    yaw:(sd<0?Math.PI/2-.35:-Math.PI/2+.35)+(R(i,93)-.5)*.5})};
  if(L.tipo!=='salto'){const passo=L.tipo==='fondo'?100:75,base=L.reti?4.3:4,nn=L.tipo==='fondo'?14:20;let k=0;
   for(let d=140;d<f-90;d+=passo,k++){const r=R(k,3),sides=r<.6?[-1,1]:[r<.8?-1:1];
@@ -649,46 +659,141 @@ const geoStella=(()=>{const sh=new THREE.Shape();for(let i=0;i<10;i++){const r=i
  const g=new THREE.ExtrudeGeometry(sh,{depth:.2,bevelEnabled:false});g.translate(0,0,-.1);return g})();
 
 /* ======================= PUBBLICO ======================= */
-const geoCorpo=new THREE.CylinderGeometry(.2,.26,.8,8);geoCorpo.translate(0,.4,0);
-const geoTesta=new THREE.SphereGeometry(.16,8,6);geoTesta.translate(0,.98,0);
-const geoCappello=unisci([[T_(new THREE.ConeGeometry(.17,.26,7),0,1.17,0),0xffffff],[T_(new THREE.SphereGeometry(.06,5,4),0,1.31,0),0xffffff]]);
-const geoBerretto=unisci([[T_(new THREE.SphereGeometry(.172,8,4,0,TAU,0,Math.PI*.5),0,1.02,0),0xffffff],[T_(new THREE.CylinderGeometry(.175,.175,.06,8),0,1.03,0),0xffffff]]);
-const geoBraccia=unisci([[T_(new THREE.BoxGeometry(.09,.5,.09),0,.25,0).rotateZ(.45),0xffffff],[T_(new THREE.BoxGeometry(.09,.5,.09),0,.25,0).rotateZ(-.45),0xffffff]]);
-const geoBandiera=unisci([[T_(new THREE.CylinderGeometry(.02,.02,1.4,5),0,.7,0),0xdddddd]]);
-const geoTela=new THREE.PlaneGeometry(.7,.45);geoTela.translate(.35,1.2,0);
-const geoCartello=new THREE.PlaneGeometry(.95,.42);geoCartello.translate(0,1.62,.12);
-const matFolla=new THREE.MeshLambertMaterial({color:0xffffff,side:THREE.DoubleSide});
-const matCartello=new THREE.MeshLambertMaterial({map:texScritta('FORZA FEDE!',.95,.42,'#ffffff','#d81b2a',false),side:THREE.DoubleSide});
-const PELLI=[0xf0c4a0,0xd9a07a,0x8d5a3b,0xffd8b8,0xc68642],GIACCHE=[0xe53935,0x1e88e5,0xfdd835,0x43a047,0x8e24aa,0xfb8c00,0x00acc1,0xec407a,0x3949ab,0xffffff];
-const imF={};
+// Human spectators: one merged geometry per pose (body + arms + head-wear + props), two levels of detail.
+// Colours per instance (jacket, trousers, skin, hat/scarf/gloves, hair) are packed in instanced attributes and
+// picked in the shader by a per-vertex 'slot'; cheering (bounce, clapping, waving) runs in the vertex shader, so the CPU never touches it.
+const _Y=new THREE.Vector3(0,1,0);
+function cil(a,b,r1,r2,seg,aperto){const A=new THREE.Vector3(a[0],a[1],a[2]),v=new THREE.Vector3(b[0]-a[0],b[1]-a[1],b[2]-a[2]),len=v.length();
+ const g=new THREE.CylinderGeometry(r2,r1,len,seg,1,!!aperto);g.translate(0,len/2,0);g.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(_Y,v.normalize())));g.translate(A.x,A.y,A.z);return g}
+function sfe(r,x,y,z,ws,hs,sx,sy,sz,tl){const g=new THREE.SphereGeometry(r,ws,hs,0,TAU,0,tl||Math.PI);g.scale(sx||1,sy||1,sz||1);g.translate(x,y,z);return g}
+function box(w,h,d,x,y,z){const g=new THREE.BoxGeometry(w,h,d);g.translate(x,y,z);return g}
+function Costr(){const P=[],N=[],C=[],S_=[],J=[],U=[],col=new THREE.Color();
+ return{add(g,slot,c,jnt,uvOk){const ng=g.index?g.toNonIndexed():g,p=ng.attributes.position.array,n=ng.attributes.normal.array,uv=ng.attributes.uv&&uvOk?ng.attributes.uv.array:null;
+   if(slot)col.setRGB(c,c,c);else col.setHex(c);
+   for(let i=0;i<p.length/3;i++){P.push(p[i*3],p[i*3+1],p[i*3+2]);N.push(n[i*3],n[i*3+1],n[i*3+2]);C.push(col.r,col.g,col.b);S_.push(slot);J.push(jnt||0);if(uv)U.push(uv[i*2],uv[i*2+1]);else U.push(.012,.06)}},
+  fine(){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));
+   g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));g.setAttribute('slot',new THREE.Float32BufferAttribute(S_,1));g.setAttribute('jnt',new THREE.Float32BufferAttribute(J,1));return g}}}
+// slots: 0 fixed colour, 1 jacket, 2 trousers, 3 skin, 4 hat/scarf/gloves, 5 hair.  joints: 0 body, 1 left arm, 2 right arm, 3 both arms + sign, 4 head
+// poses: 0 clapping, 1 arms up, 2 Italian flag, 3 sign, 4 phone, 5 fist pump
+const POSE_N=6;
+const ARMI=[ // [elbow, wrist] for left and right arm, front is +Z
+ [[[-.25,1.17,.1],[-.07,1.3,.3]],[[.25,1.17,.1],[.07,1.3,.3]]],
+ [[[-.33,1.68,.03],[-.4,1.93,.06]],[[.33,1.68,.03],[.4,1.93,.06]]],
+ [[[-.25,1.15,.06],[-.24,.9,.1]],[[.33,1.66,.05],[.34,1.9,.08]]],
+ [[[-.27,1.55,.17],[-.34,1.85,.2]],[[.27,1.55,.17],[.34,1.85,.2]]],
+ [[[-.24,1.15,.05],[-.23,.9,.08]],[[.23,1.24,.15],[.11,1.53,.3]]],
+ [[[-.34,1.16,-.03],[-.2,1.0,.05]],[[.3,1.62,.05],[.32,1.88,.08]]]];
+const CAPO=[0,1,0,2,2,1]; // head-wear per pose: 0 beanie with pompom, 1 ski helmet + goggles, 2 bare head with hair
+function figura(pose,lod){const B=Costr(),hi=lod===0,sg=hi?6:4;
+ // shadow on the snow
+ {const g=new THREE.CircleGeometry(.34,hi?8:6);g.rotateX(-Math.PI/2);g.translate(0,.015,0);B.add(g,0,0xb4c0d2)}
+ // boots, legs with knees, hips
+ for(const sd of [-1,1]){const x=sd*.11;
+  B.add(box(.12,.12,.27,x,.06,.035),0,0x2b2622);
+  if(hi){B.add(cil([x,.11,0],[x,.5,.04],.058,.064,sg,true),2,.95);B.add(cil([x,.5,.04],[sd*.1,.95,0],.066,.086,sg,true),2,1)}
+  else B.add(box(.13,.86,.15,x,.53,.02),2,1)}
+ B.add(hi?cil([0,.86,0],[0,1.0,0],.17,.175,8,true):box(.34,.14,.24,0,.93,0),2,1);
+ // jacket: puffy torso, hem, shoulders, zip
+ if(hi){const t=cil([0,.93,0],[0,1.42,0],.205,.215,8,false);t.translate(0,0,0);B.add(t,1,1);
+  B.add(cil([0,.91,0],[0,.99,0],.222,.222,8,true),1,.82);B.add(cil([0,1.42,0],[0,1.51,0],.215,.08,8,false),1,1);B.add(box(.014,.5,.012,0,1.18,.2),0,0x30343c)}
+ else{B.add(box(.4,.52,.28,0,1.17,0),1,1);B.add(cil([0,1.43,0],[0,1.51,0],.19,.08,4,false).rotateY(Math.PI/4),1,1)}
+ // neck, head with a simple face
+ const hy=1.66,cp=CAPO[pose];
+ B.add(cil([0,1.48,0],[0,1.58,0],.05,.047,hi?6:4,true),3,1,4);
+ B.add(sfe(.1,0,hy,.005,hi?8:5,hi?6:4,1,1.13,1.05),3,1,4);
+ if(hi){B.add(box(.026,.042,.04,0,hy-.015,.108),3,.9,4);
+  const occhi=cp===2&&pose===4?0x15171c:0x1a1a1a;for(const sd of [-1,1]){const e=new THREE.PlaneGeometry(cp===2&&pose===4?.05:.026,.017);e.translate(sd*.037,hy+.022,.103);B.add(e,0,occhi,4)}
+  const m=new THREE.PlaneGeometry(.042,.011);m.translate(0,hy-.055,.1);B.add(m,0,0x8a3a3a,4);
+  // ears
+  for(const sd of [-1,1])B.add(box(.02,.045,.03,sd*.1,hy,0),3,.92,4)}
+ // head-wear
+ if(cp===0){B.add(sfe(.113,0,hy+.008,0,hi?8:5,hi?4:2,1,1.18,1.06,Math.PI*.5),4,1,4);if(hi){B.add(cil([0,hy-.005,0],[0,hy+.04,0],.115,.115,8,true),4,.78,4);B.add(new THREE.IcosahedronGeometry(.045,0).translate(0,hy+.145,0),0,0xf4f4f4,4)}}
+ else if(cp===1){B.add(sfe(.124,0,hy+.012,-.008,hi?8:5,hi?4:2,1,1.02,1.08,Math.PI*.56),4,1,4);
+  if(hi){B.add(box(.19,.065,.03,0,hy+.025,.098),0,0x24262b,4);B.add(box(.17,.05,.02,0,hy+.025,.113),0,0xffa21a,4);B.add(cil([0,hy+.008,0],[0,hy+.042,0],.119,.119,8,true),0,0x24262b,4)}
+  else B.add(box(.17,.05,.03,0,hy+.025,.1),0,0xffa21a,4)}
+ else{B.add(sfe(.108,0,hy+.012,-.01,hi?8:5,hi?4:2,1,1.12,1.08,Math.PI*.55),5,1,4);if(hi)B.add(box(.19,.2,.06,0,hy-.07,-.075),5,.95,4)}
+ // scarf for the beanie people
+ if(cp===0&&hi){B.add(cil([0,1.46,0],[0,1.54,0],.09,.09,7,true),4,.9);B.add(box(.075,.2,.025,.06,1.37,.21),4,.85)}
+ // arms with elbows and gloves
+ const arms=ARMI[pose];
+ for(let k=0;k<2;k++){const sd=k?1:-1,sh=[sd*.21,1.43,0],[el,wr]=arms[k],j=pose===3?3:k?2:1;
+  if(hi){B.add(sfe(.062,sh[0],sh[1],sh[2],6,4),1,1,j);B.add(cil(sh,el,.058,.052,6,true),1,1,j);B.add(sfe(.05,el[0],el[1],el[2],5,3),1,.95,j);B.add(cil(el,wr,.05,.044,6,true),1,1,j);
+   B.add(sfe(.048,wr[0],wr[1],wr[2],5,3,.9,1.25,.8),4,.55,j)}
+  else B.add(cil(sh,wr,.06,.05,4,false),1,1,j)}
+ // props
+ if(pose===2){const w=ARMI[2][1][1];B.add(cil([w[0],w[1]-.35,w[2]],[w[0],w[1]+.75,w[2]],.012,.012,hi?5:3,true),0,0xd8d8d8,2);
+  [0x009246,0xf4f5f0,0xce2b37].forEach((c,i)=>B.add(box(.2,.4,.012,w[0]+.1+i*.2,w[1]+.53,w[2]),0,c,2))}
+ if(pose===3){const g=new THREE.PlaneGeometry(.95,.42);g.translate(0,1.98,.24);B.add(g,0,0xffffff,3,true);B.add(box(.97,.44,.015,0,1.98,.228),0,0xe8e8e8,3)}
+ if(pose===4)B.add(box(.07,.13,.014,.1,1.6,.33),0,0x15171c,2);
+ return B.fine()}
+function matPersone(map){const m=new THREE.MeshLambertMaterial({vertexColors:true,map:map||null});
+ m.userData.u={uT:{value:0},uSk:{value:0},uFin:{value:0},uA:{value:new THREE.Vector4()},uB:{value:new THREE.Vector4()}};
+ m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,m.userData.u);
+  sh.vertexShader=sh.vertexShader.replace('#include <common>',`#include <common>
+attribute float slot;attribute float jnt;attribute vec4 iCol;attribute vec4 iInf;
+uniform float uT,uSk,uFin;uniform vec4 uA,uB;
+vec3 unpk(float f){f=floor(f+.5);return vec3(floor(f/65536.),mod(floor(f/256.),256.),mod(f,256.))/255.;}
+mat3 rX(float a){float c=cos(a),s=sin(a);return mat3(1.,0.,0.,0.,c,s,0.,-s,c);}
+mat3 rY(float a){float c=cos(a),s=sin(a);return mat3(c,0.,-s,0.,1.,0.,s,0.,c);}
+mat3 rZ(float a){float c=cos(a),s=sin(a);return mat3(c,s,0.,-s,c,0.,0.,0.,1.);}`)
+  .replace('#include <color_vertex>',`#include <color_vertex>
+vec3 pc=vec3(1.);
+if(slot>.5){if(slot<1.5)pc=unpk(iCol.x);else if(slot<2.5)pc=unpk(iCol.y);else if(slot<3.5)pc=unpk(iCol.z);else if(slot<4.5)pc=unpk(iCol.w);else pc=unpk(iInf.x);}
+vColor=color*pc;
+vec4 ip=instanceMatrix*vec4(0.,0.,0.,1.);
+float ex=clamp(1.-abs(-ip.z-uSk)/80.,0.,1.);ex=max(ex*ex*(3.-2.*ex),max(.16,uFin*iInf.z));
+float ph=iInf.y,w1=sin(uT*uA.w+ph);
+mat3 RJ=mat3(1.);vec3 piv=vec3(0.);
+if(jnt>.5&&jnt<1.5){piv=vec3(-.21,1.43,0.);RJ=rY(-uA.y*ex*(.5+.5*w1))*rX(-uA.x*ex*w1)*rZ(-uA.z*ex*w1);}
+else if(jnt>1.5&&jnt<2.5){piv=vec3(.21,1.43,0.);RJ=rY(uA.y*ex*(.5+.5*w1))*rX(-uB.x*ex*w1)*rZ(uB.z*ex*w1);}
+else if(jnt>2.5&&jnt<3.5){piv=vec3(0.,1.35,0.);RJ=rZ(uB.z*ex*w1)*rX(uB.x*ex*sin(uT*uA.w*.5+ph));}
+else if(jnt>3.5){piv=vec3(0.,1.56,0.);RJ=rY(.4*sin(uT*.5+ph*2.))*rX(.1*sin(uT*.8+ph)-.08*ex);}
+float bob=ex*abs(sin(uT*uB.w*.5+ph*1.3))*.1;`)
+  .replace('#include <beginnormal_vertex>','#include <beginnormal_vertex>\nobjectNormal=RJ*objectNormal;')
+  .replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed=RJ*(transformed-piv)+piv;transformed.y+=bob;')};
+ m.customProgramCacheKey=()=>'persone'+(map?'m':'');return m}
+// animation per pose: uA=(left X, clap Y, left Z, rate)  uB=(right X, -, right Z, bounce rate)
+const POSE_AN=[[.05,.32,0,10, .05,0,0,9],[.25,0,.22,6, .25,0,.22,9],[0,0,0,5, .1,0,.45,7],[0,0,0,3, .07,0,.12,8],[0,0,0,2, .06,0,.06,6],[0,0,0,10, .45,0,0,10]];
+const PERS=[]; // [pose][lod] -> {mesh,geo}
+{const segno=texScritta('FORZA FEDE!',.95,.42,'#ffffff','#d81b2a',false);
+ for(let p=0;p<POSE_N;p++){PERS[p]=[];for(let l=0;l<2;l++){const geo=figura(p,l),mat=matPersone(p===3?segno:null),A=POSE_AN[p];
+  mat.userData.u.uA.value.set(A[0],A[1],A[2],A[3]);mat.userData.u.uB.value.set(A[4],A[5],A[6],A[7]);
+  geo.setAttribute('iCol',new THREE.InstancedBufferAttribute(new Float32Array(SP_MAX*4),4).setUsage(THREE.DynamicDrawUsage));
+  geo.setAttribute('iInf',new THREE.InstancedBufferAttribute(new Float32Array(SP_MAX*4),4).setUsage(THREE.DynamicDrawUsage));
+  const m=new THREE.InstancedMesh(geo,mat,SP_MAX);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;m.count=0;scene.add(m);PERS[p][l]={m,geo,mat}}}}
+const PELLI=[0xf1c6a5,0xe0ac88,0xc68642,0x8d5a3b,0xffdcc0,0xd9a07a],
+ GIACCHE=[0xc62828,0x1e3a8a,0x111418,0xf2f2f2,0x00838f,0xef6c00,0x6a1b9a,0xfdd835,0x546e7a,0x2e7d32,0xd81b60,0x1565c0,0x8d1c1c,0x37474f],
+ PANT=[0x15171c,0x23262d,0x1b2a4a,0x3a3f47,0x5d4037,0x8d1c1c,0xe8e8e8,0x263238],
+ ACCENT=[0xe53935,0xffffff,0x1e88e5,0xfdd835,0x43a047,0xff7043,0x212121,0xab47bc,0x00acc1,0xf06292],
+ CAPELLI=[0x2b1d14,0x4a2e1b,0x1a1410,0x8a5a2b,0xc9a15a,0x9c3d1c,0x8f8f8f];
+const PB=[]; // per pose: {n, D (sorted d), M (matrices), C, I, win:[..]}
 function creaPubblico(){
- for(const k in imF){scene.remove(imF[k]);imF[k].dispose();delete imF[k]}
- const mk=(geo,n,mat)=>{const m=IM(geo,mat||matFolla,n);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;scene.add(m);return m};
- imF.corpo=mk(geoCorpo,SP_MAX);imF.testa=mk(geoTesta,SP_MAX);imF.braccia=mk(geoBraccia,SP_MAX);imF.cappello=mk(geoCappello,SP_MAX);imF.berretto=mk(geoBerretto,SP_MAX);
- imF.asta=mk(geoBandiera,SP_MAX);imF.tela=mk(geoTela,SP_MAX);imF.cartello=mk(geoCartello,400,matCartello);
- const c=new THREE.Color();let nf=0,nc=0,nb=0,ns=0;
- SPETT.forEach((p,i)=>{const h=hash(i,7);c.setHex(GIACCHE[Math.floor(h*GIACCHE.length)]);imF.corpo.setColorAt(i,c);imF.braccia.setColorAt(i,c);
-  c.setHex(PELLI[Math.floor(hash(i,8)*PELLI.length)]);imF.testa.setColorAt(i,c);c.setHex(GIACCHE[Math.floor(hash(i,9)*GIACCHE.length)]);
-  p.hi=-1;if(p.cap===1){p.hi=nc;imF.cappello.setColorAt(nc++,c)}else if(p.cap===2){p.hi=nb;imF.berretto.setColorAt(nb++,c)}
-  p.si=-1;if(p.cart&&!p.fl&&ns<400)p.si=ns++;
-  if(p.fl){p.fi=nf;c.setHex([0x009246,0xffffff,0xce2b37,0x1e6fd9,0xffd12a][nf%5]);imF.tela.setColorAt(nf,c);c.setHex(0xdddddd);imF.asta.setColorAt(nf,c);nf++}});
- imF.corpo.count=imF.testa.count=imF.braccia.count=SPETT.length;imF.cappello.count=nc;imF.berretto.count=nb;imF.asta.count=imF.tela.count=nf;imF.cartello.count=ns;
- for(const k in imF)if(imF[k].instanceColor)imF[k].instanceColor.needsUpdate=true;
+ const lst=[...Array(POSE_N)].map(()=>[]);
+ SPETT.forEach((p,i)=>{const r=hash(i,6);p.pose=p.fl?2:p.cart?3:r<.34?0:r<.58?1:r<.74?4:5;lst[p.pose].push(p)});
+ const M=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),v=new THREE.Vector3(),sc=new THREE.Vector3();
+ const pick=(a,u)=>a[Math.floor(u*a.length)%a.length];
+ for(let k=0;k<POSE_N;k++){const L=lst[k].sort((a,b)=>a.d-b.d),n=L.length,b={n,D:new Float32Array(n),M:new Float32Array(n*16),C:new Float32Array(n*4),I:new Float32Array(n*4),win:''};
+  L.forEach((p,j)=>{const i=p.col,bam=p.sc<1,w=bam?1.1+hash(i,11)*.1:.9+hash(i,12)*.28;
+   e.set(0,p.yaw,0);q.setFromEuler(e);v.set(p.x,p.y-.02,-p.d);sc.set(p.sc*w,p.sc,p.sc*w);M.compose(v,q,sc);M.toArray(b.M,j*16);
+   b.C[j*4]=pick(GIACCHE,hash(i,7));b.C[j*4+1]=pick(PANT,hash(i,13));b.C[j*4+2]=pick(PELLI,hash(i,8));b.C[j*4+3]=pick(ACCENT,hash(i,9));
+   b.I[j*4]=pick(CAPELLI,hash(i,14));b.I[j*4+1]=p.ph;b.I[j*4+2]=p.cl&&p.cl.arrivo?1:0;b.D[j]=p.d});
+  PB[k]=b}
  aggiornaPubblico(0,true)}
+function lbD(D,x){let a=0,b=D.length;while(a<b){const m=(a+b)>>1;if(D[m]<x)a=m+1;else b=m}return a}
+function copiaFin(dst,src,ranges,sz){let o=0;for(const [a,b] of ranges)if(b>a){dst.set(src.subarray(a*sz,b*sz),o*sz);o+=b-a}return o}
 const _M=new THREE.Matrix4(),_q=new THREE.Quaternion(),_e=new THREE.Euler(),_s=new THREE.Vector3(),_v=new THREE.Vector3();
 let tFolla=0;
-function aggiornaPubblico(dt,tutti){tFolla+=dt;const s=S,sd=s?s.d:0;
- for(let i=0;i<SPETT.length;i++){const p=SPETT[i];
-  let ex=0;if(s){const dd=Math.abs(p.d-sd);if(dd<75)ex=1-dd/75;if(s.stato==='arrivo'||s.stato==='fine')if(p.cl.arrivo)ex=1;if(p.cl.tifo>0)ex=Math.max(ex,Math.min(1,p.cl.tifo))}
-  if(!tutti&&ex<=0&&!p.ex)continue;p.ex=ex>0;
-  const t=tFolla*9+p.ph,b=ex*Math.abs(Math.sin(t))*.36,k=p.sc;
-  _e.set(0,p.yaw,0);_q.setFromEuler(_e);_v.set(p.x,p.y+b,-p.d);_s.set(k,k,k);
-  _M.compose(_v,_q,_s);imF.corpo.setMatrixAt(i,_M);imF.testa.setMatrixAt(i,_M);
-  if(p.hi>=0)(p.cap===1?imF.cappello:imF.berretto).setMatrixAt(p.hi,_M);
-  if(p.si>=0){_v.y=p.y+b+Math.sin(t*.7)*.06*ex;_M.compose(_v,_q,_s);imF.cartello.setMatrixAt(p.si,_M)}
-  _v.y=p.y+b+.72*k;_s.set(k,k*mix(-.85,1,ex*(.6+.4*Math.sin(t*1.3))),k);_M.compose(_v,_q,_s);imF.braccia.setMatrixAt(i,_M);
-  if(p.fl){_v.set(p.x+.3,p.y+b+.1,-p.d);_s.set(k,k,k);_e.set(0,p.yaw+Math.sin(tFolla*(3+ex*5)+p.ph)*(.3+ex*.6),Math.sin(t)*.15*ex);_q.setFromEuler(_e);_M.compose(_v,_q,_s);imF.asta.setMatrixAt(p.fi,_M);imF.tela.setMatrixAt(p.fi,_M)}}
- for(const k in imF)imF[k].instanceMatrix.needsUpdate=true}
+function aggiornaPubblico(dt,tutti){tFolla+=dt;const s=S,sd=s?(s.stato==='menu'?-6:s.d):0,q=Math.floor(sd/15)*15;
+ const fin=s&&(s.stato==='arrivo'||s.stato==='fine')?1:0;
+ for(let k=0;k<POSE_N;k++){const b=PB[k];if(!b)continue;
+  for(let l=0;l<2;l++){const u=PERS[k][l].mat.userData.u;u.uT.value=tFolla;u.uSk.value=sd;u.uFin.value+=(fin-u.uFin.value)*Math.min(1,dt*2)}
+  // level of detail: full figures near Federico, simple ones far away
+  const a0=lbD(b.D,q-150),a=lbD(b.D,q-45),bb=lbD(b.D,q+270),e=lbD(b.D,q+1500),key=a0+','+a+','+bb+','+e;
+  if(key===b.win&&!tutti)continue;b.win=key;
+  const sets=[[[a,bb]],[[a0,a],[bb,e]]];
+  for(let l=0;l<2;l++){const {m,geo}=PERS[k][l],r=sets[l];
+   const n=copiaFin(m.instanceMatrix.array,b.M,r,16);copiaFin(geo.attributes.iCol.array,b.C,r,4);copiaFin(geo.attributes.iInf.array,b.I,r,4);
+   m.count=n;m.instanceMatrix.needsUpdate=true;geo.attributes.iCol.needsUpdate=true;geo.attributes.iInf.needsUpdate=true}}}
 
 /* ======================= FEDERICO (rig articolato) ======================= */
 function osso(a,b,r1,r2,mat){const v=new THREE.Vector3().subVectors(b,a),len=v.length();
@@ -697,73 +802,93 @@ function osso(a,b,r1,r2,mat){const v=new THREE.Vector3().subVectors(b,a),len=v.l
 function seg(len,r1,r2,mat){const g=new THREE.CylinderGeometry(r2,r1,len,10);g.translate(0,-len/2,0);return new THREE.Mesh(g,mat)}
 function palla(r,mat,x,y,z){const m=new THREE.Mesh(new THREE.SphereGeometry(r,14,10),mat);m.position.set(x||0,y||0,z||0);return m}
 const L1=.4,L2=.4;
+// Federico: race suit, helmet and goggles, gloves, boots with buckles, skis with bindings; rig with hips, knees, ankles, two-piece spine, shoulders, elbows
 function creaFederico(){
- const M=c=>new THREE.MeshLambertMaterial({color:c});
- const giacca=M(0x1e88e5),riga=M(0xffc400),pant=M(0xe53935),guanti=M(0x22252b),scarpone=M(0xff8a1a),pelle=M(0xf0c4a0),casco=M(0xffd12a),scuro=M(0x22252b);
- const sci=M(0xff3d7f),bianco=M(0xffffff),asta=new THREE.MeshPhongMaterial({color:0xc0c8d0,specular:0xffffff,shininess:60});
- const lente=new THREE.MeshPhongMaterial({color:0xff9a1a,specular:0xffffff,shininess:100,emissive:0x552200});
+ const M=c=>new THREE.MeshLambertMaterial({color:c}),Ph=(c,sh)=>new THREE.MeshPhongMaterial({color:c,specular:0x666666,shininess:sh||40});
+ const tuta=Ph(0x1e6fd9,30),tuta2=Ph(0xe53935,30),giallo=Ph(0xffc400,30),guanti=Ph(0x22252b,20),scarpone=Ph(0xff6d00,70),pelle=M(0xf0c4a0),casco=Ph(0xffd12a,90),scuro=Ph(0x1d1f24,30);
+ const sci=Ph(0xff3d7f,80),bianco=M(0xffffff),metallo=Ph(0xc0c8d0,90),asta=new THREE.MeshPhongMaterial({color:0xc0c8d0,specular:0xffffff,shininess:60});
+ const lente=new THREE.MeshPhongMaterial({color:0xff9a1a,specular:0xffffff,shininess:120,emissive:0x552200});
+ const mesh=(g,m,x,y,z)=>{const o=new THREE.Mesh(g,m);o.position.set(x||0,y||0,z||0);return o};
  const R={};
  R.root=new THREE.Group();R.root.rotation.order='YXZ';
  R.air=new THREE.Group();R.air.position.y=.7;R.air.rotation.order='YXZ';R.root.add(R.air);
  R.inn=new THREE.Group();R.inn.position.y=-.7;R.air.add(R.inn);
  R.lean=new THREE.Group();R.inn.add(R.lean);
- // sci e scarponi
  R.sci=[];R.gambe=[];
  for(const sd of [-1,1]){const g=new THREE.Group();g.position.set(sd*.12,0,0);R.lean.add(g);
-  const tav=new THREE.Mesh(new THREE.BoxGeometry(.085,.025,1.25),sci);tav.position.set(0,.02,-.05);g.add(tav);
-  const punta=new THREE.Mesh(new THREE.BoxGeometry(.085,.025,.16),bianco);punta.position.set(0,.05,-.72);punta.rotation.x=.45;g.add(punta);
-  const coda=new THREE.Mesh(new THREE.BoxGeometry(.085,.025,.1),bianco);coda.position.set(0,.03,.6);coda.rotation.x=-.25;g.add(coda);
-  const att=new THREE.Mesh(new THREE.BoxGeometry(.09,.04,.32),scuro);att.position.set(0,.05,.0);g.add(att);
-  const sc=new THREE.Mesh(new THREE.BoxGeometry(.11,.16,.26),scarpone);sc.position.set(0,.13,-.02);g.add(sc);
+  // ski: body, raised tip, tail, top-sheet stripe, binding (toe + heel piece + plate)
+  g.add(mesh(new THREE.BoxGeometry(.075,.02,1.45),sci,0,.015,-.02));
+  g.add(mesh(new THREE.BoxGeometry(.03,.003,1.2),bianco,0,.027,-.05));
+  const punta=mesh(new THREE.BoxGeometry(.075,.018,.2),sci,0,.045,-.8);punta.rotation.x=.4;g.add(punta);
+  const coda=mesh(new THREE.BoxGeometry(.075,.018,.1),sci,0,.025,.72);coda.rotation.x=-.25;g.add(coda);
+  g.add(mesh(new THREE.BoxGeometry(.07,.025,.42),scuro,0,.037,0));
+  g.add(mesh(new THREE.BoxGeometry(.07,.05,.07),metallo,0,.06,-.18));g.add(mesh(new THREE.BoxGeometry(.07,.06,.09),metallo,0,.065,.17));
+  // boot: shell, cuff, buckles
+  g.add(mesh(new THREE.BoxGeometry(.11,.09,.3),scarpone,0,.09,-.02));
+  g.add(mesh(new THREE.CylinderGeometry(.068,.075,.16,10),scarpone,0,.2,.01));
+  for(const y of [.13,.19,.24])g.add(mesh(new THREE.BoxGeometry(.03,.012,.02),metallo,sd*.068,y,0));
   R.sci.push(g);
-  // gamba: coscia -> ginocchio -> stinco
-  const cos=new THREE.Group();cos.add(seg(L1,.075,.065,pant));R.lean.add(cos);
-  const gin=new THREE.Group();gin.position.y=-L1;cos.add(gin);gin.add(palla(.066,pant));gin.add(seg(L2,.062,.055,pant));
+  // leg: thigh -> knee -> shin, suit with side stripe
+  const cos=new THREE.Group();cos.add(seg(L1,.082,.066,tuta));const st=mesh(new THREE.BoxGeometry(.012,L1*.9,.04),tuta2,sd*.074,-L1/2,0);cos.add(st);R.lean.add(cos);
+  const gin=new THREE.Group();gin.position.y=-L1;cos.add(gin);gin.add(palla(.067,tuta));gin.add(mesh(new THREE.SphereGeometry(.05,10,8),tuta2,0,0,-.035));gin.add(seg(L2,.062,.052,tuta));
+  gin.add(mesh(new THREE.BoxGeometry(.012,L2*.8,.035,1),tuta2,sd*.063,-L2*.45,0));
   R.gambe.push({cos,gin,sd})}
- // bacino e busto
+ // pelvis, lower spine (busto) and chest (petto)
  R.bac=new THREE.Group();R.lean.add(R.bac);
- const bac=palla(.15,pant);bac.scale.set(1.25,.8,1);R.bac.add(bac);
- R.busto=new THREE.Group();R.bac.add(R.busto);
- const tor=seg(.4,.16,.18,giacca);tor.rotation.z=Math.PI;tor.scale.set(1.2,1,.85);R.busto.add(tor);
- const fascia=new THREE.Mesh(new THREE.CylinderGeometry(.188,.188,.07,12),riga);fascia.scale.set(1.2,1,.86);fascia.position.y=.2;R.busto.add(fascia);
- // pettorina con il numero 1
+ const bac=palla(.155,tuta);bac.scale.set(1.2,.78,.95);R.bac.add(bac);
+ R.busto=new THREE.Group();R.busto.rotation.order='XZY';R.bac.add(R.busto);
+ const add=mesh(seg(.2,.15,.16,tuta).geometry,tuta);add.rotation.z=Math.PI;add.scale.set(1.15,1,.85);R.busto.add(add);
+ R.petto=new THREE.Group();R.petto.position.y=.18;R.busto.add(R.petto);
+ const pet=seg(.24,.16,.19,tuta);pet.rotation.z=Math.PI;pet.scale.set(1.18,1,.86);R.petto.add(pet);
+ const spalle=palla(.19,tuta2);spalle.scale.set(1.18,.42,.82);spalle.position.y=.235;R.petto.add(spalle);
+ const fascia=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.05,14),giallo);fascia.scale.set(1.18,1,.87);fascia.position.y=.12;R.petto.add(fascia);
+ // race bib with number 1 (front and back)
  {const c=document.createElement('canvas');c.width=64;c.height=64;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,64,64);x.fillStyle='#d81b2a';x.font='800 50px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('1',32,36);
-  const pet=new THREE.Mesh(new THREE.PlaneGeometry(.2,.2),new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(c)}));pet.position.set(0,.27,-.156);pet.rotation.y=Math.PI;R.busto.add(pet)}
- R.testa=new THREE.Group();R.testa.position.y=.44;R.busto.add(R.testa);
- R.testa.add(palla(.05,giacca,0,-.02,0));
- R.testa.add(palla(.13,pelle,0,.13,0));
- const cas=new THREE.Mesh(new THREE.SphereGeometry(.152,16,12,0,TAU,0,Math.PI*.56),casco);cas.position.y=.15;R.testa.add(cas);
- const vis=new THREE.Mesh(new THREE.BoxGeometry(.22,.075,.06),lente);vis.position.set(0,.16,-.125);R.testa.add(vis);
- const cinta=new THREE.Mesh(new THREE.TorusGeometry(.142,.016,6,20),scuro);cinta.position.y=.16;cinta.rotation.x=Math.PI/2;R.testa.add(cinta);
- const naso=palla(.025,pelle,0,.1,-.13);R.testa.add(naso);
- const bocca=new THREE.Mesh(new THREE.TorusGeometry(.035,.009,4,10,Math.PI),M(0x9c2a2a));bocca.position.set(0,.06,-.122);bocca.rotation.set(0,Math.PI,Math.PI);R.testa.add(bocca);
- // braccia e bastoncini
+  const tm=new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(c)});
+  const f=new THREE.Mesh(new THREE.PlaneGeometry(.19,.17),tm);f.position.set(0,.06,-.168);f.rotation.y=Math.PI;R.petto.add(f);
+  const b=new THREE.Mesh(new THREE.PlaneGeometry(.19,.17),tm);b.position.set(0,.06,.168);R.petto.add(b)}
+ // neck gaiter, head, helmet with visor ridge, goggles, face
+ R.testa=new THREE.Group();R.testa.position.y=.27;R.petto.add(R.testa);
+ R.testa.add(mesh(new THREE.CylinderGeometry(.06,.07,.09,12),scuro,0,0,0));
+ R.testa.add(palla(.12,pelle,0,.14,0));
+ const cas=new THREE.Mesh(new THREE.SphereGeometry(.145,18,12,0,TAU,0,Math.PI*.58),casco);cas.position.set(0,.155,.01);cas.scale.set(1,1.02,1.1);R.testa.add(cas);
+ const cr=mesh(new THREE.BoxGeometry(.03,.02,.24),tuta2,0,.29,.01);R.testa.add(cr);
+ const occ=new THREE.Mesh(new THREE.BoxGeometry(.23,.085,.05),scuro);occ.position.set(0,.165,-.118);R.testa.add(occ);
+ const vis=new THREE.Mesh(new THREE.BoxGeometry(.205,.065,.03),lente);vis.position.set(0,.165,-.14);R.testa.add(vis);
+ const cinta=new THREE.Mesh(new THREE.TorusGeometry(.14,.014,6,22),scuro);cinta.position.y=.165;cinta.rotation.x=Math.PI/2;R.testa.add(cinta);
+ R.testa.add(palla(.024,pelle,0,.1,-.122));
+ const bocca=new THREE.Mesh(new THREE.TorusGeometry(.032,.008,4,10,Math.PI),M(0x9c2a2a));bocca.position.set(0,.055,-.11);bocca.rotation.set(0,Math.PI,Math.PI);R.testa.add(bocca);
+ for(const sd of [-1,1])R.testa.add(palla(.022,M(0xf2a68a),sd*.065,.085,-.095));
+ // arms: shoulder, upper arm, elbow, forearm, glove with thumb, pole with grip, strap and basket
  R.braccia=[];
- for(const sd of [-1,1]){const sp=new THREE.Group();sp.position.set(sd*.2,.36,0);sp.rotation.order='ZXY';R.busto.add(sp);
-  sp.add(palla(.068,giacca));sp.add(seg(.27,.06,.05,giacca));
-  const gom=new THREE.Group();gom.position.y=-.27;sp.add(gom);gom.add(palla(.052,riga));gom.add(seg(.25,.05,.045,giacca));
-  const mano=new THREE.Group();mano.position.y=-.26;gom.add(mano);mano.add(palla(.055,guanti));
+ for(const sd of [-1,1]){const sp=new THREE.Group();sp.position.set(sd*.215,.21,0);sp.rotation.order='ZXY';R.petto.add(sp);
+  sp.add(palla(.072,tuta2));sp.add(seg(.27,.062,.052,tuta));
+  const gom=new THREE.Group();gom.position.y=-.27;sp.add(gom);gom.add(palla(.054,tuta));gom.add(seg(.24,.052,.045,tuta));
+  gom.add(mesh(new THREE.CylinderGeometry(.052,.052,.05,10),guanti,0,-.22,0));
+  const mano=new THREE.Group();mano.position.y=-.26;gom.add(mano);const pm=mesh(new THREE.BoxGeometry(.07,.1,.085),guanti,0,-.02,0);mano.add(pm);
+  mano.add(mesh(new THREE.BoxGeometry(.03,.06,.03),guanti,-sd*.03,-.01,-.045));
   const bas=new THREE.Group();mano.add(bas);
-  const st=seg(1.0,.012,.012,asta);bas.add(st);const imp=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.13,6),M(0xd81b2a));imp.position.y=-.02;bas.add(imp);
-  const rot=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.01,10),scuro);rot.position.y=-.9;bas.add(rot);
+  bas.add(seg(1.0,.011,.009,asta));bas.add(mesh(new THREE.CylinderGeometry(.024,.02,.15,8),M(0xd81b2a),0,-.02,0));
+  bas.add(mesh(new THREE.TorusGeometry(.04,.006,4,10),scuro,0,.05,0));
+  const rot=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.012,10),scuro);rot.position.y=-.9;bas.add(rot);
   R.braccia.push({sp,gom,mano,bas,sd})}
- // ombra
  R.ombra=new THREE.Mesh(new THREE.CircleGeometry(.75,20),new THREE.MeshBasicMaterial({color:0x223355,transparent:true,opacity:.28,depthWrite:false}));R.ombra.rotation.x=-Math.PI/2;
- // ice shield bubble (snowflake power-up)
  R.scudo=new THREE.Mesh(new THREE.SphereGeometry(1.05,18,12),new THREE.MeshLambertMaterial({color:0xaeeaff,emissive:0x2a6a88,transparent:true,opacity:.22,depthWrite:false}));R.scudo.visible=false;
  return R}
 const FED=creaFederico();scene.add(FED.root);scene.add(FED.ombra);scene.add(FED.scudo);
-// posa: c=accovacciato 0..1, ecc.
+// pose: c = crouch 0..1; ang = angulation (upper body against the lean), tw = counter-rotation
 function posa(o){const R=FED;
  const c=o.c,hy=.8-.33*c-.13*o.ass,hz=.06+.14*c,lift=o.lift||0;
  R.bac.position.set(0,hy,hz);
- const tl=-(.12+.85*c+(o.avanti||0)+.15*o.ass);R.busto.rotation.x=tl;R.testa.rotation.x=-tl*.75;
+ const tl=-(.12+.85*c+(o.avanti||0)+.15*o.ass);R.busto.rotation.set(tl*.55,o.tw||0,o.ang||0);R.petto.rotation.x=tl*.45;R.testa.rotation.x=-tl*.75;R.testa.rotation.z=-(o.ang||0)*.6;
  for(const g of R.gambe){const sd=g.sd,hx=sd*.11;g.cos.position.set(hx,hy-.04,hz);
-  const ax=sd*.12,ay=.17+lift,az=-.02;let vz=az-hz,vy=ay-(hy-.04);let D=Math.hypot(vz,vy);D=Math.min(D,L1+L2-.002);
+  const ax=sd*.12,ay=.2+lift,az=-.01;let vz=az-hz,vy=ay-(hy-.04);let D=Math.hypot(vz,vy);D=Math.min(D,L1+L2-.002);
   const th=Math.atan2(-vz,-vy),a1=Math.acos(clamp((L1*L1+D*D-L2*L2)/(2*L1*D),-1,1)),a2=Math.acos(clamp((L1*L1+L2*L2-D*D)/(2*L1*L2),-1,1));
   g.cos.rotation.x=th+a1;g.gin.rotation.x=-(Math.PI-a2);g.cos.rotation.z=(ax-hx)*-1.2}
  R.sci.forEach((s,i)=>{const sd=i?1:-1;s.position.y=lift;s.rotation.y=(o.v||0)*sd*-1;s.rotation.x=(o.skiX||0);s.rotation.z=o.edge||0})
  for(const b of R.braccia){const sd=b.sd;let sx=o.braccioX,sz=o.braccioZ,el=o.gomito;
+  // inside arm lower and forward in a turn, outside arm out for balance
+  const dentro=Math.sign(o.ang||0)===sd?1:0;sz+=Math.abs(o.ang||0)*(dentro?-.3:.6);sx+=Math.abs(o.ang||0)*(dentro?.4:0);
   if(o.pianta&&o.pianta.sd===sd){const k=Math.sin(Math.min(1,o.pianta.t/.35)*Math.PI);sx+=.55*k;el-=.2*k}
   if(o.grab&&sd===1){sx=.25+c*.3;sz=.15;el=.25}
   b.sp.rotation.set(sx,0,sd*sz);b.gom.rotation.x=el;
@@ -812,6 +937,15 @@ function aggiornaNevicata(dt){if(!nevicata.visible)return;tNeve+=dt;const vento=
  const w=(v,h)=>v<-h?v+2*h*Math.ceil((-h-v)/(2*h)):v>h?v-2*h*Math.ceil((v-h)/(2*h)):v;const a=geoFiocchi.attributes.position.array;
  for(let i=0;i<NF;i++){const j=i*3;fp[j]=w(fp[j]-dx+(Math.sin(tNeve+i)*.4+vento)*dt,FX);fp[j+1]=w(fp[j+1]-dy-cade*dt,FY);fp[j+2]=w(fp[j+2]-dz,FZ);a[j]=fp[j];a[j+1]=fp[j+1];a[j+2]=fp[j+2]}
  geoFiocchi.attributes.position.needsUpdate=true;nevicata.position.copy(camera.position)}
+
+// speed lines: thin streaks flying past the camera, stronger with speed
+const NL=70,lPos=new Float32Array(NL*6),lSeed=new Float32Array(NL*3);
+for(let i=0;i<NL;i++){const a=Math.random()*TAU,r=1.6+Math.random()*5;lSeed[i*3]=Math.cos(a)*r;lSeed[i*3+1]=Math.sin(a)*r*.75;lSeed[i*3+2]=-Math.random()*40}
+const geoLinee=new THREE.BufferGeometry();geoLinee.setAttribute('position',new THREE.BufferAttribute(lPos,3));
+const linee=new THREE.LineSegments(geoLinee,new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false}));linee.frustumCulled=false;camera.add(linee);scene.add(camera);
+function aggiornaLinee(dt,v){const k=clamp((v-18)/22,0,1);linee.visible=k>0;if(!k)return;linee.material.opacity=.5*k;const len=.4+v*.05;
+ for(let i=0;i<NL;i++){let z=lSeed[i*3+2]+v*1.3*dt;if(z>-1){z-=40}lSeed[i*3+2]=z;const j=i*6;lPos[j]=lPos[j+3]=lSeed[i*3];lPos[j+1]=lPos[j+4]=lSeed[i*3+1];lPos[j+2]=z;lPos[j+5]=z-len}
+ geoLinee.attributes.position.needsUpdate=true}
 
 /* ======================= AUDIO ======================= */
 let AC=null,master=null,sfx=null,musG=null,rumore=null,vento=null,carv=null,rasc=null,muto=false,musicaOn=true;
@@ -979,7 +1113,9 @@ function nuovo(i,caso){
    vite:3,gameover:false,scudo:0,combo:0,comboT:0,boostT:0,photo:0,trace:[],traceT:0,
    distScia:0,arrT:0,tFin:0,vStyle:false,stacco:'',po:null};
  S.px=S.x;S.py=S.y;S.pd=S.d;S.ppsi=0;S.pflip=0;S.pspin=0;
- posa({c:.2,ass:0,braccioX:.5,braccioZ:.15,gomito:.6})}
+ posa({c:.2,ass:0,braccioX:.5,braccioZ:.15,gomito:.6});
+ // compile every shader now (shield bubble, ghost, speed lines...), so nothing stalls the first time it appears on the course
+ try{const h=[FED.scudo,ghost,linee].map(o=>[o,o.visible]);h.forEach(([o])=>o.visible=true);renderer.compile(scene,camera);h.forEach(([o,v])=>o.visible=v)}catch(e){}}
 function parti(i){audio();i=i===undefined?LVI:i;
  $('#menu').classList.add('hidden');$('#fine').classList.add('hidden');$('#pausa').classList.add('hidden');pausaOn=false;
  nuovo(i,true);S.stato='conto';S.t=0;S.tc=0;
@@ -999,7 +1135,7 @@ function gameOver(){const s=S;if(s.stato==='gameover'||s.stato==='fine')return;s
 function cade(perche){const s=S;if(s.caduta>0)return true;
  if(s.scudo>0){s.scudo=0;s.inv=1.2;s.aria=false;s.flip=s.spin=s.flipT=s.spinT=0;s.rail=null;s.V*=.75;messaggio('❄️ Lo scudo ti ha salvato!',1.5);badge('scudo');suono(1600,700,.45,'triangle',.12);
   const p=FED.root.position;emetti(p.x,p.y+.8,p.z,0,2,0,40,4,.8);return false}
- s.caduta=1.7;s.aria=false;s.cadute++;s.flip=s.spin=s.flipT=s.spinT=0;s.rail=null;
+ s.caduta=1.25;s.aria=false;s.scossa=1;s.cadute++;s.flip=s.spin=s.flipT=s.spinT=0;s.rail=null;
  oops();perdiVita();messaggio(s.gameover?'💔 Niente più vite!':(perche||'Ops! Che capitombolo!')+' 💔',1.5);scritta('',.1);const p=FED.root.position;emetti(p.x,p.y,p.z,0,2,0,45,5,1);return true}
 function atterra(){const s=S;
  const e=.3,gx=(gnd(s.x+e,s.d)-gnd(s.x-e,s.d))/(2*e),gd=(gnd(s.x,s.d+e)-gnd(s.x,s.d-e))/(2*e);
@@ -1020,7 +1156,7 @@ function atterra(){const s=S;
  if(nS){nomi.push((nS*360)+'°');pt+=nS*220+(nS-1)*120}
  if(grab){nomi.push(s.grabNome);pt+=150+Math.round(Math.min(1.2,s.grabT)*150)}
  if(s.railStacco&&s.railT>.3){nomi.unshift('Rail');}
- if(imp>13.5||mancato>1.05){const caduto=cade(mancato>1.05?'Ops! Rotazione non finita!':'Atterraggio troppo duro!');if(LV.tipo==='salto'&&caduto)s.saltoCaduta=true;s.flip=s.spin=s.flipT=s.spinT=0;
+ if(imp>19||mancato>1.05){const caduto=cade(mancato>1.05?'Ops! Rotazione non finita!':'Atterraggio troppo duro!');if(LV.tipo==='salto'&&caduto)s.saltoCaduta=true;s.flip=s.spin=s.flipT=s.spinT=0;
   if(LV.tipo==='salto'&&s.saltoFatto&&s.salto>0&&!s.mostrato){s.mostrato=true;scritta('🦅 '+s.salto.toFixed(1).replace('.',',')+' m',2.2)}return}
  s.flip=s.spin=s.flipT=s.spinT=0;
  if(nomi.length&&(nF||nS||grab)){
@@ -1035,12 +1171,12 @@ function atterra(){const s=S;
 function passo(dt){const s=S,inp=comandi();
  const fin=s.stato==='arrivo';
  if(s.inv>0)s.inv-=dt;
- if(s.caduta>0){s.caduta-=dt;s.V=Math.max(0,s.V-7*dt);const hs=s.V*dt;s.x+=Math.sin(s.psi)*hs;s.d+=Math.cos(s.psi)*hs;s.y=gnd(s.x,s.d);s.vy=0;
+ if(s.caduta>0){s.caduta-=dt;s.V=Math.max(Math.min(s.V,6),s.V-12*dt);const hs=s.V*dt;s.x+=Math.sin(s.psi)*hs;s.d+=Math.cos(s.psi)*hs;s.y=gnd(s.x,s.d);s.vy=0;
   if(s.caduta<=0){if(s.gameover){gameOver();return}
-   s.rialzo=.7;s.inv=1;s.V=Math.max(s.V,1);s.psi=dirPista(s.d)*.5;const c=centro(s.d),w=largh(s.d);
+   s.rialzo=.6;s.inv=1.6;s.V=Math.max(s.V,LV.tipo==='salto'?1:VRESP);s.psi=dirPista(s.d);const c=centro(s.d),w=largh(s.d);s.x=c+clamp(s.x-c,-w*.5,w*.5);s.bil=0;s.skid=0;
    for(const o of ostacoli)if(Math.hypot(o.x-s.x,o.d-s.d)<o.r+1.5){s.x+=Math.sign(c-s.x||1)*2.5}
    for(const o of OSTL)if(Math.hypot(o.x-s.x,o.d-s.d)<o.r+1.5){s.x+=Math.sign(c-s.x||1)*2.5}
-   if(Math.abs(s.x-c)>w+12)s.x=c+Math.sign(s.x-c)*(w+12);s.y=gnd(s.x,s.d);messaggio('Federico si rialza! 💪',1.1)}
+   s.y=gnd(s.x,s.d);messaggio('Federico si rialza! 💪',1.1)}
   return}
  if(s.rialzo>0)s.rialzo-=dt;
  if(s.aria){
@@ -1062,7 +1198,7 @@ function passo(dt){const s=S,inp=comandi();
   // slightly floatier jumps (except the ski-jump hill, which keeps its real physics)
   const grav=s.vStyle?.74:LV.tipo==='salto'?1:.84,kA=s.vStyle?.0012:.0022;
   s.vy-=G*grav*dt;s.vh=Math.max(0,s.vh-kA*s.vh*s.vh*dt);
-  if(LV.tipo!=='salto')s.psi+=inp.steer*.35*dt*(s.blk.s?1:0);
+  if(LV.tipo!=='salto')s.psi+=inp.steer*.7*dt*(s.blk.s?1:0);
   s.x+=Math.sin(s.psi)*s.vh*dt;s.d+=Math.cos(s.psi)*s.vh*dt;s.y+=s.vy*dt;
   const h=gnd(s.x,s.d);if(s.y<=h){s.y=h;atterra()}
   return}
@@ -1073,7 +1209,11 @@ function passo(dt){const s=S,inp=comandi();
  if(salto){steer=0;s.psi*=Math.max(0,1-dt*4);s.x+=(centro(s.d)-s.x)*Math.min(1,dt*3)}
  const c=centro(s.d),w=largh(s.d),dx=s.x-c,adx=Math.abs(dx);
  if(s.rail){steer*=.15;s.x+=(s.rail.x-s.x)*Math.min(1,dt*6);s.psi*=Math.max(0,1-dt*5)}
- s.psi+=steer*2.0*dt*(s.V<2?.5:1);
+ // skid: hard turns at speed make the skis slide sideways (spray, scraping, balance at risk)
+ const skT=s.rail||salto?0:clamp((Math.abs(steer)*s.V-13)/12,0,1);s.skid=(s.skid||0)+(skT-(s.skid||0))*Math.min(1,dt*6);
+ if(s.skid>.7&&s.V>20&&s.stato==='gara')s.bil=(s.bil||0)+dt*(s.skid-.55)*1.1;else s.bil=Math.max(0,(s.bil||0)-dt*.8);
+ if(s.bil>1&&s.rialzo<=0&&s.inv<=0){s.bil=0;cade('Sbandata! Che capitombolo!');return}
+ s.psi+=steer*2.3*dt*(1-.3*s.skid);
  if(Math.abs(steer)<.1)s.psi+=(dirPista(s.d)-s.psi)*Math.min(1,dt*.45);
  if(adx>w+16){s.psi+=-Math.sign(dx)*1.3*dt}
  s.psi=clamp(s.psi,-1.5,1.5);
@@ -1082,17 +1222,18 @@ function passo(dt){const s=S,inp=comandi();
  const e=.3,gx=(gnd(s.x+e,s.d)-gnd(s.x-e,s.d))/(2*e),gd=(gnd(s.x,s.d+e)-gnd(s.x,s.d-e))/(2*e);
  const sp=Math.sin(s.psi),cp=Math.cos(s.psi),sl=gx*sp+gd*cp,a=Math.atan(-sl);s.aTerra=a;
  const tuck=inp.giu&&!fin,frena=(inp.freno||fin)&&!salto,spazz=inp.su&&!s.blk.f&&!fin&&!salto;
- let k=tuck?.0028:.0055;if(LV.tipo==='fondo')k=tuck?.0062:.0085;k+=.004*Math.abs(steer);if(adx>w)k+=.009;if(s.rail)k=.003;
+ let k=tuck?.0022:.0042;if(LV.tipo==='fondo')k=tuck?.005:.007;if(LV.tipo==='salto')k=tuck?.0028:.0055;k+=.003*Math.abs(steer)+.0015*s.skid;if(adx>w)k+=.006;if(s.rail)k=.003;
  let acc=G*Math.sin(a)-.035*G*Math.cos(a)-k*s.V*s.V;
  if(frena)acc-=fin?4.5:7;if(spazz&&!inp.salto)acc-=3.2;
- if(adx>w+16&&Math.sign(sp)===Math.sign(dx))acc-=2.5;
- // mai fermi per sbaglio: se quasi fermo (e non freni) Federico si gira verso valle e spinge coi bastoncini
- if(s.V<3&&!frena&&!spazz&&s.stato==='gara'){acc+=1.4;if(Math.abs(steer)<.5)s.psi+=(dirPista(s.d)-s.psi)*Math.min(1,dt*1.6)}
+ // never stopped: if slow (and not braking) Federico turns downhill and pushes with the poles
+ if(s.V<VMIN&&!frena&&s.stato==='gara'&&Math.abs(steer)<.5)s.psi+=(dirPista(s.d)-s.psi)*Math.min(1,dt*1.6);
  // cross-country: Federico skates and pushes with the poles
  if(LV.spinta&&s.stato==='gara'&&!frena&&s.V<LV.spinta)acc+=1.7*(1-s.V/LV.spinta)+.4;
  if(s.rialzo>0)acc+=2;
- if(s.boostT>0)acc+=3;
- s.V=clamp(s.V+acc*dt,0,40);if(fin&&s.V<.5)s.V=0;
+ if(s.boostT>0)acc+=5;
+ s.V=clamp(s.V+acc*dt,0,VMAX);if(fin&&s.V<.5)s.V=0;
+ // minimum speed: never below ~38 km/h during the race (FRENA may go briefly down to ~25 km/h, then it recovers by itself)
+ if(s.stato==='gara'){const vf=frena||spazz?VFRENO:VMIN;if(s.V<vf){s.V+=(vf-s.V)*Math.min(1,dt*5);if(s.V<vf*.95)s.V=vf*.95}}
  const hs=s.V*Math.cos(a)*dt;s.x+=sp*hs;s.d+=cp*hs;
  const lim=w+60;if(Math.abs(s.x-centro(s.d))>lim)s.x=centro(s.d)+Math.sign(s.x-centro(s.d))*lim;
  // salto col tasto (piccola rincorsa accucciata)
@@ -1106,19 +1247,21 @@ function passo(dt){const s=S,inp=comandi();
  // rail
  const r=railSotto(s.x,s.d);if(r&&s.y>quota(s.x,s.d)+.25){if(s.rail!==r){s.rail=r;s.railT=0;scritta('Rail! 🛹',.8)}s.railT+=dt;s.punti+=110*dt*molt()}else{if(s.rail&&s.railT>.4){const pt=Math.round(s.railT*110*molt());comboAdd(1);scritta('Rail slide! +'+pt,1.2)}s.rail=null}
  // ostacoli
- if(s.rialzo<=0&&s.inv<=0){for(const o of ostacoli){if(Math.abs(o.d-s.d)>o.r+.6)continue;if(Math.hypot(o.x-s.x,o.d-s.d)<o.r+.35){if(cade(o.r>3?'Bum! Contro la baita!':'Bum! Contro un ostacolo!'))s.V*=.3;return}}
-  for(const o of OSTL){if(Math.abs(o.d-s.d)>o.r+.6)continue;if(Math.hypot(o.x-s.x,o.d-s.d)<o.r+.35){if(cade(o.tipo==='pupazzo'?'Bum! Contro il pupazzo di neve!':'Bum! Contro un palo!'))s.V*=.3;return}}}
+ if(s.rialzo<=0&&s.inv<=0){for(const o of ostacoli){if(Math.abs(o.d-s.d)>o.r+.6)continue;if(Math.hypot(o.x-s.x,o.d-s.d)<o.r+.35){if(cade(o.r>3?'Bum! Contro la baita!':'Bum! Contro un ostacolo!'))s.V*=.5;return}}
+  for(const o of OSTL){if(Math.abs(o.d-s.d)>o.r+.6)continue;if(Math.hypot(o.x-s.x,o.d-s.d)<o.r+.35){if(cade(o.tipo==='pupazzo'?'Bum! Contro il pupazzo di neve!':'Bum! Contro un palo!'))s.V*=.5;return}}}
  // reti del pubblico
- for(const cl of FOLLE){if(!cl.side||cl.arrivo)continue;if(Math.abs(s.d-cl.d)<12&&Math.sign(dx)===cl.side&&adx>w+2.2){s.x=c+cl.side*(w+2.1);s.psi=-s.psi*.5;s.V*=.6;messaggio('Attento al pubblico! 🙈',1)}}
+ for(const cl of FOLLE){if(!cl.side||cl.arrivo)continue;if(Math.abs(s.d-cl.d)<12&&Math.sign(dx)===cl.side&&adx>w+2.2){s.x=c+cl.side*(w+2.1);s.psi=dirPista(s.d)-cl.side*.2;if(!s.urtoT||s.t-s.urtoT>1.2){s.urtoT=s.t;s.V*=.93;messaggio('Attento al pubblico! 🙈',1)}}}
  // reti di sicurezza
- if(LV.reti&&adx>w+3&&s.d>8&&s.d<LV.fine-55){s.x=c+Math.sign(dx)*(w+2.9);s.psi=dirPista(s.d)-Math.sign(dx)*.25;s.V*=.85;if(!s.reteT||s.t-s.reteT>2){s.reteT=s.t;messaggio('Rete di protezione! 🥅',1)}}}
+ if(LV.reti&&adx>w+3&&s.d>8&&s.d<LV.fine-55){s.x=c+Math.sign(dx)*(w+2.9);s.psi=dirPista(s.d)-Math.sign(dx)*.25;if(!s.reteT||s.t-s.reteT>1.2){s.reteT=s.t;s.V*=.93;messaggio('Rete di protezione! 🥅',1)}}
+ // safety: a broken number can never freeze the race
+ if(!(isFinite(s.x)&&isFinite(s.d)&&isFinite(s.y)&&isFinite(s.V)&&isFinite(s.psi)&&isFinite(s.vy))){s.x=centro(s.pd||0);s.d=isFinite(s.pd)?s.pd:0;s.y=gnd(s.x,s.d);s.V=VMIN;s.vy=0;s.psi=dirPista(s.d);s.aria=false}}
 
 function aggiorna(dt){const s=S;
  s.px=s.x;s.py=s.y;s.pd=s.d;s.ppsi=s.psi;s.pflip=s.flip;s.pspin=s.spin;
  if(s.stato==='conto'){s.tc+=dt;const n=3-Math.floor(s.tc-.8);
   if(s.tc<.8){if($('#msg').textContent!==METEO.nome)messaggio(METEO.nome,.8)}
   else if(n>0){if($('#msg').textContent!==String(n)){messaggio(String(n),.8);suono(440,440,.14,'sine',.15)}}
-  else{s.stato='gara';s.t=0;messaggio('VIA! ⛷️',1);suono(880,880,.35,'sine',.18);campanacci(3);s.V=4}
+  else{s.stato='gara';s.t=0;messaggio('VIA! ⛷️',1);suono(880,880,.35,'sine',.18);campanacci(3);s.V=LV.tipo==='salto'?4:VMIN}
   aggiornaPubblico(dt);ALPHA=1;return}
  if(s.stato==='fine'||s.stato==='menu'||s.stato==='gameover'){aggiornaPubblico(dt);if(s.stato==='gameover'&&s.caduta>0)s.caduta-=dt;ALPHA=1;return}
  const dPrima=s.d,xPrima=s.x;
@@ -1146,7 +1289,7 @@ function aggiorna(dt){const s=S;
  for(let i=0;i<STELLE.length;i++){const st=STELLE[i];if(st.preso||Math.abs(st.d-s.d)>3)continue;if(Math.hypot(st.x-s.x,st.y-(s.y+.8),st.d-s.d)<1.8){st.preso=true;s.stelle++;const v=punti(100);comboAdd(1);stellina();scritta('🌟 +'+v,.8)}}
  for(const m of MONETE){if(m.preso||Math.abs(m.d-s.d)>2.5)continue;if(Math.hypot(m.x-s.x,m.y-(s.y+.8),m.d-s.d)<1.45){m.preso=true;s.monete++;punti(10);comboAdd(1);moneta();if(s.monete>=30)badge('monete')}}
  for(const f of FIOCCHI){if(f.preso||Math.abs(f.d-s.d)>2.5)continue;if(Math.hypot(f.x-s.x,f.y-(s.y+.8),f.d-s.d)<1.7){f.preso=true;s.scudo=1;scritta('❄️ Scudo di ghiaccio!',1.4);suono(1200,2400,.4,'triangle',.1);stellina()}}
- for(const b of BOOST){if(Math.abs(b.d-s.d)>2.3){b.usato=false;continue}if(!b.usato&&!s.aria&&Math.abs(b.x-s.x)<1.8){b.usato=true;s.V=Math.min(40,s.V+6);s.boostT=1.3;comboAdd(1);turbo();scritta('🚀 Turbo!',.9);emetti(s.x,s.y+.3,-s.d,0,1,0,25,3,.6)}}
+ for(const b of BOOST){if(Math.abs(b.d-s.d)>2.3){b.usato=false;continue}if(!b.usato&&!s.aria&&Math.abs(b.x-s.x)<1.8){b.usato=true;s.V=Math.min(VMAX,s.V+8);s.boostT=1.3;comboAdd(1);turbo();scritta('🚀 Turbo!',.9);emetti(s.x,s.y+.3,-s.d,0,1,0,25,3,.6)}}
  // tifo dei gruppetti
  for(const cl of FOLLE){if(cl.tifo>0)cl.tifo-=dt;if(!cl.fatto&&!cl.arrivo&&Math.abs(s.d-cl.d)<24){cl.fatto=true;cl.tifo=2;tifo(false)}}
  // traguardo
@@ -1158,9 +1301,9 @@ function aggiorna(dt){const s=S;
  const fw=[Math.sin(s.psi),Math.cos(s.psi)],rx=Math.cos(s.psi),rz=Math.sin(s.psi);
  if(!s.aria&&s.caduta<=0){const inp=comandi(),st=Math.abs(s.st),fren=inp.freno||s.stato==='arrivo';
   const powder=Math.abs(s.x-centro(s.d))>largh(s.d)?1:0;
-  const rate=(st*s.V*2.6+(fren?s.V*3:0)+powder*s.V*1.4)*dt;let n=Math.floor(rate+Math.random());
+  const rate=(st*s.V*2.6+(fren?s.V*3:0)+powder*s.V*1.4+(s.skid||0)*s.V*6)*dt;let n=Math.floor(rate+Math.random());
   if(n>0&&s.V>2){const side=s.st>0?-1:1;const tx=s.x-fw[0]*.5,td=s.d-fw[1]*.5;
-   emetti(tx+rx*side*.3,s.y+.05,-td+rz*side*.3,rx*side*(1.5+st*3)+fw[0]*s.V*.35,1.2+st*1.5,rz*side*(1.5+st*3)-fw[1]*s.V*.35,Math.min(n,12),1.6,.6)}
+   emetti(tx+rx*side*.3,s.y+.05,-td+rz*side*.3,rx*side*(1.5+st*3)+fw[0]*s.V*.35,1.2+st*1.5,rz*side*(1.5+st*3)-fw[1]*s.V*.35,Math.min(n,18),1.6+(s.skid||0)*1.5,.6)}
   if(s.boostT>0&&Math.random()<.5)emetti(s.x-fw[0],s.y+.2,-s.d+fw[1],-fw[0]*3,1,fw[1]*3,2,1.5,.5);
   // scie
   s.distScia+=Math.hypot(s.x-xPrima,s.d-dPrima);if(s.distScia>.45){s.distScia=0;sciaPunto(s.x,s.d,s.psi,quota(s.x,s.d)+(s.rail?.7:0),s.rottaScia);s.rottaScia=false}}
@@ -1286,21 +1429,21 @@ function ghostPos(t){const p=GHOST&&GHOST.p;if(!p)return null;const n=p.length/3
 const EL={};const el=id=>EL[id]||(EL[id]=document.getElementById(id));const _txt={};
 function txt(id,t,cls){const e=el(id);if(_txt[id]!==t){e.textContent=t;_txt[id]=t}if(cls!==undefined&&e.className!==cls)e.className=cls}
 function disegna(dt){const s=S;if(!s){renderer.render(scene,camera);return}
- const inp=comandi(),R=FED,sdt=Math.min(.05,dt*TS),a=ALPHA;
+ const inp=comandi(),R=FED,sdt=Math.min(.05,dt*TS),a=ALPHA,v=s.aria?s.vh:s.V;
  const ip=(p,c)=>p===undefined?c:p+(c-p)*a;
  // render state interpolated between the last two fixed physics steps
  const rx=ip(s.px,s.x),ry=ip(s.py,s.y),rd=ip(s.pd,s.d),rpsi=ip(s.ppsi,s.psi),rflip=ip(s.pflip,s.flip),rspin=ip(s.pspin,s.spin);
  R.root.position.set(rx,ry,-rd);R.root.rotation.y=-rpsi;
  const pT=s.aria?clamp(Math.atan2(s.vy,Math.max(1,s.vh))*.5,-.6,.3):-s.aTerra;s.pitch+=(pT-s.pitch)*(1-Math.exp(-sdt*9));R.root.rotation.x=s.pitch;
  // banking: a damped spring, so turns ease in and out
- const leanT=s.aria||s.caduta>0?0:clamp(s.st*Math.min(1,s.V/9)*.55,-.55,.55)*(s.rail?.2:1),kk=70;
+ const leanT=s.aria||s.caduta>0?0:clamp(s.st*Math.min(1,s.V/9)*(.55+.25*(s.skid||0)),-.75,.75)*(s.rail?.2:1),kk=70;
  s.leanV+=((leanT-s.lean)*kk-s.leanV*2*Math.sqrt(kk)*.9)*sdt;s.lean+=s.leanV*sdt;R.lean.rotation.z=-s.lean;
  s.ass=Math.max(0,s.ass-sdt*2.4);
  // posa: target pose, blended smoothly
  const T={c:.25+.12*Math.abs(s.st),braccioX:.55,braccioZ:.18,gomito:.65,lift:0,v:0,palo:-.35,avanti:0,skiX:0};let rate=10;
  if(s.stato==='menu'){T.c=.12;T.braccioX=.25;T.gomito=.3}
- else if(s.caduta>0){const t=1.7-s.caduta;T.c=1;T.braccioX=1.4+Math.sin(t*12)*.6;T.braccioZ=.9;T.gomito=.3;T.lift=.15;rate=16}
- else if(s.rialzo>0){T.c=mix(.25,1,s.rialzo/.7);T.braccioX=.3;T.braccioZ=.4}
+ else if(s.caduta>0){const t=1.25-s.caduta;T.c=t<.7?.9:.5;T.braccioX=t<.7?1.6+Math.sin(t*14)*.7:2.2;T.braccioZ=t<.7?1.1:.7;T.gomito=.4;T.lift=.15;T.v=.35;rate=16}
+ else if(s.rialzo>0){T.c=mix(.3,1,s.rialzo/.6);T.braccioX=.9;T.braccioZ=.45;T.palo=-.9;rate=14}
  else if(s.aria){const hG=ry-quota(rx,rd);
   if(LV.tipo==='salto'){if(s.vStyle){T.c=.15;T.avanti=.75;T.braccioX=-.2;T.braccioZ=.25;T.gomito=0;T.v=.28;T.palo=-1.2;T.skiX=-.25}else{T.c=.3;T.avanti=.4;T.braccioX=0;T.braccioZ=.2;T.palo=-1.1}}
   else if(s.ext>0){T.c=0;T.braccioX=-.3;T.braccioZ=.55;T.gomito=.2;T.palo=.2;rate=16}          // take-off: full extension
@@ -1309,23 +1452,29 @@ function disegna(dt){const s=S;if(!s){renderer.render(scene,camera);return}
   else if(hG<1.7){T.c=.15;T.braccioX=.7;T.braccioZ=.35;T.gomito=.6;T.palo=-.2;rate=12}          // reaching for the snow
   else{T.c=.38;T.lift=.06;T.braccioX=.45;T.braccioZ=.95;T.gomito=.3;T.palo=.6}}                   // falling: spread
  else if(LV.tipo==='salto'&&s.d<DT&&s.stato==='gara'){T.c=inp.giu?1:.75;T.braccioX=.1;T.braccioZ=.12;T.gomito=.2;T.palo=-1.3}
- else{if(inp.giu){T.c=1;T.braccioX=1.25;T.braccioZ=.12;T.gomito=1.3;T.palo=-1.35}
+ else{const vt=clamp((v-22)/12,0,1)*(1-Math.min(1,Math.abs(s.st)*2.5));if(vt>0){T.c=mix(T.c,.85,vt);T.braccioX=mix(T.braccioX,1.15,vt);T.gomito=mix(T.gomito,1.2,vt);T.palo=mix(T.palo,-1.3,vt);T.braccioZ=mix(T.braccioZ,.12,vt)} // natural tuck at high speed
+  if(s.skid>.3){T.c=Math.max(T.c,.55+.3*s.skid);T.braccioZ=.3+.5*s.skid}
+  if(s.bil>.3){T.braccioZ=.9+Math.sin(performance.now()/60)*.4*s.bil;T.braccioX=.2+Math.sin(performance.now()/45)*.5*s.bil}
+  if(inp.giu){T.c=1;T.braccioX=1.25;T.braccioZ=.12;T.gomito=1.3;T.palo=-1.35}
   if(inp.freno||s.stato==='arrivo'){T.c=Math.max(T.c,.45);T.braccioZ=.4}
   if(s.rail){T.braccioZ=1.1;T.braccioX=.2;T.gomito=.2;T.palo=.3}}
  if(s.preSalto>0&&!s.aria){T.c=1;T.braccioX=.95;T.braccioZ=.2;T.palo=-1;rate=24}                 // anticipation crouch
  if(!s.po||s.stato==='menu')s.po=Object.assign({},T);
  const kb=1-Math.exp(-rate*sdt);for(const key in T)s.po[key]+=(T[key]-s.po[key])*kb;
- s.c=s.po.c;posa(Object.assign({},s.po,{ass:s.ass,pianta:s.pianta,grab:s.aria&&s.grabNow,edge:-s.lean*.45}));
+ s.c=s.po.c;posa(Object.assign({},s.po,{ass:s.ass,pianta:s.pianta,grab:s.aria&&s.grabNow,edge:-s.lean*.6,ang:s.aria||s.caduta>0?0:s.lean*.75,tw:s.aria||s.caduta>0?0:-s.st*.15}));
  // rotazioni in aria / capitombolo
- if(s.caduta>0){const t=1.7-s.caduta;R.air.rotation.set(Math.sin(t*5)*1.2,t*2.5,Math.min(1.3,t*3))}
- else R.air.rotation.set(rflip,rspin,0);
+ // tumbling fall: two rolls through the snow, then a slide on the back; Federico gets up in the 'rialzo' phase
+ if(s.caduta>0){const t=1.25-s.caduta,u=Math.min(1,t/.7);R.air.rotation.set(t<.7?-u*TAU*1.15:-1.25+Math.sin(t*9)*.08,Math.sin(t*3)*.9,Math.sin(t*7)*.5*(1-u)+(t<.7?0:.3));R.air.position.y=t<.7?.7-.25*Math.sin(u*Math.PI):.42}
+ else if(s.rialzo>0){const u=s.rialzo/.6;R.air.rotation.set(-1.25*u*u,0,0);R.air.position.y=mix(.7,.42,u*u)}
+ else{R.air.rotation.set(rflip,rspin,0);R.air.position.y=.7}
  // braking: sci di traverso
- if(!s.aria&&s.caduta<=0&&(inp.freno||s.stato==='arrivo')&&s.V>1){R.inn.rotation.y+=(.9*(s.lastSteer>=0?-1:1)-R.inn.rotation.y)*(1-Math.exp(-sdt*8))}else R.inn.rotation.y*=Math.exp(-sdt*8);
+ if(!s.aria&&s.caduta<=0&&(inp.freno||s.stato==='arrivo')&&s.V>1){R.inn.rotation.y+=(.9*(s.lastSteer>=0?-1:1)-R.inn.rotation.y)*(1-Math.exp(-sdt*8))}
+ else if(!s.aria&&s.caduta<=0&&s.skid>.05){R.inn.rotation.y+=(-Math.sign(s.st)*s.skid*.55-R.inn.rotation.y)*(1-Math.exp(-sdt*10))}else R.inn.rotation.y*=Math.exp(-sdt*8);
  const gy=quota(rx,rd);R.ombra.position.set(rx,gy+.1,-rd);const ha=Math.max(0,ry-gy);R.ombra.material.opacity=Math.max(.05,.3-ha*.04);R.ombra.scale.setScalar(1+ha*.08);
  R.scudo.visible=s.scudo>0||s.inv>0&&Math.floor(s.inv*10)%2===0;if(R.scudo.visible){R.scudo.position.set(rx,ry+.75,-rd);R.scudo.scale.setScalar(1+Math.sin(performance.now()/180)*.04)}
  luceFed.position.set(rx+Math.sin(rpsi)*3,ry+5,-rd-Math.cos(rpsi)*3);
  // telecamera
- const pos=_w.set(rx,ry,-rd),v=s.aria?s.vh:s.V,fp=camModo===2&&(s.stato==='gara'||s.stato==='conto');
+ const pos=_w.set(rx,ry,-rd),fp=camModo===2&&(s.stato==='gara'||s.stato==='conto');
  let want,look,kp,kl;
  _f.set(Math.sin(rpsi),0,-Math.cos(rpsi));_r.set(Math.cos(rpsi),0,Math.sin(rpsi));
  if(s.stato==='menu'){tMenu+=dt;const a=tMenu*.25;want=_w2.copy(pos).add(_l.set(Math.sin(a)*6.5,2.6,Math.cos(a)*6.5+1));look=_l2.copy(pos);look.y+=.9;kp=kl=1}
@@ -1339,19 +1488,24 @@ function disegna(dt){const s=S;if(!s){renderer.render(scene,camera);return}
   if(!camInit)camYaw=yawT;camYaw+=(yawT-camYaw)*(1-Math.exp(-dt*(largo?2.6:6)));
   _f.set(Math.sin(camYaw),0,-Math.cos(camYaw));
   let dist,alto,la;
-  if(largo){dist=(sal?13.5:10.5)+clamp(v-10,0,25)*.13+(s.aria?2.2:0);alto=(sal?6.4:4.5)+clamp(v-10,0,25)*.05+(s.aria?1.4:0);la=13+v*.3;if(port){dist*=1.12;alto*=1.5;la*=.55}}
+  if(largo){dist=(sal?13.5:10.5)+clamp(v-10,0,25)*.08+(s.aria?2.2:0);alto=(sal?6.4:4.5)+clamp(v-10,0,25)*.05+(s.aria?1.4:0);la=13+v*.3;if(port){dist*=1.12;alto*=1.5;la*=.55}}
   else{dist=sal?8.5:6.2;alto=sal?3.4:2.5;la=5}
   if(!camInit){camDist=dist;camAlto=alto}
   camDist+=(dist-camDist)*(1-Math.exp(-dt*2));camAlto+=(alto-camAlto)*(1-Math.exp(-dt*2));
   want=_w2.copy(pos).addScaledVector(_f,-camDist);want.y=ry+camAlto+Math.max(0,prof(rd-camDist)-prof(rd))*.9;
   if(s.aria)want.y=Math.max(want.y,ry+1.5);
   look=_l2.copy(pos).addScaledVector(_f,la);look.y=ry+.7+(prof(rd+la)-prof(rd))*(largo?.55:.9);
-  kp=1-Math.exp(-dt*(largo?4.5:7));kl=1-Math.exp(-dt*(largo?6:10))}
+  kp=1-Math.exp(-dt*((largo?4.5:7)+v*.15));kl=1-Math.exp(-dt*((largo?6:10)+v*.15))}
  const tw=quota(want.x,-want.z);if(want.y<tw+1.1)want.y=tw+1.1;
  if(!camInit||s.stato==='conto'&&s.tc<.1){kp=kl=1;camInit=true}
  camPos.lerp(want,kp);camLook.lerp(look,kl);
- camera.position.copy(camPos);camera.lookAt(camLook);camera.rotateZ(-s.lean*(fp?.3:camModo===0?.06:.15));
- let fovT=fp?78:camModo===0?70+clamp(v-8,0,30)*.32:62+clamp(v-8,0,25)*.55;if(s.boostT>0)fovT+=6;
+ camera.position.copy(camPos);
+ // camera shake at high speed, on skids and on crashes
+ s.scossa=Math.max(0,(s.scossa||0)-dt*2.2);const tt=performance.now()/1000,sh=(s.stato==='gara'?clamp((v-20)/30,0,1)*.07+(s.skid||0)*.05:0)+s.scossa*.25;
+ if(sh>0&&!fp){camera.position.x+=sh*(Math.sin(tt*37)+Math.sin(tt*23.7))*.5;camera.position.y+=sh*(Math.sin(tt*41.3)+Math.sin(tt*19.1))*.5}
+ camera.lookAt(camLook);camera.rotateZ(-s.lean*(fp?.3:camModo===0?.06:.15));
+ let fovT=fp?80+clamp(v-15,0,35)*.3:camModo===0?70+clamp(v-8,0,40)*.36:62+clamp(v-8,0,40)*.6;if(s.boostT>0)fovT+=8;fovT=Math.min(96,fovT);
+ aggiornaLinee(dt,s.stato==='gara'||s.stato==='arrivo'?v:0);
  if(!fp&&camera.aspect<1)fovT=Math.max(fovT,Math.min(100,2*Math.atan(Math.tan(36*DEG)/camera.aspect)/DEG));
  camera.fov+=(fovT-camera.fov)*(1-Math.exp(-dt*3));camera.updateProjectionMatrix();
  // in prima persona si nascondono testa e busto
@@ -1388,9 +1542,9 @@ function disegna(dt){const s=S;if(!s){renderer.render(scene,camera);return}
   if(s.aria&&(s.flipT||s.spinT||s.grabNow)){const nF=Math.round(Math.abs(s.flipT)/TAU),nS=Math.round(Math.abs(s.spinT)/TAU),t=[];if(nF)t.push((nF>1?nF+'× ':'')+(s.flipT>0?'Backflip':'Frontflip'));if(nS)t.push(nS*360+'°');if(s.grabNow)t.push(s.grabNome);$('#trick').textContent=t.join(' + ');$('#trick').style.opacity=1;trickT=.3}}
  // suoni continui
  if(AC&&vento){const t=AC.currentTime,on=!muto&&!pausaOn&&(inGara||s.stato==='arrivo');
-  vento.g.gain.setTargetAtTime(on?Math.min(.28,v/120+(METEO.neve===2?.06:0)):0,t,.1);vento.f.frequency.setTargetAtTime(300+v*22,t,.1);
+  vento.g.gain.setTargetAtTime(on?Math.min(.4,v*v/5200+.02+(METEO.neve===2?.06:0)):0,t,.1);vento.f.frequency.setTargetAtTime(300+v*30,t,.1);
   const terra=on&&!s.aria&&s.caduta<=0&&v>2;carv.g.gain.setTargetAtTime(terra?Math.min(.16,.015+Math.abs(s.st)*v/110):0,t,.06);carv.f.frequency.setTargetAtTime(1800+v*40,t,.1);
-  rasc.g.gain.setTargetAtTime(terra&&(inp.freno||s.stato==='arrivo'||s.rail)?Math.min(.18,v/80):0,t,.05);rasc.f.frequency.setTargetAtTime(s.rail?2400:800,t,.05)}}
+  rasc.g.gain.setTargetAtTime(terra&&(inp.freno||s.stato==='arrivo'||s.rail||s.skid>.2)?Math.min(.22,v/80*(s.skid>.2?s.skid*1.3:1)):0,t,.05);rasc.f.frequency.setTargetAtTime(s.rail?2400:800,t,.05)}}
 
 [geoPalo,geoTelo,geoSedia,geoStella,geoGobba,geoBaita,geoMoneta,geoFiocco,geoPad,geoTronco,geoPupazzo,geoLampione,geoTorre,geoBanner].forEach(g=>SHARED.add(g));
 ridimensiona();
@@ -1406,14 +1560,16 @@ function frame(dt){
  // fixed-step physics, rendering interpolated in between
  if(!pausaOn){ACCT=Math.max(0,ACCT)+Math.max(0,dt)*TS;let n=0;while(ACCT>=FIX&&n<6){aggiorna(FIX);ACCT-=FIX;n++}if(n>=6)ACCT=0;ALPHA=clamp(ACCT/FIX,0,1)}
  disegna(pausaOn?0:dt)}
-function loop(now){const dt=clamp((now-last)/1000,0,.05);last=now;frame(dt);requestAnimationFrame(loop)}
+let ERRN=0;
+function loop(now){requestAnimationFrame(loop);const dt=clamp((now-last)/1000,0,.05);last=now;
+ try{frame(dt)}catch(e){ERRN++;if(ERRN<6)console.error('frame error',e);try{if(S&&!(isFinite(S.x)&&isFinite(S.d)&&isFinite(S.V))){S.d=isFinite(S.pd)?S.pd:0;S.x=centro(S.d);S.y=gnd(S.x,S.d);S.V=VMIN;S.vy=0;S.aria=false}}catch(_){}}}
 $('#via').addEventListener('click',()=>parti(LVI));
 requestAnimationFrame(loop);
 // per i test automatici
 window.SCI={get S(){return S},frame,aggiorna,disegna,parti,nuovo,K,J,BT,LIVELLI,PORTE:()=>PORTE,KICK:()=>KICK,STELLE:()=>STELLE,RAILS:()=>RAILS,FOLLE:()=>FOLLE,
  MONETE:()=>MONETE,BOOST:()=>BOOST,FIOCCHI:()=>FIOCCHI,TRONCHI:()=>TRONCHI,OSTL:()=>OSTL,SPETT:()=>SPETT,get GHOST(){return GHOST},
  centro,largh,quota,gnd,dirPista,premiSalto,get ost(){return ostacoli},pausa,alMenu,cambiaCam,get camModo(){return camModo},get LVI(){return LVI},DT,
- sbloccaTouch,ridimensiona,layoutHud,finePartita,camera,renderer,get TS(){return TS},get sbloccati(){return sbloccati}};
+ sbloccaTouch,ridimensiona,layoutHud,finePartita,camera,renderer,scene,cade,PERS,get ROLL(){return ROLL},get ERRN(){return ERRN},VMIN,get TS(){return TS},get sbloccati(){return sbloccati}};
 </script>
 </body>
 </html>
