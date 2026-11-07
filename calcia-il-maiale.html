@@ -57,7 +57,7 @@ td.n{text-align:left;font-weight:800}
 <div id="tabella" class="hidden"></div>
 <div id="msg"></div>
 <div id="metro" class="hidden">
- <label><span class="t">💪 Forza</span><input type="range" id="rPot" min="0" max="1000" step="1" value="60" aria-label="Forza del calcio, da 0 a 1000"><b id="vPot">60</b></label>
+ <label><span class="t">💪 Forza</span><input type="range" id="rPot" min="0" max="200" step="1" value="60" aria-label="Forza del calcio, da 0 a 200"><b id="vPot">60</b></label>
  <label><span class="t">📐 Angolo</span><input type="range" id="rAng" min="12" max="70" step="1" value="40" aria-label="Angolo del calcio"><b id="vAng">40°</b></label>
  <button id="bCalcia">⚽ CALCIA!</button>
 </div>
@@ -100,34 +100,37 @@ let AC=null,muto=load('maialeMuto',false);
 $('#audio').textContent=muto?'🔇':'🔊';
 $('#audio').onclick=()=>{muto=!muto;save('maialeMuto',muto);$('#audio').textContent=muto?'🔇':'🔊'};
 function audio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume()}
-// Grugnito vero: il maiale "gracchia" con impulsi della gola (40–70 al secondo) filtrati dal muso.
+// Grugnito vero e cupo: la gola del maiale vibra a scatti (impulsi irregolari 35-90 al secondo, voce roca)
+// e il suono esce dal muso, che lascia passare soprattutto i bassi (risonanze ~240, ~600 e ~1200 Hz).
 function bufGrugnito(dur,r0,r1){const sr=AC.sampleRate,n=Math.floor(sr*dur),b=AC.createBuffer(1,n,sr),d=b.getChannelData(0);
- let fase=0;for(let i=0;i<n;i++){const u=i/n,rate=(r0+(r1-r0)*u)*(1+(Math.random()-.5)*.35);fase+=rate/sr;
-  if(fase>=1){fase-=1;const L=Math.floor(sr*.006),A=.6+Math.random()*.4;for(let k=0;k<L&&i+k<n;k++){const e=Math.exp(-k/(sr*.0016));d[i+k]+=A*e*((Math.random()*2-1)*.7+Math.sin(k/sr*2*Math.PI*170)*.6)}}}
- for(let i=0;i<n;i++){const u=i/n,env=Math.min(1,u/.12)*Math.min(1,(1-u)/.3)*(.7+.3*Math.sin(u*Math.PI));d[i]*=env}
+ let fase=0,lp=0;for(let i=0;i<n;i++){const u=i/n,rate=(r0+(r1-r0)*u)*(1+(Math.random()-.5)*.5);fase+=rate/sr;
+  if(fase>=1){fase-=1;const L=Math.floor(sr*.011),A=.55+Math.random()*.45,f0=95+Math.random()*25;
+   for(let k=0;k<L&&i+k<n;k++){const e=Math.exp(-k/(sr*.0035));d[i+k]+=A*e*(Math.sin(k/sr*2*Math.PI*f0)*.9+(Math.random()*2-1)*.45)}}}
+ for(let i=0;i<n;i++){lp+=(d[i]-lp)*.25;d[i]=lp}// smussa gli acuti: suono più cupo
+ for(let i=0;i<n;i++){const u=i/n,env=Math.min(1,u/.08)*Math.min(1,(1-u)/.35)*(.75+.25*Math.sin(u*Math.PI));d[i]*=env}
  return b}
 function suonaGrugnito(t0,dur,r0,r1,vol,tono){const src=AC.createBufferSource();src.buffer=bufGrugnito(dur,r0,r1);src.playbackRate.value=tono||1;
- const out=AC.createGain();out.gain.value=vol;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;
- for(const [f,q,g] of [[420,1.6,1],[1150,3,.7],[2500,5,.25]]){const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=f*(tono||1);bp.Q.value=q;const gg=AC.createGain();gg.gain.value=g*2.2;src.connect(bp);bp.connect(gg);gg.connect(lp)}
+ const out=AC.createGain();out.gain.value=vol;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1700;lp.Q.value=.7;
+ const dry=AC.createGain();dry.gain.value=.9;src.connect(dry);dry.connect(lp);
+ for(const [f,q,g] of [[240,1.4,1.3],[600,2.5,.8],[1200,4,.25]]){const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=f*(tono||1);bp.Q.value=q;const gg=AC.createGain();gg.gain.value=g*2;src.connect(bp);bp.connect(gg);gg.connect(lp)}
  lp.connect(out);out.connect(AC.destination);src.start(t0)}
-// Strillo: urlo acuto e ruvido, con la voce che trema
-let curva=null;
-function strilloAt(t0,dur,f,vol){if(!curva){curva=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;curva[i]=Math.tanh(x*3.2)}}
- const o1=AC.createOscillator(),o2=AC.createOscillator(),lfo=AC.createOscillator(),lg=AC.createGain(),ws=AC.createWaveShaper(),bp=AC.createBiquadFilter(),g=AC.createGain(),mix=AC.createGain();
- o1.type='sawtooth';o2.type='sawtooth';ws.curve=curva;bp.type='bandpass';bp.frequency.value=2100;bp.Q.value=.9;mix.gain.value=.5;
- o1.frequency.setValueAtTime(f*.85,t0);o1.frequency.linearRampToValueAtTime(f*1.15,t0+dur*.35);o1.frequency.linearRampToValueAtTime(f*.9,t0+dur);
- o2.frequency.setValueAtTime(f*.87,t0);o2.frequency.linearRampToValueAtTime(f*1.19,t0+dur*.35);o2.frequency.linearRampToValueAtTime(f*.93,t0+dur);
- lfo.frequency.value=11+Math.random()*5;lg.gain.value=f*.06;lfo.connect(lg);lg.connect(o1.frequency);lg.connect(o2.frequency);
- o1.connect(mix);o2.connect(mix);mix.connect(ws);ws.connect(bp);bp.connect(g);g.connect(AC.destination);
- // soffio rauco
- const nb=AC.createBufferSource(),bb=AC.createBuffer(1,Math.floor(AC.sampleRate*dur),AC.sampleRate),dd=bb.getChannelData(0);for(let i=0;i<dd.length;i++)dd[i]=Math.random()*2-1;nb.buffer=bb;
- const nf=AC.createBiquadFilter();nf.type='bandpass';nf.frequency.value=f*2.2;nf.Q.value=2;const ng=AC.createGain();ng.gain.value=.35;nb.connect(nf);nf.connect(ng);ng.connect(g);
- g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+.04);g.gain.setValueAtTime(vol,t0+dur*.7);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
- for(const x of [o1,o2,lfo,nb]){x.start(t0);x.stop(t0+dur+.02)}}
-function oink(alto){if(!AC||muto)return;const t=AC.currentTime,k=alto?1.15:1;suonaGrugnito(t,.2,62,44,.9,k);suonaGrugnito(t+.26,.24,58,38,.85,k*.95)}
-function squittio(){if(!AC||muto)return;strilloAt(AC.currentTime,.55,1150,.3)}
-function strillo(h){if(!AC||muto)return;const t=AC.currentTime,f=1000+Math.random()*350+Math.min(250,h*8);strilloAt(t,.32+Math.random()*.2,f,.24);if(Math.random()<.4)strilloAt(t+.42,.25,f*1.08,.2)}
-function versetto(){if(!AC||muto)return;suonaGrugnito(AC.currentTime,.14,60,42,.8,1)}
+// serie di grugniti: «ugh ugh ugh», più veloci e un po' più alti se il maiale è agitato
+function grugniti(t0,quanti,agitato){let t=t0;for(let q=0;q<quanti;q++){const dur=(agitato?.16:.24)+Math.random()*.08,r=agitato?70:48;
+ suonaGrugnito(t,dur,r+10,r-12,.95,(agitato?1.12:1)*(.95+Math.random()*.1));t+=dur+(agitato?.06:.11)+Math.random()*.05}}
+function oink(alto){if(!AC||muto)return;grugniti(AC.currentTime,alto?3:2,!!alto)}
+function squittio(){if(!AC||muto)return;const t=AC.currentTime;suonaGrugnito(t,.5,60,32,1,.92)}// grugnito lungo e scocciato
+function strillo(h){if(!AC||muto)return;grugniti(AC.currentTime,2+Math.floor(Math.random()*2),true)}// in volo: grugniti agitati, niente strilli acuti
+// razzo: rombo di scarico (rumore filtrato che sale e poi si allontana) con un brontolio basso sotto, per i tiri fortissimi
+function razzo(k){if(!AC||muto)return;const t=AC.currentTime,dur=1.6+k*1.4,sr=AC.sampleRate,n=Math.floor(sr*dur),b=AC.createBuffer(1,n,sr),d=b.getChannelData(0);
+ let br=0;for(let i=0;i<n;i++){br=br*.97+(Math.random()*2-1)*.3;d[i]=(Math.random()*2-1)*.6+br+(Math.random()<.002?(Math.random()*2-1)*1.5:0)}
+ const src=AC.createBufferSource();src.buffer=b;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.Q.value=.8;
+ bp.frequency.setValueAtTime(250,t);bp.frequency.exponentialRampToValueAtTime(1400,t+.35);bp.frequency.exponentialRampToValueAtTime(450,t+dur);
+ const g=AC.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.55*Math.min(1,.6+k*.4),t+.12);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+ src.connect(bp);bp.connect(g);g.connect(AC.destination);src.start(t);
+ const o=AC.createOscillator(),og=AC.createGain();o.type='sawtooth';o.frequency.setValueAtTime(70,t);o.frequency.exponentialRampToValueAtTime(45,t+dur);
+ const ol=AC.createBiquadFilter();ol.type='lowpass';ol.frequency.value=180;og.gain.setValueAtTime(.0001,t);og.gain.exponentialRampToValueAtTime(.35,t+.1);og.gain.exponentialRampToValueAtTime(.0001,t+dur);
+ o.connect(ol);ol.connect(og);og.connect(AC.destination);o.start(t);o.stop(t+dur+.05)}
+function versetto(){if(!AC||muto)return;suonaGrugnito(AC.currentTime,.18,55,38,.9,1)}
 function tono(a,b,d,tipo,v){if(!AC||muto)return;const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=tipo||'sine';o.frequency.setValueAtTime(a,t);o.frequency.exponentialRampToValueAtTime(b,t+d);g.gain.setValueAtTime(v||.15,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)}
 function rumore(dur,freq,vol){if(!AC||muto)return;const t=AC.currentTime,n=AC.createBufferSource(),b=AC.createBuffer(1,AC.sampleRate*dur,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);n.buffer=b;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=freq;const g=AC.createGain();g.gain.value=vol;n.connect(f);f.connect(g);g.connect(AC.destination);n.start(t)}
 
@@ -334,8 +337,8 @@ addEventListener('keyup',e=>{const c=e.code;if(c==='ArrowLeft')KS.sx=false;else 
 addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='Enter'){if(!$('#menu').classList.contains('hidden')||!$('#fine').classList.contains('hidden'))return;e.preventDefault();if(!e.repeat){if(S.fase==='mira')calciaOra();else tocca()}}});
 function calcia(){const p=S.p;const v=11+27*Math.pow(S.pot,S.pot>1?.55:1),a=(12+S.ang*58)*Math.PI/180;
  p.vx=v*Math.cos(a);p.vy=v*Math.sin(a);p.vz=(Math.random()-.5)*1.2;p.vr=-(3+Math.min(S.pot,1.6)*7);p.spin=(Math.random()-.5)*3;p.stato='vola';
- S.fase='volo';S.t=0;S.energia=1;S.guidaAvviso=false;oink(false);rumore(.12,1800,.35);
- S.strillo=.35;messaggio(['Che calcio!','Aiutooo! 🐷','Rosolino ha paura!','Bel tiro!'][Math.floor(Math.random()*4)],1.2)}
+ S.fase='volo';S.t=0;S.energia=1;S.guidaAvviso=false;oink(false);rumore(.12,1800,.35);if(S.pot>1.3)razzo(Math.min(1,(S.pot-1.3)/.7));
+ S.strillo=.35;messaggio(S.pot>1.3?'🚀 Tiro a razzo!':['Che calcio!','Aiutooo! 🐷','Rosolino ha paura!','Bel tiro!'][Math.floor(Math.random()*4)],1.2)}
 function prossimo(){S.turno++;if(S.turno>=S.gioc.length){S.turno=0;S.tiro++}if(S.tiro>=TIRI){fine();return}nuovoTiro()}
 function fine(){S.fase='fine';$('#metro').classList.add('hidden');
  const cl=S.gioc.map(p=>({nome:p.nome,best:Math.max(...p.tiri),tiri:p.tiri})).sort((a,b)=>b.best-a.best);const med=['🥇','🥈','🥉','🏅'];
@@ -391,7 +394,7 @@ function aggiorna(dt){if(!S.gioc)return;S.t+=dt;
   let sy=1;if(fermo){const sp=S.t;sy=sp<.1?1-.5*(sp/.1):.62+.16*(1-Math.exp(-(sp-.1)*4))+Math.sin(sp*26)*.06*Math.exp(-sp*5)}
   u.corpo.scale.set(1/Math.sqrt(sy),sy,1/Math.sqrt(sy));
   u.stelle.visible=fermo&&S.t>.25;if(u.stelle.visible){u.stelle.rotation.y=t*4}
-  if(paura){S.strillo=(S.strillo||0)-dt;if(S.strillo<=0){S.strillo=.5+Math.random()*.6;strillo(p.y)}}}
+  if(paura){S.strillo=(S.strillo||0)-dt;if(S.strillo<=0){S.strillo=1.1+Math.random()*.9;strillo(p.y)}}}
  if(p.stato==='vola'||p.stato==='rotola'){maiale.rotation.z=p.rot;maiale.rotation.y=p.spin*S.t*.3;maiale.rotation.x=0}
  else if(p.stato==='fermo'){const kk=Math.min(1,dt*18);maiale.rotation.z+=(0-maiale.rotation.z)*kk;maiale.rotation.x=0;maiale.position.y=p.fango?.3:.38}
  $('#hDist').classList.toggle('hidden',p.stato==='tee');
