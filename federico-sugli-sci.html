@@ -309,18 +309,18 @@ function generaLivello(){
  const persona=(x,d,cl,fl)=>{if(SPETT.length>=SP_MAX)return;const i=SPETT.length,sd=x<centro(d)?-1:1;
   SPETT.push({x,d,y:quotaBase(x,d),ph:R(i,91)*6.28,col:i,fl:fl||R(i,92)<.2,cart:R(i,94)<.09,cap:Math.floor(R(i,95)*3),sc:R(i,96)<.18?.95:1.32+R(i,97)*.16,cl,
    yaw:(sd<0?Math.PI/2-.35:-Math.PI/2+.35)+(R(i,93)-.5)*.5})};
- if(L.tipo!=='salto'){const passo=L.tipo==='fondo'?150:115,base=L.reti?4.3:4,nn=L.tipo==='fondo'?9:12;let k=0;
-  for(let d=140;d<f-90;d+=passo,k++){const r=R(k,3),sides=r<.3?[-1,1]:[r<.65?-1:1];
+ if(L.tipo!=='salto'){const passo=L.tipo==='fondo'?100:75,base=L.reti?4.3:4,nn=L.tipo==='fondo'?14:20;let k=0;
+  for(let d=140;d<f-90;d+=passo,k++){const r=R(k,3),sides=r<.6?[-1,1]:[r<.8?-1:1];
    for(const side of sides){const c=centro(d),w=largh(d);const cl={d,side,fatto:false};FOLLE.push(cl);
-    for(let j=0;j<nn;j++)persona(c+side*(w+base+R(k*3+side,10+j)*4.5),d+(R(k*3+side,20+j)-.5)*20,cl)}
+    for(let j=0;j<nn;j++)persona(c+side*(w+base+R(k*3+side,10+j)*7),d+(R(k*3+side,40+j)-.5)*24,cl)}
    if(k%3===1&&L.tipo!=='fondo'){const side=-sides[0],c=centro(d+18),w=largh(d+18);const t={x:c+side*(w+11),d:d+18,side};TORRI.push(t);OSTL.push({x:t.x,d:t.d,r:2})}}}
- else{for(let k=0;k<3;k++){const d=DT+40+k*25,side=k%2?1:-1,cl={d,side,fatto:false};FOLLE.push(cl);for(let j=0;j<14;j++)persona(side*(largh(d)+4+R(k,10+j)*5),d+(R(k,20+j)-.5)*16,cl)}
+ else{for(let k=0;k<5;k++){const d=DT+30+k*20,side=k%2?1:-1,cl={d,side,fatto:false};FOLLE.push(cl);for(let j=0;j<26;j++)persona(side*(largh(d)+4+R(k,10+j)*7),d+(R(k,40+j)-.5)*18,cl)}
   TORRI.push({x:largh(DT+75)+12,d:DT+75,side:1})}
  // a few spectators all along the course, between the groups
- {const clS={d:-1e9,side:0,fatto:true};let j=0;for(let d=55;d<f-70;d+=19,j++){if(FOLLE.some(cl=>Math.abs(cl.d-d)<24))continue;const side=R(j,81)<.5?-1:1,c=centro(d),w=largh(d),n=1+Math.floor(R(j,82)*3);
+ {const clS={d:-1e9,side:0,fatto:true};let j=0;for(let d=50;d<f-70;d+=11,j++){if(FOLLE.some(cl=>Math.abs(cl.d-d)<16))continue;const side=R(j,81)<.5?-1:1,c=centro(d),w=largh(d),n=2+Math.floor(R(j,82)*4);
    for(let q=0;q<n;q++){const x=c+side*(w+(L.reti?4.4:4)+R(j,83+q)*3),dd=d+q*1.3;SPARSI.push({x,d:dd});persona(x,dd,clS)}}}
  const clF={d:f,side:0,fatto:false,arrivo:true};FOLLE.push(clF);
- for(let j=0;j<170;j++){const side=j%2?1:-1,d=f-40+R(j,40)*85,c=centro(d),w=largh(d);persona(c+side*(w+3.5+R(j,41)*8),d,clF)}
+ for(let j=0;j<340;j++){const side=j%2?1:-1,d=f-40+R(j,40)*85,c=centro(d),w=largh(d);persona(c+side*(w+3.5+R(j,41)*8),d,clF)}
 }
 
 /* ======================= SCENA ======================= */
@@ -501,7 +501,7 @@ function aggiornaChunk(d,tutti){const k0=Math.floor((d-260)/L_),k1=Math.floor((d
 
 /* ======================= OGGETTI DEL LIVELLO ======================= */
 let livG=null;
-const SP_MAX=1150;
+const SP_MAX=2600;
 const geoPalo=new THREE.CylinderGeometry(.035,.035,1.9,6);geoPalo.translate(0,.95,0);
 const geoTelo=new THREE.PlaneGeometry(.75,.55);
 const matPorta=new THREE.MeshLambertMaterial({color:0xffffff,side:THREE.DoubleSide});
@@ -665,12 +665,12 @@ function creaPubblico(){
  for(const k in imF){scene.remove(imF[k]);imF[k].dispose();delete imF[k]}
  const mk=(geo,n,mat)=>{const m=IM(geo,mat||matFolla,n);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;scene.add(m);return m};
  imF.corpo=mk(geoCorpo,SP_MAX);imF.testa=mk(geoTesta,SP_MAX);imF.braccia=mk(geoBraccia,SP_MAX);imF.cappello=mk(geoCappello,SP_MAX);imF.berretto=mk(geoBerretto,SP_MAX);
- imF.asta=mk(geoBandiera,SP_MAX);imF.tela=mk(geoTela,SP_MAX);imF.cartello=mk(geoCartello,200,matCartello);
+ imF.asta=mk(geoBandiera,SP_MAX);imF.tela=mk(geoTela,SP_MAX);imF.cartello=mk(geoCartello,400,matCartello);
  const c=new THREE.Color();let nf=0,nc=0,nb=0,ns=0;
  SPETT.forEach((p,i)=>{const h=hash(i,7);c.setHex(GIACCHE[Math.floor(h*GIACCHE.length)]);imF.corpo.setColorAt(i,c);imF.braccia.setColorAt(i,c);
   c.setHex(PELLI[Math.floor(hash(i,8)*PELLI.length)]);imF.testa.setColorAt(i,c);c.setHex(GIACCHE[Math.floor(hash(i,9)*GIACCHE.length)]);
   p.hi=-1;if(p.cap===1){p.hi=nc;imF.cappello.setColorAt(nc++,c)}else if(p.cap===2){p.hi=nb;imF.berretto.setColorAt(nb++,c)}
-  p.si=-1;if(p.cart&&!p.fl&&ns<200)p.si=ns++;
+  p.si=-1;if(p.cart&&!p.fl&&ns<400)p.si=ns++;
   if(p.fl){p.fi=nf;c.setHex([0x009246,0xffffff,0xce2b37,0x1e6fd9,0xffd12a][nf%5]);imF.tela.setColorAt(nf,c);c.setHex(0xdddddd);imF.asta.setColorAt(nf,c);nf++}});
  imF.corpo.count=imF.testa.count=imF.braccia.count=SPETT.length;imF.cappello.count=nc;imF.berretto.count=nb;imF.asta.count=imF.tela.count=nf;imF.cartello.count=ns;
  for(const k in imF)if(imF[k].instanceColor)imF[k].instanceColor.needsUpdate=true;
