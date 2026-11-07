@@ -279,11 +279,12 @@ function creaChunk(k){
  if(k>=1){const d=k*L+L*.55;if(!CRESTE.some(r=>Math.abs(r.d-d)<90)&&Math.abs(d-CAMPO)>200){
   const x=centro(d)+(hash(k,80)-.5)*largh(d)*.6,sm=Math.floor(SEME*1000);
   let terra=-1e9;for(const [ox,od] of [[0,0],[-18,0],[18,0],[0,-18],[0,18],[-13,-13],[13,13],[-13,13],[13,-13]])terra=Math.max(terra,quota(x+ox,d+od));
-  const yG=START_Y-d*Math.tan(GLIDE+3*DEG);// dove arriva chi plana dritto senza tirare su
-  const lo=terra+30,hi=yG-20,u=hash(k*7+sm,82),r=hash(k,81+sm);
+  // quota massima raggiungibile con margine: chi plana un po' peggio del massimo della tuta ci arriva comunque
+  const yG=START_Y-d*Math.tan(GLIDE+10*DEG)-30;
+  const lo=terra+30,hi=yG,u=hash(k*7+sm,82),r=hash(k,81+sm);
   let liv=u<.28?0:u<.56?1:u<.84?2:3;
-  if(hi-lo<120&&liv===3)liv=2;if(hi-lo<70)liv=Math.min(liv,1);if(hi-lo<30)liv=0;
-  const y=liv===0?lo+r*22:liv===1?lo+(hi-lo)*(.35+.2*r):liv===2?lo+(hi-lo)*(.78+.18*r):yG+5+r*25;
+  if(hi-lo<140&&liv===3)liv=2;if(hi-lo<80)liv=Math.min(liv,1);if(hi-lo<35)liv=0;
+  const y=liv===0?lo+r*22:liv===1?lo+(hi-lo)*(.35+.15*r):liv===2?lo+(hi-lo)*(.62+.14*r):lo+(hi-lo)*(.88+.12*r);
   const PT=[150,200,300,400],SC=[1,1,1.2,1.4];
   const am=new THREE.Mesh(geoAnello,liv>=2?matAnelloAlto:matAnello);am.position.set(x,y,-d);am.scale.setScalar(SC[liv]);
   const dc=centro(d+5)-centro(d-5);am.rotation.y=Math.atan2(dc,10);grp.add(am);
