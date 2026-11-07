@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>La Slitta di Federico</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#0c1838;font-family:'Baloo 2','Trebuchet MS',sans-serif;user-select:none;-webkit-user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#hud{position:fixed;top:calc(max(8px,env(safe-area-inset-top)) + 40px);left:50%;transform:translateX(-50%);display:flex;gap:5px;flex-wrap:wrap;justify-content:center;z-index:5;pointer-events:none;width:calc(100% - 20px)}
+.pill{background:rgba(10,20,50,.62);color:#fff;border-radius:14px;padding:2px 10px;font-size:clamp(13px,2.2vw,18px);font-weight:700;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.pill.warn{background:rgba(214,40,40,.85)}
+.pill.hot{background:rgba(242,128,0,.88)}
+.pill.ok{background:rgba(40,150,70,.85)}
+#home,.tb2{position:fixed;top:max(8px,env(safe-area-inset-top));z-index:6;background:rgba(255,255,255,.88);border-radius:14px;padding:4px 11px;font-weight:800;color:#1f2a44;text-decoration:none;font-size:17px;border:0;font-family:inherit;cursor:pointer}
+#home{left:8px}#audio{right:8px}#musica{right:60px}#vista{right:112px}#pausaBtn{right:164px}
+#musica.off{opacity:.5;text-decoration:line-through}
+#mappa{position:fixed;left:max(8px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));width:132px;height:132px;z-index:4;border-radius:50%;pointer-events:none;border:3px solid rgba(255,255,255,.75);background:rgba(10,20,50,.5)}
+@media (max-height:420px){#mappa{width:104px;height:104px}}
+#msg{position:fixed;top:24%;left:0;right:0;text-align:center;z-index:5;pointer-events:none;color:#fff;font-weight:800;font-size:clamp(24px,5.5vw,50px);text-shadow:0 3px 0 rgba(0,0,0,.35),0 0 18px rgba(0,0,0,.35);transition:opacity .3s}
+#regalo{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:6;width:84px;height:84px;border-radius:50%;border:4px solid #fff;background:#2e9b4f;color:#fff;font-size:36px;box-shadow:0 6px 0 #1b5e30;cursor:pointer;display:none;font-family:inherit;padding:0;touch-action:none}
+#regalo small{display:block;font-size:12px;font-weight:800;margin-top:-6px}
+#regalo:active,#regalo.on{transform:translateY(4px);box-shadow:0 2px 0 #1b5e30}
+#regalo.vuoto{background:#7d8a96;box-shadow:0 6px 0 #4b5560}
+#turbo{position:fixed;right:max(20px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 100px);z-index:6;width:78px;height:78px;border-radius:50%;border:0;padding:5px;cursor:pointer;display:none;touch-action:none;font-family:inherit;background:conic-gradient(#ffd84a 0deg,rgba(0,0,0,.35) 0deg);box-shadow:0 6px 0 #4a2a7a}
+#turbo span{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;border-radius:50%;background:#7a4ac8;color:#fff;font-size:28px;line-height:1;border:3px solid #fff}
+#turbo small{font-size:10px;font-weight:800;margin-top:2px}
+#turbo.on{transform:translateY(4px);box-shadow:0 2px 0 #4a2a7a}
+#turbo.on span{background:#ffb400}
+#turboFx{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;background:repeating-conic-gradient(from 0deg at 50% 45%,rgba(255,240,180,0) 0deg 4deg,rgba(255,240,180,.55) 4deg 4.6deg);-webkit-mask-image:radial-gradient(circle at 50% 45%,transparent 30%,#000 82%);mask-image:radial-gradient(circle at 50% 45%,transparent 30%,#000 82%)}
+#joy{position:fixed;width:130px;height:130px;border-radius:50%;border:3px solid rgba(255,255,255,.7);background:rgba(255,255,255,.14);z-index:4;pointer-events:none;display:none;transform:translate(-50%,-50%)}
+#knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(255,255,255,.85)}
+#hint{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));text-align:center;color:#fff;font-weight:700;font-size:15px;text-shadow:0 1px 3px rgba(0,0,0,.8);z-index:4;pointer-events:none;padding:0 120px 0 150px}
+body.cab #hint{bottom:calc(min(24vh,112px) + 18px)}
+/* elfo */
+#elfo{position:fixed;left:max(8px,env(safe-area-inset-left));top:calc(max(8px,env(safe-area-inset-top)) + 76px);z-index:5;display:flex;align-items:flex-start;gap:6px;pointer-events:none}
+#elfoFaccia{width:58px;height:58px;flex:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+#elfoFaccia.parla{animation:parla .18s infinite alternate}
+@keyframes parla{from{transform:translateY(0) rotate(-3deg)}to{transform:translateY(-3px) rotate(3deg)}}
+#fumetto{background:#fffdf5;color:#24324d;border-radius:14px;padding:5px 11px;font-size:15px;font-weight:700;line-height:1.25;max-width:min(300px,42vw);border:3px solid #2e9b4f;box-shadow:0 3px 8px rgba(0,0,0,.35);opacity:0;transition:opacity .25s;position:relative}
+#fumetto b{color:#c62f3a}
+#fumetto.vis{opacity:1}
+#fumetto i{font-style:normal;display:block;font-size:11px;color:#2e9b4f;font-weight:800;margin-bottom:-2px}
+/* cruscotto (vista dal posto di guida) */
+#cruscotto{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(60vw,540px);height:min(24vh,112px);z-index:4;display:none;pointer-events:none;border-radius:22px 22px 0 0;background:linear-gradient(#8a5530,#5e3519);border:4px solid #e2b13c;border-bottom:0;box-shadow:0 -4px 14px rgba(0,0,0,.45)}
+body.cab #cruscotto{display:flex}
+#cruscotto canvas{flex:1;width:100%;height:100%}
+body.cab #elfo{position:absolute;left:auto;right:100%;top:auto;bottom:6px;margin-right:6px;flex-direction:column-reverse;align-items:flex-end}
+body.cab #elfo #fumetto{width:min(240px,26vw);max-width:none;font-size:14px}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,14,40,.6);z-index:10;padding:14px;overflow:auto}
+.hidden{display:none!important}
+.card{background:#fffdf5;border-radius:24px;box-shadow:0 10px 0 #7d1720,0 20px 40px rgba(0,0,0,.35);padding:16px 20px;max-width:680px;width:100%;border:4px solid #c62f3a;margin:auto}
+h1{margin:0 0 4px;font-size:clamp(28px,5vw,44px);color:#1d5e3a;text-align:center;line-height:1.05}
+h1 span{color:#c62f3a}
+.sub{text-align:center;color:#555;margin:0 0 10px;font-size:17px;line-height:1.3}
+.comandi{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+@media (max-width:520px){.comandi{grid-template-columns:1fr}}
+.box{background:#eef6ff;border-radius:14px;padding:8px 12px;font-size:15px;line-height:1.35;color:#24324d}
+.box b{color:#1d5e3a}
+.box.elf{display:flex;gap:10px;align-items:center;background:#eaf7ec}
+.box.elf svg{width:54px;height:54px;flex:none}
+.btn{display:block;margin:12px auto 4px;background:#c62f3a;color:#fff;border:0;border-radius:18px;padding:10px 34px;font-size:26px;font-weight:800;font-family:inherit;box-shadow:0 6px 0 #7d1720;cursor:pointer}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #7d1720}
+.btn.verde{background:#2e9b4f;box-shadow:0 6px 0 #1b5e30}
+.record{text-align:center;color:#1d5e3a;font-weight:700;font-size:16px;margin:6px 0}
+.ris{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+@media (max-width:520px){.ris{grid-template-columns:1fr 1fr}}
+.ris div{background:#eef6ff;border-radius:12px;padding:6px 10px;text-align:center;font-size:15px;color:#24324d}
+.ris b{display:block;font-size:22px;color:#1d5e3a}
+.tit{margin:10px 0 6px;text-align:center;color:#1d5e3a;font-size:20px}
+#missioni{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+@media (max-width:520px){#missioni{grid-template-columns:repeat(2,1fr)}}
+.mb{border:3px solid #c9d6c9;background:#fff;border-radius:12px;padding:4px 3px;font-family:inherit;font-size:13px;font-weight:700;color:#24324d;cursor:pointer;line-height:1.15}
+.mb b{display:block;font-size:20px;color:#c62f3a}
+.mb.sel{border-color:#c62f3a;background:#fff0f2}
+.mb[disabled]{opacity:.45;cursor:not-allowed}
+.stelle{color:#f2a900;letter-spacing:1px}
+.grandi{font-size:46px;text-align:center;color:#f2a900;letter-spacing:6px;line-height:1;margin:2px 0 6px;text-shadow:0 2px 0 #b07800}
+.link{text-align:center;font-size:15px;margin-top:8px}
+.link a{color:#1e6fd9;font-weight:700}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<a id="home" href="index.html" aria-label="Torna ai giochi">🏠 Giochi</a>
+<button id="audio" class="tb2" aria-label="Audio">🔊</button>
+<button id="musica" class="tb2" aria-label="Musica">🎵</button>
+<button id="vista" class="tb2" aria-label="Cambia vista" style="display:none">🎥</button>
+<button id="pausaBtn" class="tb2" aria-label="Pausa" style="display:none">⏸</button>
+<canvas id="mappa" width="300" height="300" class="hidden"></canvas>
+<div id="hud" class="hidden">
+  <span class="pill" id="hRegali">🎁 0</span>
+  <span class="pill" id="hCase">🏠 0/0</span>
+  <span class="pill" id="hTempo">⏱ 0:00</span>
+  <span class="pill" id="hVel">💨 0 km/h</span>
+  <span class="pill" id="hAlt">⬆ 0 m</span>
+  <span class="pill" id="hTurbo">☄️ 100%</span>
+  <span class="pill" id="hStelle">⭐ 0</span>
+  <span class="pill" id="hAnelli" style="display:none">🔔 0/0</span>
+  <span class="pill" id="hMeteo">🌙</span>
+</div>
+<div id="turboFx"></div>
+<div id="msg"></div>
+<div id="hint"></div>
+<div id="joy"><div id="knob"></div></div>
+<div id="cruscotto"><canvas id="cru"></canvas></div>
+<div id="elfo" class="hidden"><div id="elfoFaccia"></div><div id="fumetto"></div></div>
+<button id="turbo" aria-label="Turbo cometa: tieni premuto"><span>☄️<small>TURBO</small></span></button>
+<button id="regalo" aria-label="Lancia un regalo">🎁<small>REGALO</small></button>
+
+<div id="menu" class="overlay">
+  <div class="card">
+    <h1>La Slitta di <span>Federico</span></h1>
+    <p class="sub">Guida la slitta volante con le renne! Decolla dal <b>Polo Nord</b>, porta i regali nei camini e torna ad atterrare a casa.</p>
+    <div class="box elf"><span class="elfoSvg"></span><div><b>Ciao, sono l'Elfo Pepe!</b> Viaggio con te sulla slitta e ti dico dove portare i regali. Segui le <b>luci dorate</b> sopra i camini e i <b>cerchi verdi</b> per le consegne a mano.</div></div>
+    <div class="comandi">
+      <div class="box"><b>📱 Telefono e tablet</b><br>Trascina il dito: <b>su</b> per correre e salire, <b>giù</b> per scendere, <b>destra e sinistra</b> per girare. Tocca 🎁 per lanciare un regalo, tieni premuto ☄️ per il <b>turbo cometa</b>. 🎥 cambia vista, ⏸ pausa.</div>
+      <div class="box"><b>⌨️ Computer</b><br><b>↑ ↓</b> sali e scendi (↑ a terra per partire) · <b>← →</b> giri<br><b>Spazio</b> lancia un regalo 🎁<br><b>Shift</b> o <b>B</b> (tieni premuto) turbo ☄️<br><b>C</b> vista 🎥 · <b>M</b> musica · <b>Esc</b> pausa</div>
+    </div>
+    <div class="box">💡 <b>Per atterrare:</b> scendi piano e dritto su un prato di neve liscia (non in picchiata e non col turbo). Atterra vicino al <b>cerchio verde</b> per le consegne a mano e fermati sul <b>cerchio rosso e bianco del Polo Nord</b> per finire la missione. Se il sacco è vuoto, torna al Polo Nord a riempirlo!</div>
+    <h3 class="tit">🎄 Missioni</h3>
+    <div id="missioni"></div>
+    <div class="box" id="mInfo"></div>
+    <button class="btn" id="via">Partiamo! 🛷</button>
+  </div>
+</div>
+
+<div id="pausa" class="overlay hidden">
+  <div class="card">
+    <h1>Pausa ⏸</h1>
+    <button class="btn" id="riprendi">▶ Riprendi</button>
+    <button class="btn verde" id="rifai">↺ Ricomincia la missione</button>
+    <p class="link"><a href="#" id="alMenu">🎄 Missioni</a> · <a href="index.html">🏠 Altri giochi</a></p>
+  </div>
+</div>
+<div id="fine" class="overlay hidden">
+  <div class="card">
+    <h1 id="fTitolo">Missione compiuta!</h1>
+    <div class="grandi" id="fStelle">★★★</div>
+    <p class="sub" id="fSub"></p>
+    <div class="ris">
+      <div>Regali consegnati<b id="fRegali">0</b></div>
+      <div>Tempo<b id="fTempo">0:00</b></div>
+      <div>Stelle cometa<b id="fStelline">0</b></div>
+      <div>Campanelle<b id="fAnelli">0</b></div>
+      <div>Urti<b id="fUrti">0</b></div>
+      <div>Punti<b id="fPunti">0</b></div>
+    </div>
+    <p class="record" id="fRecord"></p>
+    <button class="btn" id="ancora">Prossima missione ▶</button>
+    <p class="link"><a href="#" id="fMenu">🎄 Missioni</a> · <a href="index.html">🏠 Altri giochi</a> · <a href="libri.html">📚 I libri</a></p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t;
+const G=9.81,DEG=Math.PI/180;
+const wrapA=a=>{while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a};
+
+/* ======================= ELFO PEPE (disegno originale) ======================= */
+const ELFO_SVG=`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<path d="M18 52 L2 40 L22 62Z M82 52 L98 40 L78 62Z" fill="#f2c6a0" stroke="#c98e68" stroke-width="2"/>
+<circle cx="50" cy="58" r="30" fill="#f6d2b0" stroke="#c98e68" stroke-width="2"/>
+<path d="M18 46 Q50 -18 86 40 L96 22 Q50 10 18 46Z" fill="#2e9b4f"/>
+<path d="M20 44 Q50 -14 84 40 Q52 30 20 44Z" fill="#37b35c"/>
+<rect x="16" y="38" width="68" height="11" rx="5" fill="#c62f3a"/>
+<circle cx="96" cy="22" r="6" fill="#ffd23a" stroke="#b08a00" stroke-width="2"/>
+<circle cx="39" cy="58" r="5" fill="#2a1d14"/><circle cx="61" cy="58" r="5" fill="#2a1d14"/>
+<circle cx="40.5" cy="56.5" r="1.6" fill="#fff"/><circle cx="62.5" cy="56.5" r="1.6" fill="#fff"/>
+<circle cx="31" cy="70" r="5" fill="#f3a0a0"/><circle cx="69" cy="70" r="5" fill="#f3a0a0"/>
+<path d="M40 73 Q50 82 60 73" stroke="#7a3b22" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+<circle cx="50" cy="66" r="4" fill="#f0a888"/>
+</svg>`;
+$('#elfoFaccia').innerHTML=ELFO_SVG;document.querySelectorAll('.elfoSvg').forEach(e=>e.innerHTML=ELFO_SVG);
+
+/* ======================= RUMORE E TERRENO ======================= */
+function hash(i,j){let h=(Math.imul(i,374761393)+Math.imul(j,668265263))|0;h=Math.imul(h^(h>>>13),1274126177);h^=h>>>16;return (h>>>0)/4294967296}
+function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+ const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}
+function fbm(x,y){let s=0,a=1,f=1,n=0;for(let o=0;o<4;o++){s+=a*vnoise(x*f,y*f);n+=a;a*=.5;f*=2.03}return s/n}
+function smooth(a,b,x){const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)}
+
+const BASE={x:0,z:0,h:14,r:230};
+const VILLAGGI=[
+ {nome:'Borgo Pino',x:160,z:-640,r:62,n:6},
+ {nome:'Valle Cannella',x:-560,z:-930,r:72,n:8},
+ {nome:'Colle Zenzero',x:720,z:-1250,r:72,n:8},
+ {nome:'Lago Ghiacciolo',x:-260,z:-1850,r:72,n:8},
+ {nome:'Monte Vischio',x:1150,z:-2250,r:66,n:7,alto:150},
+ {nome:'Fiocco di Neve',x:-1150,z:-1500,r:72,n:8},
+ {nome:'Stellina',x:420,z:-2750,r:72,n:9},
+ {nome:'Campanelle',x:-900,z:-2600,r:76,n:9},
+];
+const LAGHI=[{x:-180,z:-1380,r:240},{x:560,z:-560,r:120},{x:-760,z:-420,r:110},{x:1250,z:-900,r:150}];
+const CENTRO_MONDO={x:0,z:-1400},R_MONDO=3500;
+function grezzo(x,z){
+ let h=8+38*fbm(x*.0028+5,z*.0028+9)+10*fbm(x*.011,z*.011);
+ const m=smooth(.5,.74,fbm(x*.0011+11,z*.0011+3));
+ if(m>0)h+=m*(210+140*fbm(x*.005+2,z*.005+7))+m*(fbm(x*.02,z*.02)-.5)*40;
+ const dc=Math.hypot(x-CENTRO_MONDO.x,z-CENTRO_MONDO.z);if(dc>R_MONDO-300)h+=smooth(R_MONDO-300,R_MONDO+600,dc)*320*(.7+.6*fbm(x*.006,z*.006));
+ return h}
+function quota(x,z){
+ let h=grezzo(x,z);
+ for(const l of LAGHI){const d=Math.hypot(x-l.x,z-l.z);if(d<l.r+90)h=lerp(h,2,smooth(l.r+90,l.r-10,d))}
+ for(const v of VILLAGGI){const d=Math.hypot(x-v.x,z-v.z);if(d<v.r+220)h=lerp(h,v.h,smooth(v.r+220,v.r+70,d))}
+ {const d=Math.hypot(x-BASE.x,z-BASE.z);if(d<BASE.r+200)h=lerp(h,BASE.h,smooth(BASE.r+200,BASE.r,d))}
+ return h}
+for(const v of VILLAGGI)v.h=v.alto||clamp(grezzo(v.x,v.z),10,40);
+function inLago(x,z,m){for(const l of LAGHI)if(Math.hypot(x-l.x,z-l.z)<l.r+(m||0))return true;return false}
+
+/* ======================= SCENA ======================= */
+const cv=$('#c');
+let renderer;
+try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true})}catch(e){
+ document.querySelector('#menu .card').innerHTML='<h1>Ops! 🛷</h1><p class="sub">Questo browser non riesce a disegnare il mondo in 3D. Prova a ricaricare la pagina o ad aprirla con un altro browser.</p><p class="link"><a href="index.html">🏠 Altri giochi</a></p>';throw e}
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0x1c2a52,300,1500);
+const camera=new THREE.PerspectiveCamera(68,1,.5,2600);
+const emi=new THREE.HemisphereLight(0x8fa8e8,0x2a3050,.85);scene.add(emi);
+const luna=new THREE.DirectionalLight(0xc8d8ff,.6);luna.position.set(.5,1,-.6);scene.add(luna);
+function texPunto(){const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d');const g=x.createRadialGradient(16,16,0,16,16,16);
+ g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.4,'rgba(255,255,255,.8)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,32,32);return new THREE.CanvasTexture(c)}
+const TEX_PUNTO=texPunto();
+
+/* cielo: stelle, luna, aurora (seguono la camera) */
+const cielo=new THREE.Group();scene.add(cielo);
+let aurora=[];
+{const n=900,pos=new Float32Array(n*3);for(let i=0;i<n;i++){const a=Math.random()*6.283,z=.06+Math.random()*.94,r=Math.sqrt(1-z*z);pos[i*3]=Math.cos(a)*r*1500;pos[i*3+1]=z*1500;pos[i*3+2]=Math.sin(a)*r*1500}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+ cielo.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:2,sizeAttenuation:false,fog:false})));
+ const lu=new THREE.Mesh(new THREE.SphereGeometry(48,20,14),new THREE.MeshBasicMaterial({color:0xfff4d6,fog:false}));lu.position.set(620,760,-1050);cielo.add(lu);
+ const al=new THREE.Mesh(new THREE.CircleGeometry(120,32),new THREE.MeshBasicMaterial({color:0xbfd0ff,transparent:true,opacity:.14,fog:false,depthWrite:false}));al.position.copy(lu.position).multiplyScalar(1.02);al.lookAt(0,0,0);cielo.add(al);
+ const c=document.createElement('canvas');c.width=4;c.height=128;const x=c.getContext('2d');const gr=x.createLinearGradient(0,128,0,0);
+ gr.addColorStop(0,'rgba(60,255,150,0)');gr.addColorStop(.12,'rgba(60,255,150,.9)');gr.addColorStop(.5,'rgba(80,220,200,.45)');gr.addColorStop(.85,'rgba(170,90,255,.35)');gr.addColorStop(1,'rgba(170,90,255,0)');x.fillStyle=gr;x.fillRect(0,0,4,128);
+ const tx=new THREE.CanvasTexture(c);
+ for(let k=0;k<3;k++){const geo=new THREE.PlaneGeometry(1500,320,48,1),p=geo.attributes.position;
+  for(let i=0;i<p.count;i++){const xx=p.getX(i);p.setZ(i,Math.sin(xx*.004+k*2)*220+Math.sin(xx*.011+k)*60)}
+  const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:tx,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
+  m.position.set(-200+k*260,560+k*70,-1150+k*120);m.rotation.y=(k-1)*.35;cielo.add(m);aurora.push(m)}
+ cielo.children.forEach(o=>o.frustumCulled=false)}
+
+/* neve che cade: un solo Points che segue la camera */
+const FIOCCHI=1800,FX=70,FY=45,FZ=70,fp=new Float32Array(FIOCCHI*3);
+for(let i=0;i<FIOCCHI;i++){fp[i*3]=(Math.random()*2-1)*FX;fp[i*3+1]=(Math.random()*2-1)*FY;fp[i*3+2]=(Math.random()*2-1)*FZ}
+const geoNeve=new THREE.BufferGeometry();geoNeve.setAttribute('position',new THREE.BufferAttribute(new Float32Array(FIOCCHI*3),3));
+const neve=new THREE.Points(geoNeve,new THREE.PointsMaterial({color:0xffffff,size:.45,map:TEX_PUNTO,transparent:true,depthWrite:false,opacity:.9}));neve.frustumCulled=false;scene.add(neve);
+const camPrima=new THREE.Vector3();let camPrimaOk=false;
+function aggiornaNeve(dt){
+ const dx=camPrimaOk?camera.position.x-camPrima.x:0,dy=camPrimaOk?camera.position.y-camPrima.y:0,dz=camPrimaOk?camera.position.z-camPrima.z:0;camPrima.copy(camera.position);camPrimaOk=true;
+ const w=(v,h)=>v<-h?v+2*h*Math.ceil((-h-v)/(2*h)):v>h?v-2*h*Math.ceil((v-h)/(2*h)):v;
+ const a=geoNeve.attributes.position.array,ven=(METEO.vento||0)*9+(S&&S.inBufera?14:0),t=performance.now()/1000;
+ for(let i=0;i<FIOCCHI;i++){const j=i*3;
+  gp_(j,dx,dy,dz,dt,ven,t,w);a[j]=fp[j];a[j+1]=fp[j+1];a[j+2]=fp[j+2]}
+ geoNeve.attributes.position.needsUpdate=true;neve.position.copy(camera.position)}
+function gp_(j,dx,dy,dz,dt,ven,t,w){fp[j]=w(fp[j]-dx+(ven+Math.sin(t+j)*.6)*dt,FX);fp[j+1]=w(fp[j+1]-dy-(2.2+(j%7)*.25)*dt,FY);fp[j+2]=w(fp[j+2]-dz+Math.cos(t*.7+j)*.6*dt,FZ)}
+
+/* ======================= METEO ======================= */
+const METEI=[
+ {id:'sereno',nome:'🌙 Notte serena',ico:'🌙',cielo:['#040920','#122150','#2d4378'],nebbia:0x1f2f5c,n0:320,n1:1550,emi:[0x8fa8e8,0x2a3050,.9],luna:[0xc8d8ff,.65],neve:350,aurora:true,vento:0,hint:'Notte serena: guarda l\'aurora boreale!'},
+ {id:'tramonto',nome:'🌆 Crepuscolo',ico:'🌆',cielo:['#1b1f4f','#6b4a8a','#f2a27a'],nebbia:0x8a6a8a,n0:300,n1:1500,emi:[0xffd8c8,0x3a3050,.9],luna:[0xffc8a0,.6],neve:250,aurora:false,vento:0,hint:'Il sole è appena tramontato: che colori!'},
+ {id:'neve',nome:'❄️ Nevicata',ico:'❄️',cielo:['#1a2238','#3a4766','#5f6d8a'],nebbia:0x56627e,n0:130,n1:850,emi:[0xb8c6e0,0x3a4258,.95],luna:[0xb8c8e8,.35],neve:1800,aurora:false,vento:.3,hint:'Nevica forte: segui la mappa e le luci dorate!'},
+ {id:'vento',nome:'💨 Vento',ico:'💨',cielo:['#0a1230','#22305e','#47598a'],nebbia:0x2c3a64,n0:240,n1:1300,emi:[0x9fb4e8,0x2a3050,.9],luna:[0xc8d8ff,.55],neve:800,aurora:true,vento:1,hint:'C\'è vento: la slitta viene spinta di lato!'},
+];
+let METEO=METEI[0];
+function applicaMeteo(m){METEO=m;
+ const g=document.createElement('canvas');g.width=2;g.height=256;const x=g.getContext('2d');
+ const gr=x.createLinearGradient(0,0,0,256);gr.addColorStop(0,m.cielo[0]);gr.addColorStop(.55,m.cielo[1]);gr.addColorStop(1,m.cielo[2]);x.fillStyle=gr;x.fillRect(0,0,2,256);
+ if(scene.background&&scene.background.dispose)scene.background.dispose();scene.background=new THREE.CanvasTexture(g);
+ scene.fog.color.setHex(m.nebbia);scene.fog.near=m.n0;scene.fog.far=m.n1;
+ emi.color.setHex(m.emi[0]);emi.groundColor.setHex(m.emi[1]);emi.intensity=m.emi[2];luna.color.setHex(m.luna[0]);luna.intensity=m.luna[1];
+ aurora.forEach(a=>a.visible=m.aurora);geoNeve.setDrawRange(0,m.neve);camPrimaOk=false;$('#hMeteo').textContent=m.ico}
+
+/* ======================= MATERIALI E GEOMETRIE CONDIVISE ======================= */
+const matTerreno=new THREE.MeshLambertMaterial({vertexColors:true});
+const matVC=new THREE.MeshLambertMaterial({vertexColors:true});
+function unisci(parti){const pos=[],nor=[],col=[];
+ for(const [g,hexc] of parti){g.computeVertexNormals();const ng=g.index?g.toNonIndexed():g;const c=new THREE.Color(hexc);
+  const p=ng.attributes.position.array,n=ng.attributes.normal.array;for(let i=0;i<p.length;i+=3){pos.push(p[i],p[i+1],p[i+2]);nor.push(n[i],n[i+1],n[i+2]);col.push(c.r,c.g,c.b)}}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));return g}
+const T_=(g,x,y,z)=>{g.translate(x,y,z);return g};
+const RX=(g,a)=>{g.rotateX(a);return g},RY=(g,a)=>{g.rotateY(a);return g},RZ=(g,a)=>{g.rotateZ(a);return g};
+// abete innevato
+const geoAbete=(()=>{const P=[[T_(new THREE.CylinderGeometry(.3,.5,3.2,7),0,1.6,0),0x5b3b22]];
+ for(const [r,h,y,c] of [[3.5,4.8,4.6,0x1d4a2c],[2.8,4.3,7.0,0x225532],[2.0,3.8,9.3,0x286038],[1.15,2.8,11.4,0x2e6a3e]]){
+  P.push([T_(new THREE.ConeGeometry(r,h,9),0,y,0),c]);P.push([T_(new THREE.ConeGeometry(r*.5,h*.42,9),0,y+h/2-h*.21+.06,0),0xf2f6ff])}
+ return unisci(P)})();
+const geoPacco=[0xd8283a,0x2e7fd9,0x2e9b4f,0xf2a900,0x9a3fd0].map(c=>unisci([[new THREE.BoxGeometry(.8,.8,.8),c],[new THREE.BoxGeometry(.84,.84,.16),0xfff4c8],[new THREE.BoxGeometry(.16,.84,.84),0xfff4c8],[T_(new THREE.TorusGeometry(.14,.05,6,12),0,.46,0),0xfff4c8]]));
+const geoStella=(()=>{const sh=new THREE.Shape();for(let i=0;i<10;i++){const a=i/10*Math.PI*2+Math.PI/2,r=i%2?1:2.3;i?sh.lineTo(Math.cos(a)*r,Math.sin(a)*r):sh.moveTo(Math.cos(a)*r,Math.sin(a)*r)}
+ const g=new THREE.ExtrudeGeometry(sh,{depth:.7,bevelEnabled:true,bevelThickness:.2,bevelSize:.2,bevelSegments:1});g.center();return g})();
+const matStella=new THREE.MeshLambertMaterial({color:0xffd23a,emissive:0xb07800});
+const matPresa=new THREE.MeshLambertMaterial({color:0x8a93a0,transparent:true,opacity:.35});
+
+/* ======================= TERRENO A QUADROTTI (mondo aperto) ======================= */
+const C=400,NS=40,NV=NS+1,STEP=C/NS;
+const chunks=new Map();
+const ORDINE=[];for(let a=-2;a<=2;a++)for(let b=-2;b<=2;b++)ORDINE.push([a,b]);ORDINE.sort((p,q)=>Math.hypot(p[0],p[1])-Math.hypot(q[0],q[1]));
+function creaChunk(i,j){
+ const geo=new THREE.PlaneGeometry(C,C,NS,NS);geo.rotateX(-Math.PI/2);
+ const p=geo.attributes.position,alt=new Float32Array(p.count),col=new Float32Array(p.count*3);
+ const x0=i*C+C/2,z0=j*C+C/2;
+ for(let k=0;k<p.count;k++){const h=quota(p.getX(k)+x0,p.getZ(k)+z0);alt[k]=h;p.setY(k,h)}
+ for(let k=0;k<p.count;k++){const ix=k%NV,iz=(k/NV)|0,x=p.getX(k)+x0,z=p.getZ(k)+z0;
+  const gx=(alt[Math.min(NV-1,ix+1)+iz*NV]-alt[Math.max(0,ix-1)+iz*NV])/(2*STEP),gz=(alt[ix+Math.min(NV-1,iz+1)*NV]-alt[ix+Math.max(0,iz-1)*NV])/(2*STEP);
+  const sl=Math.hypot(gx,gz),n=hash(Math.floor(x/7)+900,Math.floor(z/7)),m=fbm(x*.02,z*.02);let r,g,b;
+  if(inLago(x,z,-4)){const t=.55+m*.35;r=.62*t+.1;g=.8*t+.1;b=.95}
+  else if(sl>.8){const s=.38+n*.08;r=s;g=s+.02;b=s+.08}
+  else{const s=.86+n*.06+m*.08-sl*.15;r=s*.94;g=s*.97;b=Math.min(1,s*1.04)}
+  col[k*3]=r;col[k*3+1]=g;col[k*3+2]=b}
+ geo.setAttribute('color',new THREE.BufferAttribute(col,3));geo.computeVertexNormals();
+ const grp=new THREE.Group();const mesh=new THREE.Mesh(geo,matTerreno);mesh.position.set(x0,0,z0);grp.add(mesh);
+ const ch={i,j,grp,alt,alberi:[]};chunks.set(i+','+j,ch);
+ // alberi: foreste a macchie, lontano da paesi, base e laghi
+ const N=130,im=new THREE.InstancedMesh(geoAbete,matVC,N),M=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),s=new THREE.Vector3(),v=new THREE.Vector3(),tinta=new THREE.Color();let n=0;
+ const seme=(i*7919+j*104729)|0;
+ for(let t=0;t<N*5&&n<N;t++){const u=seme+t*31;const x=i*C+hash(u,3)*C,z=j*C+hash(u,4)*C;
+  if(fbm(x*.005+4,z*.005+8)<.47)continue;if(Math.hypot(x-BASE.x,z-BASE.z)<BASE.r-30)continue;if(inLago(x,z,15))continue;
+  let vicino=false;for(const vv of VILLAGGI)if(Math.hypot(x-vv.x,z-vv.z)<vv.r+65){vicino=true;break}if(vicino)continue;
+  if(Math.abs(x-CAVO.ax)<300&&Math.abs(z-(CAVO.az+CAVO.bz)/2)<330&&distSeg2(x,z,CAVO.ax,CAVO.az,CAVO.bx,CAVO.bz)<20)continue;
+  const h=quota(x,z);if(h>260)continue;
+  const sc=.65+hash(u,9)*.9;s.set(sc,sc*(.9+hash(u,11)*.3),sc);e.set(0,hash(u,14)*6.28,0);q.setFromEuler(e);v.set(x,h-.5,z);M.compose(v,q,s);im.setMatrixAt(n,M);
+  const l=.8+hash(u,16)*.35;tinta.setRGB(l,l,l);im.setColorAt(n,tinta);ch.alberi.push(x,z,h,h+12.8*s.y,1.7*sc);n++}
+ im.count=n;if(im.instanceColor)im.instanceColor.needsUpdate=true;grp.add(im);
+ scene.add(grp);return ch}
+function togliChunk(ch){scene.remove(ch.grp);ch.grp.children[0].geometry.dispose();chunks.delete(ch.i+','+ch.j)}
+function aggiornaChunk(x,z,tutti){const ic=Math.floor(x/C),jc=Math.floor(z/C);
+ for(const [,ch] of chunks)if(Math.abs(ch.i-ic)>3||Math.abs(ch.j-jc)>3)togliChunk(ch);
+ let fatti=0;for(const [a,b] of ORDINE){if(!chunks.has((ic+a)+','+(jc+b))){creaChunk(ic+a,jc+b);if(!tutti&&++fatti>=1)break}}}
+function suolo(x,z){const i=Math.floor(x/C),j=Math.floor(z/C),ch=chunks.get(i+','+j);if(!ch)return quota(x,z);
+ const fx=(x-i*C)/STEP,fz=(z-j*C)/STEP,ix=Math.min(NS-1,Math.max(0,Math.floor(fx))),iz=Math.min(NS-1,Math.max(0,Math.floor(fz))),tx=fx-ix,tz=fz-iz,a=ch.alt;
+ return (a[ix+NV*iz]*(1-tx)+a[ix+1+NV*iz]*tx)*(1-tz)+(a[ix+NV*(iz+1)]*(1-tx)+a[ix+1+NV*(iz+1)]*tx)*tz}
+function pendenza(x,z){return Math.hypot(suolo(x+3,z)-suolo(x-3,z),suolo(x,z+3)-suolo(x,z-3))/6}
+function distSeg2(px,pz,ax,az,bx,bz){const dx=bx-ax,dz=bz-az,t=clamp(((px-ax)*dx+(pz-az)*dz)/(dx*dx+dz*dz),0,1);return Math.hypot(px-ax-dx*t,pz-az-dz*t)}
+
+/* ======================= PAESI: CASE, CHIESE, LUCI ======================= */
+const TETTI=[['rosso',0xb8282c],['blu',0x2b5aa8],['verde',0x2a7a44],['viola',0x6f3b98],['arancione',0xd0661c],['marrone',0x6b4024]];
+const MURI=[0xf1e3c6,0xe9c9a0,0xd8e2ea,0xf4d2d2,0xd9ecd9,0xf6efe0];
+const CASE=[],OST=[];
+function aggiungiCasa(x,z,y,rot,s,vi,k){
+ const c=Math.cos(rot),sn=Math.sin(rot),loc=(lx,lz)=>({x:x+(lx*c+lz*sn)*s,z:z+(-lx*sn+lz*c)*s});
+ const cam=loc(2.2,-1.2),pad=loc(0,-3.5-15/s);
+ const casa={x,z,y,rot,s,vi,k,tetto:TETTI[Math.floor(hash(vi+20,k)*TETTI.length)],muro:MURI[Math.floor(hash(vi+40,k)*MURI.length)],
+  camino:{x:cam.x,y:y+8.75*s,z:cam.z},pad,loc,esterna:k%2===1};
+ CASE.push(casa);OST.push({x,z,y0:y,top:y+9*s,r:5*s});return casa}
+VILLAGGI.forEach((v,vi)=>{for(let k=0;k<v.n;k++){const a=k/v.n*6.283+hash(vi,k)*.35,rr=v.r*(k%2?.95:.6)+hash(vi,k+50)*5;
+ const x=v.x+Math.cos(a)*rr,z=v.z+Math.sin(a)*rr;aggiungiCasa(x,z,v.h,Math.atan2(v.x-x,v.z-z),.95+hash(vi,k+9)*.25,vi,k)}});
+// casette degli elfi al Polo Nord
+for(const [x,z,r] of [[-70,70,-2.2],[-112,32,-1.9],[-118,-78,-1.2],[85,60,2.4]])aggiungiCasa(x,z,BASE.h,r,.85,-1,CASE.length);
+const geoCorpo=unisci([[T_(new THREE.BoxGeometry(8,5,7),0,2.5,0),0xffffff],[(()=>{const sh=new THREE.Shape();sh.moveTo(-3.5,0);sh.lineTo(3.5,0);sh.lineTo(0,2.8);sh.lineTo(-3.5,0);
+ const g=new THREE.ExtrudeGeometry(sh,{depth:7.96,bevelEnabled:false});g.translate(0,5,-3.98);g.rotateY(Math.PI/2);return g})(),0xffffff]]);
+const AT=Math.atan(2.8/3.5);
+const geoTetto=unisci([[T_(RX(new THREE.BoxGeometry(9,.4,4.9),AT),0,6.55,1.8),0xffffff],[T_(RX(new THREE.BoxGeometry(9,.4,4.9),-AT),0,6.55,-1.8),0xffffff]]);
+const geoNeveTetto=unisci([[T_(RX(new THREE.BoxGeometry(8.6,.25,3.4),AT),0,7.25,1.2),0xffffff],[T_(RX(new THREE.BoxGeometry(8.6,.25,3.4),-AT),0,7.25,-1.2),0xffffff]]);
+const geoCamino=unisci([[T_(new THREE.BoxGeometry(1.1,2.8,1.1),2.2,7.2,-1.2),0x9a3b2a],[T_(new THREE.BoxGeometry(1.45,.32,1.45),2.2,8.6,-1.2),0x6e2a1e],[T_(new THREE.BoxGeometry(1.5,.2,1.5),2.2,8.82,-1.2),0xf2f6ff]]);
+const geoFinestre=(()=>{const P=[],W=0xffd27a;
+ P.push([T_(new THREE.BoxGeometry(1.4,2.4,.08),0,1.2,3.52),0x6a2e1a]);P.push([T_(new THREE.TorusGeometry(.38,.12,6,12),0,2.9,3.6),0x2a7a44]);
+ for(const x of [-2.6,2.6]){P.push([T_(new THREE.BoxGeometry(1.3,1.3,.08),x,2.9,3.52),W]);P.push([T_(new THREE.BoxGeometry(1.3,1.3,.08),x,2.9,-3.52),W])}
+ for(const s of [-1,1])P.push([T_(new THREE.BoxGeometry(.08,1.3,1.3),4.02*s,2.9,0),W]);
+ return unisci(P)})();
+const matCasa=new THREE.MeshLambertMaterial({color:0xffffff,vertexColors:true});
+const matFin=new THREE.MeshBasicMaterial({vertexColors:true});
+let luciNatale=[];
+(function creaCase(){const N=CASE.length,M=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),s=new THREE.Vector3(),v=new THREE.Vector3(),col=new THREE.Color();
+ const ims=[geoCorpo,geoTetto,geoNeveTetto,geoCamino].map((g,i)=>new THREE.InstancedMesh(g,i===3||i===2?matVC:matCasa,N));const fin=new THREE.InstancedMesh(geoFinestre,matFin,N);
+ const luci=[[],[],[]];
+ CASE.forEach((h,n)=>{e.set(0,h.rot,0);q.setFromEuler(e);s.setScalar(h.s);v.set(h.x,h.y,h.z);M.compose(v,q,s);
+  ims.forEach(m=>m.setMatrixAt(n,M));fin.setMatrixAt(n,M);
+  ims[0].setColorAt(n,col.setHex(h.muro));ims[1].setColorAt(n,col.setHex(h.tetto[1]));ims[2].setColorAt(n,col.setHex(0xf4f8ff));ims[3].setColorAt(n,col.setHex(0xffffff));
+  let li=0;for(const zz of [3.95,-3.95])for(let lx=-4.3;lx<=4.31;lx+=.86){const p=h.loc(lx,zz);luci[li%3].push(p.x,h.y+4.95*h.s,p.z);li++}});
+ ims.forEach(m=>{m.instanceColor.needsUpdate=true;scene.add(m)});scene.add(fin);
+ [0xff3040,0x30ff60,0xffd040].forEach((c,i)=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(luci[i],3));
+  const p=new THREE.Points(g,new THREE.PointsMaterial({color:c,size:1.1,map:TEX_PUNTO,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));scene.add(p);luciNatale.push(p)})})();
+// chiese con campanile e grande albero di Natale in ogni paese
+const M_=c=>new THREE.MeshLambertMaterial({color:c});
+const matPalline=[0xff3040,0xffd040,0x40a0ff,0xff60d0].map(c=>new THREE.MeshBasicMaterial({color:c}));
+function alberoNatale(x,z,y,sc,par){const g=new THREE.Group();const a=new THREE.Mesh(geoAbete,matVC);a.scale.setScalar(sc);g.add(a);
+ const sp=new THREE.SphereGeometry(.45,8,6);for(let i=0;i<22;i++){const t=hash(i,77),yy=3.5+t*8.5,r=(3.6-(yy-3.5)*.3)*1.0,an=i*2.4;const b=new THREE.Mesh(sp,matPalline[i%4]);b.position.set(Math.cos(an)*r,yy,Math.sin(an)*r);b.position.multiplyScalar(1);b.position.y=yy;b.position.x*=sc*.95;b.position.z*=sc*.95;b.position.y*=sc;g.add(b)}
+ const st=new THREE.Mesh(geoStella,new THREE.MeshBasicMaterial({color:0xffe060}));st.scale.setScalar(.55*sc);st.position.y=13.6*sc;g.add(st);
+ g.position.set(x,y,z);par.add(g);OST.push({x,z,y0:y,top:y+14*sc,r:3*sc});return g}
+const paesi=new THREE.Group();scene.add(paesi);
+VILLAGGI.forEach((v,vi)=>{alberoNatale(v.x,v.z,v.h,1.6,paesi);
+ const a=hash(vi,99)*6.28,cx=v.x+Math.cos(a)*24,cz=v.z+Math.sin(a)*24,ch=new THREE.Group();ch.position.set(cx,v.h,cz);ch.rotation.y=a;
+ const b=new THREE.Mesh(new THREE.BoxGeometry(9,8,15),M_(0xf0e6d2));b.position.set(0,4,0);ch.add(b);
+ for(const sg of [-1,1]){const r=new THREE.Mesh(new THREE.BoxGeometry(5.8,.4,15.6),M_(0x8a2a24));r.position.set(2.3*sg,9.6,0);r.rotation.z=-sg*.72;ch.add(r)}
+ const t=new THREE.Mesh(new THREE.BoxGeometry(4.6,24,4.6),M_(0xe6dcc6));t.position.set(0,12,-9);ch.add(t);
+ const sp=new THREE.Mesh(new THREE.ConeGeometry(3.6,9,4),M_(0x7a2420));sp.position.set(0,28.5,-9);sp.rotation.y=Math.PI/4;ch.add(sp);
+ const bell=new THREE.Mesh(new THREE.SphereGeometry(.9,10,8),new THREE.MeshBasicMaterial({color:0xffd040}));bell.position.set(0,20,-6.65);ch.add(bell);
+ for(const zz of [-3,1,5]){const w=new THREE.Mesh(new THREE.BoxGeometry(9.1,2.2,1),new THREE.MeshBasicMaterial({color:0xffcc66}));w.position.set(0,4.5,zz);w.scale.set(1,1,.6);ch.add(w)}
+ paesi.add(ch);const tw=new THREE.Vector3(0,0,-9).applyAxisAngle(new THREE.Vector3(0,1,0),a);
+ OST.push({x:cx+tw.x,z:cz+tw.z,y0:v.h,top:v.h+33,r:3.4});OST.push({x:cx,z:cz,y0:v.h,top:v.h+12,r:7})});
+
+/* ======================= POLO NORD ======================= */
+const baseG=new THREE.Group();scene.add(baseG);
+let baseRaggio=null,baseLuce=null,luciPista=null;
+(function creaBase(){const y=BASE.h,add=(m,x,yy,z)=>{m.position.set(x,yy,z);baseG.add(m);return m};
+ // pista e cerchio di atterraggio
+ [[30,0xffffff],[23,0xd81b2a],[16,0xffffff],[8,0xd81b2a]].forEach(([r,c],i)=>{const d=new THREE.Mesh(new THREE.CircleGeometry(r,40),M_(c));d.rotation.x=-Math.PI/2;add(d,0,y+.12+i*.04,0)});
+ const lp=[];for(let z=-40;z>=-220;z-=18)for(const x of [-18,18])lp.push(x,y+.8,z);
+ const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));
+ luciPista=new THREE.Points(lg,new THREE.PointsMaterial({color:0x80c0ff,size:2.4,map:TEX_PUNTO,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));baseG.add(luciPista);
+ // laboratorio dei giocattoli
+ const lab=new THREE.Group();lab.position.set(-78,y,-22);lab.rotation.y=Math.PI/2;baseG.add(lab);
+ const corpo=new THREE.Mesh(new THREE.BoxGeometry(42,14,24),M_(0x8a5a32));corpo.position.y=7;lab.add(corpo);
+ for(const sg of [-1,1]){const r=new THREE.Mesh(new THREE.BoxGeometry(43.5,.8,15),M_(0xb8282c));r.position.set(0,17.6,5.6*sg);r.rotation.x=sg*.62;lab.add(r);
+  const sn=new THREE.Mesh(new THREE.BoxGeometry(42,.4,10),M_(0xf4f8ff));sn.position.set(0,18.5,4.4*sg);sn.rotation.x=sg*.62;lab.add(sn)}
+ const front=new THREE.Mesh(new THREE.BoxGeometry(41,.5,.5),new THREE.MeshBasicMaterial({color:0xffd040}));front.position.set(0,14,12.2);lab.add(front);
+ const porta=new THREE.Mesh(new THREE.BoxGeometry(7,8,.3),M_(0x5a2a14));porta.position.set(0,4,12.1);lab.add(porta);
+ for(const x of [-14,-7,7,14]){const w=new THREE.Mesh(new THREE.BoxGeometry(4,4,.3),new THREE.MeshBasicMaterial({color:0xffd27a}));w.position.set(x,7,12.1);lab.add(w)}
+ const cam=new THREE.Mesh(new THREE.BoxGeometry(3,8,3),M_(0x9a3b2a));cam.position.set(12,21,-4);lab.add(cam);
+ {const c=document.createElement('canvas');c.width=512;c.height=128;const x=c.getContext('2d');x.fillStyle='#c62f3a';x.fillRect(0,0,512,128);x.strokeStyle='#ffd040';x.lineWidth=10;x.strokeRect(5,5,502,118);
+  x.fillStyle='#fff';x.font='bold 74px "Baloo 2",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('POLO NORD',256,68);
+  const ins=new THREE.Mesh(new THREE.PlaneGeometry(18,4.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));ins.position.set(0,11.2,12.3);lab.add(ins)}
+ OST.push({x:-78,z:-22,y0:y,top:y+22,r:16});OST.push({x:-78,z:-2,y0:y,top:y+22,r:12});OST.push({x:-78,z:-42,y0:y,top:y+22,r:12});
+ alberoNatale(62,-14,y,2.1,baseG);
+ // palo del Polo Nord a strisce
+ {const c=document.createElement('canvas');c.width=64;c.height=64;const x=c.getContext('2d');for(let i=0;i<8;i++){x.fillStyle=i%2?'#ffffff':'#d81b2a';x.beginPath();x.moveTo(0,i*16-32);x.lineTo(64,i*16);x.lineTo(64,i*16+16);x.lineTo(0,i*16-16);x.fill()}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1,4);
+  add(new THREE.Mesh(new THREE.CylinderGeometry(.7,.7,14,12),new THREE.MeshLambertMaterial({map:t})),36,y+7,34);
+  add(new THREE.Mesh(new THREE.SphereGeometry(1.5,14,10),new THREE.MeshBasicMaterial({color:0xffd040})),36,y+15,34);OST.push({x:36,z:34,y0:y,top:y+16,r:1.8})}
+ baseRaggio=add(new THREE.Mesh(new THREE.CylinderGeometry(2.5,2.5,220,12,1,true),new THREE.MeshBasicMaterial({color:0xffd040,transparent:true,opacity:.15,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide})),0,y+110,0);
+ baseLuce=new THREE.PointLight(0xffb060,1.8,260,1.2);baseLuce.position.set(-30,y+30,-10);baseG.add(baseLuce)})();
+
+/* ======================= FUNIVIA (Monte Vischio) ======================= */
+const CAVO={ax:860,az:-1700,bx:1085,bz:-2165};
+const funivia={seg:[],cab:[],g:new THREE.Group()};scene.add(funivia.g);
+(function creaFunivia(){const pt=[];const A={x:CAVO.ax,z:CAVO.az},B={x:CAVO.bx,z:CAVO.bz},Mm={x:(A.x+B.x)/2,z:(A.z+B.z)/2};
+ const yA=quota(A.x,A.z),yB=quota(B.x,B.z),yM=quota(Mm.x,Mm.z);const hA=yA+24,hB=yB+20,hM=Math.max(yM+30,(hA+hB)/2);
+ for(const [p,y0,y1] of [[A,yA,hA],[Mm,yM,hM],[B,yB,hB]]){const h=y1-y0;const t=new THREE.Mesh(new THREE.BoxGeometry(2.2,h,2.2),M_(0x7a828c));t.position.set(p.x,y0+h/2,p.z);funivia.g.add(t);
+  const tr=new THREE.Mesh(new THREE.BoxGeometry(7,.8,1.2),M_(0x5a6068));tr.position.set(p.x,y1,p.z);tr.rotation.y=Math.atan2(B.x-A.x,B.z-A.z)+Math.PI/2;funivia.g.add(tr);
+  OST.push({x:p.x,z:p.z,y0:y0,top:y1+1,r:2.4});pt.push(new THREE.Vector3(p.x,y1,p.z))}
+ funivia.pt=pt;const lg=new THREE.BufferGeometry().setFromPoints([pt[0],pt[1],pt[1],pt[2]]);funivia.g.add(new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0x222222})));
+ funivia.seg=[[pt[0],pt[1]],[pt[1],pt[2]]];
+ for(let k=0;k<2;k++){const c=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(3,2.6,3.6),M_(k?0x1e6fd9:0xd81b2a));b.position.y=-3.4;c.add(b);
+  const w=new THREE.Mesh(new THREE.BoxGeometry(3.1,1,3.7),new THREE.MeshBasicMaterial({color:0xffe08a}));w.position.y=-3.1;c.add(w);
+  const a=new THREE.Mesh(new THREE.BoxGeometry(.2,2,.2),M_(0x333333));a.position.y=-1.2;c.add(a);funivia.g.add(c);funivia.cab.push({g:c,u:k*.5})}})();
+function puntoCavo(u){const pt=funivia.pt;const t=u<.5?u*2:(u-.5)*2,a=u<.5?pt[0]:pt[1],b=u<.5?pt[1]:pt[2];return new THREE.Vector3().lerpVectors(a,b,t)}
+
+/* ======================= SLITTA, RENNE, FEDERICO, ELFO ======================= */
+function osso(a,b,r1,r2,mat){const v=new THREE.Vector3().subVectors(b,a),len=v.length();
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(r2,r1,len,10),mat);m.position.copy(a).addScaledVector(v,.5);
+ m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());return m}
+function palla(p,r,mat){const m=new THREE.Mesh(new THREE.SphereGeometry(r,14,10),mat);m.position.copy(p);return m}
+const V3=(x,y,z)=>new THREE.Vector3(x,y,z);
+const geoGamba=new THREE.CylinderGeometry(.06,.05,.46,8);geoGamba.translate(0,-.23,0);
+const geoGambaSu=new THREE.CylinderGeometry(.085,.065,.46,8);geoGambaSu.translate(0,-.23,0);
+const geoZoccolo=new THREE.CylinderGeometry(.065,.075,.08,8);
+function creaRenna(naso,tono){
+ const g=new THREE.Group(),pel=new THREE.MeshLambertMaterial({color:tono}),chiaro=new THREE.MeshLambertMaterial({color:0xd9b98a}),scuro=M_(0x2a1a10),corna=M_(0xe6d2a8),
+  rosso=M_(0xc62f3a),oro=new THREE.MeshLambertMaterial({color:0xffd040,emissive:0x5a4000});
+ const corpo=new THREE.Group();g.add(corpo);
+ const b=new THREE.Mesh(new THREE.CylinderGeometry(.27,.29,1.05,12),pel);b.rotation.x=Math.PI/2;b.position.set(0,1.0,0);corpo.add(b);
+ corpo.add(palla(V3(0,1.03,-.5),.3,pel));corpo.add(palla(V3(0,1.0,.5),.3,pel));
+ const pan=palla(V3(0,.86,0),.24,chiaro);pan.scale.set(1,.7,2.2);corpo.add(pan);
+ corpo.add(palla(V3(0,1.17,.78),.09,M_(0xffffff)));
+ corpo.add(osso(V3(0,1.15,-.6),V3(0,1.58,-.86),.15,.12,pel));
+ const testa=new THREE.Group();testa.position.set(0,1.64,-.9);corpo.add(testa);
+ const t=palla(V3(0,0,-.07),.16,pel);t.scale.set(1,.92,1.45);testa.add(t);
+ testa.add(palla(V3(0,-.05,-.28),.1,chiaro));
+ const nas=palla(V3(0,-.02,-.38),naso?.075:.045,naso?new THREE.MeshBasicMaterial({color:0xff2a2a}):scuro);testa.add(nas);
+ for(const s of [-1,1]){testa.add(palla(V3(.09*s,.05,-.16),.028,scuro));
+  const o=new THREE.Mesh(new THREE.ConeGeometry(.05,.16,6),pel);o.position.set(.14*s,.07,.02);o.rotation.z=-s*1.2;testa.add(o);
+  const r0=V3(.06*s,.12,0),r1=V3(.2*s,.42,.1),r2=V3(.32*s,.62,.02);testa.add(osso(r0,r1,.03,.026,corna));testa.add(osso(r1,r2,.026,.02,corna));
+  testa.add(osso(r1,V3(.18*s,.58,-.1),.02,.015,corna));testa.add(osso(V3(.13*s,.27,.05),V3(.1*s,.4,-.08),.018,.013,corna));testa.add(osso(r2,V3(.42*s,.66,.12),.018,.012,corna))}
+ const col=new THREE.Mesh(new THREE.TorusGeometry(.17,.045,6,14),rosso);col.position.set(0,1.22,-.64);col.rotation.x=1.15;corpo.add(col);
+ for(const s of [-1,0,1])corpo.add(palla(V3(.15*s,1.12-Math.abs(s)*.04,-.73),.045,oro));
+ const sella=new THREE.Mesh(new THREE.BoxGeometry(.6,.08,.36),rosso);sella.position.set(0,1.28,-.05);corpo.add(sella);
+ const gambe=[];
+ for(const [x,z,ph] of [[-.15,-.45,0],[.15,-.45,.35],[-.15,.45,Math.PI],[.15,.45,Math.PI+.35]]){
+  const su=new THREE.Group();su.position.set(x,.95,z);corpo.add(su);su.add(new THREE.Mesh(geoGambaSu,pel));
+  const gi=new THREE.Group();gi.position.y=-.46;su.add(gi);gi.add(new THREE.Mesh(geoGamba,pel));const zo=new THREE.Mesh(geoZoccolo,scuro);zo.position.y=-.48;gi.add(zo);
+  gambe.push({su,gi,ph,dietro:z>0})}
+ return {g,corpo,gambe,testa}}
+const SL=(function creaSlitta(){
+ const g=new THREE.Group();g.rotation.order='YXZ';
+ const rosso=new THREE.MeshLambertMaterial({color:0xc4202c}),oro=new THREE.MeshLambertMaterial({color:0xffc83a,emissive:0x4a3000}),
+  legno=M_(0x7a4a26),verde=M_(0x2a7a44),pelle=M_(0xf2c6a0),bianco=M_(0xffffff),nero=M_(0x1a1a22),blu=M_(0x26407a);
+ const add=(geo,mat,x,y,z,par)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);(par||g).add(m);return m};
+ // pattini con ricciolo davanti
+ for(const s of [-1,1]){add(new THREE.BoxGeometry(.09,.09,3.3),oro,.72*s,.05,-.05);
+  const rc=new THREE.TorusGeometry(.4,.05,6,16,Math.PI);rc.rotateZ(-Math.PI/2);rc.rotateY(Math.PI/2);add(rc,oro,.72*s,.45,-1.7);
+  for(const z of [-1.05,0,1.05])g.add(osso(V3(.72*s,.05,z),V3(.68*s,.58,z),.035,.035,oro))}
+ // cassone
+ add(new THREE.BoxGeometry(1.55,.18,2.7),rosso,0,.62,0);
+ for(const s of [-1,1]){add(new THREE.BoxGeometry(.1,.6,2.7),rosso,.78*s,.95,0);add(new THREE.BoxGeometry(.16,.07,2.75),oro,.78*s,1.27,0);
+  add(new THREE.BoxGeometry(.12,.12,.12),oro,.78*s,1.0,-.6)}
+ add(new THREE.BoxGeometry(1.66,1.1,.12),rosso,0,1.2,1.32);add(new THREE.BoxGeometry(1.7,.08,.16),oro,0,1.77,1.32);
+ const fr=add(new THREE.BoxGeometry(1.66,.75,.12),rosso,0,1.02,-1.36);fr.rotation.x=-.25;
+ const ric=new THREE.TorusGeometry(.22,.07,8,16,Math.PI*1.3);ric.rotateY(Math.PI/2);add(ric,oro,0,1.45,-1.45);
+ add(new THREE.BoxGeometry(1.4,.14,.62),verde,0,.8,-.3);add(new THREE.BoxGeometry(1.4,.5,.12),verde,0,1.05,.02);
+ // lanterna
+ g.add(osso(V3(-.82,1.27,-1.3),V3(-.82,1.5,-1.3),.02,.02,nero));add(new THREE.BoxGeometry(.09,.12,.09),new THREE.MeshBasicMaterial({color:0xffe08a}),-.82,1.56,-1.3);
+ // sacco e regali visibili
+ const sacco=add(new THREE.SphereGeometry(.55,14,10),M_(0x8a5a2b),.28,1.42,.78);sacco.scale.set(1,1.15,.85);
+ add(new THREE.CylinderGeometry(.1,.16,.18,8),M_(0x6a4220),.28,2.05,.78);
+ const regali=[];[[-.48,.92,.85,0],[-.5,.92,1.15,1],[-.5,1.3,1.0,2],[.85-.2,1.0,.5,3],[.2,2.0,.62,4],[.45,1.95,.95,0],[-.05,1.85,1.05,1],[.6,1.2,1.15,2]].forEach(([x,y,z,c],i)=>{
+  const m=add(geoPacco[c],matVC,x,y,z);m.scale.setScalar(.38);m.rotation.y=i*.7;regali.push(m)});
+ // Federico: berretto e cappotto rossi
+ const fede=new THREE.Group();g.add(fede);const capp=M_(0xd42a2a);
+ fede.add(osso(V3(0,.9,-.32),V3(0,1.52,-.34),.2,.18,capp));fede.add(palla(V3(0,1.52,-.34),.18,capp));
+ const pel=new THREE.Mesh(new THREE.TorusGeometry(.2,.05,6,14),bianco);pel.rotation.x=Math.PI/2;pel.position.set(0,1.0,-.32);fede.add(pel);
+ const cint=new THREE.Mesh(new THREE.TorusGeometry(.2,.03,6,14),nero);cint.rotation.x=Math.PI/2;cint.position.set(0,1.12,-.33);fede.add(cint);
+ for(const s of [-1,1]){fede.add(osso(V3(.12*s,.92,-.38),V3(.14*s,.95,-.82),.08,.07,blu));fede.add(osso(V3(.14*s,.95,-.82),V3(.14*s,.7,-.88),.07,.06,blu));
+  const sc=add(new THREE.BoxGeometry(.13,.12,.24),nero,.14*s,.66,-.94,fede);
+  fede.add(osso(V3(.2*s,1.45,-.34),V3(.2*s,1.28,-.6),.065,.06,capp));fede.add(osso(V3(.2*s,1.28,-.6),V3(.16*s,1.3,-.8),.06,.055,capp));fede.add(palla(V3(.16*s,1.3,-.84),.06,verde))}
+ fede.add(osso(V3(0,1.6,-.34),V3(0,1.66,-.34),.07,.07,pelle));
+ fede.add(palla(V3(0,1.8,-.35),.17,pelle));const cap=palla(V3(0,1.83,-.29),.165,M_(0x6a3a1a));cap.scale.set(1.02,.95,1);fede.add(cap);
+ fede.add(palla(V3(0,1.8,-.36),.168,pelle));
+ for(const s of [-1,1]){fede.add(palla(V3(.06*s,1.83,-.5),.022,nero));fede.add(palla(V3(.1*s,1.76,-.48),.035,M_(0xf3a0a0)))}
+ fede.add(palla(V3(0,1.78,-.52),.03,M_(0xe8a888)));
+ const sorr=new THREE.Mesh(new THREE.TorusGeometry(.05,.012,4,10,Math.PI),M_(0x7a2a1a));sorr.position.set(0,1.73,-.5);sorr.rotation.z=Math.PI;fede.add(sorr);
+ const tesa=new THREE.Mesh(new THREE.TorusGeometry(.16,.055,8,16),bianco);tesa.rotation.x=Math.PI/2;tesa.position.set(0,1.92,-.35);fede.add(tesa);
+ const cono=new THREE.Mesh(new THREE.ConeGeometry(.16,.42,12),capp);cono.position.set(0,2.1,-.3);cono.rotation.x=.55;fede.add(cono);
+ fede.add(palla(V3(0,2.22,-.08),.07,bianco));
+ // Elfo Pepe in slitta
+ const elfo=new THREE.Group();elfo.position.set(-.42,.86,.55);g.add(elfo);const verdeE=M_(0x2e9b4f);
+ elfo.add(osso(V3(0,0,0),V3(0,.42,0),.15,.12,verdeE));const cint2=new THREE.Mesh(new THREE.TorusGeometry(.15,.025,6,12),nero);cint2.rotation.x=Math.PI/2;cint2.position.y=.12;elfo.add(cint2);
+ elfo.add(palla(V3(0,.58,0),.14,pelle));for(const s of [-1,1]){const o=new THREE.Mesh(new THREE.ConeGeometry(.04,.16,6),pelle);o.position.set(.15*s,.6,0);o.rotation.z=-s*1.4;elfo.add(o);elfo.add(palla(V3(.05*s,.61,-.12),.02,nero))}
+ const ce=new THREE.Mesh(new THREE.ConeGeometry(.15,.42,10),verdeE);ce.position.set(0,.86,.04);ce.rotation.x=-.35;elfo.add(ce);
+ const be=new THREE.Mesh(new THREE.TorusGeometry(.14,.035,6,12),rosso);be.rotation.x=Math.PI/2;be.position.y=.7;elfo.add(be);elfo.add(palla(V3(0,1.04,.12),.045,oro));
+ // renne: 3 coppie
+ const renne=[],toni=[0x8a5a34,0x7a4c2c,0x946240,0x6e4426,0x8a5a34,0x7f5030];let k=0;
+ for(const z of [-3.1,-4.9,-6.7])for(const x of [-.62,.62]){const r=creaRenna(z===-6.7&&x<0,toni[k++]);r.g.position.set(x,0,z);g.add(r.g);renne.push(r)}
+ // finimenti: tirelle d'oro ai lati di ogni renna + redini fino alle mani di Federico
+ const lp=[];for(const x of [-.62,.62])for(const o of [-.3,.3]){let px=x*.6+o*.7,py=.95,pz=-1.45;
+  for(const z of [-3.1,-4.9,-6.7]){lp.push(px,py,pz,x+o,1.0,z+.55);lp.push(x+o,1.0,z+.55,x+o*.8,1.08,z-.45);px=x+o*.8;py=1.08;pz=z-.45}}
+ for(const s of [-1,1]){lp.push(.16*s,1.3,-.84,.62*s*.3,1.5,-3.0);lp.push(.62*s*.3,1.5,-3.0,.62*s,1.5,-7.5)}
+ const lgeo=new THREE.BufferGeometry();lgeo.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));
+ g.add(new THREE.LineSegments(lgeo,new THREE.LineBasicMaterial({color:0xe2b13c})));
+ // cometa del turbo davanti alle renne
+ const cometa=new THREE.Mesh(geoStella,new THREE.MeshBasicMaterial({color:0xfff0a0,transparent:true,opacity:.95}));cometa.scale.setScalar(.32);cometa.position.set(0,2.0,-8.8);cometa.visible=false;g.add(cometa);
+ // ombra morbida
+ const omb=new THREE.Mesh(new THREE.CircleGeometry(1,24),new THREE.MeshBasicMaterial({color:0x000814,transparent:true,opacity:.28,depthWrite:false}));omb.rotation.x=-Math.PI/2;omb.scale.set(1.6,4.8,1);scene.add(omb);
+ scene.add(g);return {g,fede,elfo,renne,regali,cometa,omb}})();
+
+/* ======================= SCINTILLE (scia del turbo e della magia) ======================= */
+const NSC=500,scPos=new Float32Array(NSC*3).fill(-9999),scCol=new Float32Array(NSC*3),scVel=new Float32Array(NSC*3),scVita=new Float32Array(NSC),scBase=new Float32Array(NSC*3);let scI=0;
+const geoSc=new THREE.BufferGeometry();geoSc.setAttribute('position',new THREE.BufferAttribute(scPos,3));geoSc.setAttribute('color',new THREE.BufferAttribute(scCol,3));
+const scintille=new THREE.Points(geoSc,new THREE.PointsMaterial({size:.4,map:TEX_PUNTO,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));scintille.frustumCulled=false;scene.add(scintille);
+function emetti(x,y,z,n,sp,vx,vy,vz,tipo,vita){for(let k=0;k<n;k++){const i=scI;scI=(scI+1)%NSC;const j=i*3;
+ scPos[j]=x+(Math.random()-.5)*sp;scPos[j+1]=y+(Math.random()-.5)*sp;scPos[j+2]=z+(Math.random()-.5)*sp;
+ scVel[j]=(vx||0)+(Math.random()-.5)*2;scVel[j+1]=(vy||0)+(Math.random()-.5)*2;scVel[j+2]=(vz||0)+(Math.random()-.5)*2;scVita[i]=vita?vita*(.6+Math.random()*.6):.6+Math.random()*.7;
+ const c=tipo===1?[.5,1,.6]:Math.random()<.5?[1,.9,.45]:[1,1,1];scBase[j]=c[0];scBase[j+1]=c[1];scBase[j+2]=c[2]}}
+function aggiornaScintille(dt){for(let i=0;i<NSC;i++){if(scVita[i]<=0)continue;const j=i*3;scVita[i]-=dt;
+ if(scVita[i]<=0){scPos[j+1]=-9999;continue}scPos[j]+=scVel[j]*dt;scPos[j+1]+=scVel[j+1]*dt;scPos[j+2]+=scVel[j+2]*dt;scVel[j+1]-=.8*dt;
+ const f=Math.min(1,scVita[i]*1.5);scCol[j]=scBase[j]*f;scCol[j+1]=scBase[j+1]*f;scCol[j+2]=scBase[j+2]*f}
+ geoSc.attributes.position.needsUpdate=true;geoSc.attributes.color.needsUpdate=true}
+
+/* ======================= AUDIO ======================= */
+let AC=null,MAST=null,MUS=null,SFX=null,ventoG=null,ventoF=null,rumore=null,muto=false,musicaOn=true;
+try{muto=localStorage.getItem('slittaMuto')==='1';musicaOn=localStorage.getItem('slittaMusica')!=='0'}catch(e){}
+$('#audio').textContent=muto?'🔇':'🔊';$('#musica').classList.toggle('off',!musicaOn);
+function audio(){if(AC)return;try{AC=new (window.AudioContext||window.webkitAudioContext)();
+ MAST=AC.createGain();MAST.gain.value=muto?0:.9;MAST.connect(AC.destination);
+ MUS=AC.createGain();MUS.gain.value=musicaOn?.55:0;MUS.connect(MAST);SFX=AC.createGain();SFX.connect(MAST);
+ const buf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate),d=buf.getChannelData(0);let l=0;for(let i=0;i<d.length;i++){l=(l+.02*(Math.random()*2-1))/1.02;d[i]=l*3.5}
+ rumore=buf;const bianco=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),w=bianco.getChannelData(0);for(let i=0;i<w.length;i++)w[i]=Math.random()*2-1;rumoreB=bianco;
+ const src=AC.createBufferSource();src.buffer=buf;src.loop=true;ventoF=AC.createBiquadFilter();ventoF.type='bandpass';ventoF.Q.value=.7;ventoF.frequency.value=400;
+ ventoG=AC.createGain();ventoG.gain.value=0;src.connect(ventoF);ventoF.connect(ventoG);ventoG.connect(SFX);src.start();musNext=AC.currentTime+.3}catch(e){AC=null}}
+let rumoreB=null;
+function suono(f1,f2,dur,tipo,vol,dt){if(!AC||muto)return;const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime+(dt||0);o.type=tipo||'sine';
+ o.frequency.setValueAtTime(f1,t);o.frequency.exponentialRampToValueAtTime(f2,t+dur);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol||.15,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(SFX);o.start(t);o.stop(t+dur+.02)}
+function soffio(f0,f1,dur,vol,tipo,t,dest){if(!AC||!rumoreB)return;t=t||AC.currentTime;const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();s.buffer=rumoreB;f.type=tipo||'bandpass';f.Q.value=1;
+ f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(f1,t+dur);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(dest||SFX);s.start(t,Math.random()*.5);s.stop(t+dur+.02)}
+// sonagli: parziali metalliche brillanti + fruscio acuto
+function sonagli(t,vol,dest){if(!AC)return;dest=dest||SFX;for(let k=0;k<3;k++){const o=AC.createOscillator(),g=AC.createGain(),tt=t+k*.018+Math.random()*.01;o.type='sine';
+ o.frequency.value=[2637,3520,4699][k]*(1+(Math.random()-.5)*.03);g.gain.setValueAtTime(vol*.6,tt);g.gain.exponentialRampToValueAtTime(.0005,tt+.18);o.connect(g);g.connect(dest);o.start(tt);o.stop(tt+.2)}
+ soffio(7000,9000,.12,vol*.9,'highpass',t,dest)}
+function whoosh(){if(!AC||muto)return;soffio(300,1800,.6,.3)}
+function zoccolo(t){if(!AC||muto)return;soffio(900,300,.06,.12,'lowpass',t);const o=AC.createOscillator(),g=AC.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(60,t+.08);
+ g.gain.setValueAtTime(.09,t);g.gain.exponentialRampToValueAtTime(.001,t+.09);o.connect(g);g.connect(SFX);o.start(t);o.stop(t+.1)}
+function pop(){suono(520,170,.14,'sine',.2);if(AC&&!muto)soffio(2000,600,.08,.12)}
+function campanello(){[72,76,79,84].forEach((m,i)=>suono(mf(m),mf(m)*1.002,.35,'triangle',.14,i*.08));if(AC&&!muto)sonagli(AC.currentTime+.32,.08)}
+function boing(){if(!AC||muto)return;const o=AC.createOscillator(),g=AC.createGain(),l=AC.createOscillator(),lg=AC.createGain(),t=AC.currentTime;o.type='sine';o.frequency.setValueAtTime(300,t);o.frequency.exponentialRampToValueAtTime(110,t+.4);
+ l.frequency.value=14;lg.gain.value=30;l.connect(lg);lg.connect(o.frequency);g.gain.setValueAtTime(.2,t);g.gain.exponentialRampToValueAtTime(.001,t+.45);o.connect(g);g.connect(SFX);o.start(t);l.start(t);o.stop(t+.46);l.stop(t+.46)}
+function cinguettio(n){if(!AC||muto)return;for(let i=0;i<n;i++){const f=750+Math.random()*700;suono(f,f*(Math.random()<.5?1.35:.75),.07,'square',.035,i*.09)}}
+const mf=m=>440*Math.pow(2,(m-69)/12);
+$('#audio').addEventListener('click',()=>{muto=!muto;$('#audio').textContent=muto?'🔇':'🔊';if(MAST)MAST.gain.value=muto?0:.9;try{localStorage.setItem('slittaMuto',muto?'1':'0')}catch(e){}});
+function cambiaMusica(){audio();musicaOn=!musicaOn;$('#musica').classList.toggle('off',!musicaOn);if(MUS)MUS.gain.setTargetAtTime(musicaOn?.55:0,AC.currentTime,.1);try{localStorage.setItem('slittaMusica',musicaOn?'1':'0')}catch(e){}}
+$('#musica').addEventListener('click',cambiaMusica);
+
+/* musica: «Jingle Bells» (J. L. Pierpont, 1857, pubblico dominio) — solo melodia, con sonagli sul battito */
+const MEL=[[76,1],[76,1],[76,2],[76,1],[76,1],[76,2],[76,1],[79,1],[72,1.5],[74,.5],[76,4],
+ [77,1],[77,1],[77,1.5],[77,.5],[77,1],[76,1],[76,1],[76,.5],[76,.5],[76,1],[74,1],[74,1],[76,1],[74,2],[79,2],
+ [76,1],[76,1],[76,2],[76,1],[76,1],[76,2],[76,1],[79,1],[72,1.5],[74,.5],[76,4],
+ [77,1],[77,1],[77,1],[77,1],[77,1],[76,1],[76,1],[76,.5],[76,.5],[79,1],[79,1],[77,1],[74,1],[72,4]];
+const BASSO=[48,48,48,48,53,48,50,55,48,48,48,48,53,48,55,48];
+const MELMAP={};{let b=0;for(const [m,d] of MEL){MELMAP[Math.round(b*2)]=[m,d];b+=d}}
+const BEAT=.33;let musNext=0,musStep=0,musGiro=0;
+function notaMus(m,t,dur,tipo,vol){const o=AC.createOscillator(),g=AC.createGain();o.type=tipo;o.frequency.value=mf(m);
+ g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.015);g.gain.setTargetAtTime(vol*.55,t+.05,.12);g.gain.setTargetAtTime(.0001,t+dur*.9,.05);o.connect(g);g.connect(MUS);o.start(t);o.stop(t+dur+.3)}
+function musicaTick(){if(!AC||!musicaOn||muto||pausaOn)return;const now=AC.currentTime;if(musNext<now-.2)musNext=now+.05;
+ while(musNext<now+.3){const st=musStep,t=musNext;
+  const n=MELMAP[st];if(n){const campana=musGiro%2===1;notaMus(n[0],t,n[1]*BEAT,campana?'sine':'triangle',campana?.07:.085);if(campana)notaMus(n[0]+12,t,n[1]*BEAT*.6,'sine',.02)}
+  if(st%8===0||st%8===4){const r=BASSO[(st/8)|0];notaMus(st%8===0?r:r+7,t,BEAT*1.6,'sine',.09)}
+  if(st%2===0)sonagli(t,st%8===0?.035:.022,MUS);else if(musGiro%2)sonagli(t,.012,MUS);
+  musStep=(st+1)%128;if(musStep===0)musGiro++;musNext+=BEAT/2}}
+
+/* ======================= ELFO PEPE: fumetti e cinguettii ======================= */
+const elfoT={t:0,cd:{}};
+function elfo(testo,chiave,attesa,dur){if(chiave){const now=performance.now()/1000;if(elfoT.cd[chiave]&&now<elfoT.cd[chiave])return false;elfoT.cd[chiave]=now+(attesa||8)}
+ const f=$('#fumetto');f.innerHTML='<i>Elfo Pepe</i>'+testo;f.classList.add('vis');elfoT.t=dur||4;$('#elfoFaccia').classList.add('parla');elfoT.parla=.2+Math.min(1.2,testo.length*.02);
+ cinguettio(3+Math.min(4,Math.floor(testo.length/18)));return true}
+function aggiornaElfo(dt){if(elfoT.t>0){elfoT.t-=dt;if(elfoT.t<=0)$('#fumetto').classList.remove('vis')}
+ if(elfoT.parla>0){elfoT.parla-=dt;if(elfoT.parla<=0)$('#elfoFaccia').classList.remove('parla')}}
+
+/* ======================= MISSIONI ======================= */
+const MISSIONI=[
+ {nome:'Il primo volo',vil:[0],camini:2,atterra:0,stelle:0,anelli:0,tempo:180,meteo:'sereno',
+  desc:'Decolla dal Polo Nord, lascia cadere <b>2 regali</b> nei camini di Borgo Pino e torna ad atterrare a casa.'},
+ {nome:'Valle Cannella',vil:[1],camini:4,atterra:0,stelle:3,anelli:0,tempo:280,
+  desc:'<b>4 regali</b> nei camini di Valle Cannella. Raccogli anche <b>3 stelle cometa ⭐</b>: caricano il turbo!'},
+ {nome:'Consegna speciale',vil:[0,2],camini:2,atterra:1,stelle:0,anelli:0,tempo:330,
+  desc:'Un regalo grande va consegnato a mano: <b>atterra vicino al cerchio verde</b> a Colle Zenzero! Più 2 camini.'},
+ {nome:'Campane nel cielo',vil:[2],camini:3,atterra:0,stelle:0,anelli:5,tempo:330,uccelli:2,
+  desc:'Vola dentro <b>5 anelli con le campanelle 🔔</b> e porta 3 regali a Colle Zenzero. Attento agli uccellini!'},
+ {nome:'Il lago ghiacciato',vil:[3],camini:4,atterra:1,stelle:2,anelli:0,tempo:420,meteo:'vento',
+  desc:'Oltre il grande lago ghiacciato c\'è Lago Ghiacciolo: <b>4 camini</b> e <b>una consegna a mano</b>. Tira vento!'},
+ {nome:'La funivia',vil:[4],camini:4,atterra:1,stelle:3,anelli:0,tempo:480,
+  desc:'Monte Vischio è in alto, vicino alla <b>funivia</b>: sali di quota e non toccare i cavi!'},
+ {nome:'Bufera di neve',vil:[5,3],camini:6,atterra:0,stelle:0,anelli:3,tempo:540,meteo:'neve',bufere:3,
+  desc:'Nevica forte! <b>Evita le nuvole di bufera</b> e porta 6 regali a Fiocco di Neve e Lago Ghiacciolo.'},
+ {nome:'La grande notte',vil:[6,7,4],camini:7,atterra:2,stelle:5,anelli:4,tempo:900,uccelli:2,bufere:1,
+  desc:'La missione più grande: <b>9 regali</b> in tre paesi, 5 stelle e 4 anelli. Buon Natale, Federico!'},
+];
+let sbloccate=1,record={};
+try{sbloccate=clamp(+localStorage.getItem('slittaLivello')||1,1,MISSIONI.length);record=JSON.parse(localStorage.getItem('slittaRecord')||'{}')||{}}catch(e){record={}}
+let scelta=Math.min(sbloccate-1,MISSIONI.length-1);
+const stelleTxt=n=>'★'.repeat(n)+'☆'.repeat(3-n);
+function disegnaMissioni(){const box=$('#missioni');box.innerHTML='';
+ MISSIONI.forEach((m,i)=>{const b=document.createElement('button');b.className='mb'+(i===scelta?' sel':'');b.disabled=i>=sbloccate;const r=record[i];
+  b.innerHTML=`<b>${i>=sbloccate?'🔒':i+1}</b>${m.nome}<br><span class="stelle">${r?stelleTxt(r.stelle):'☆☆☆'}</span>`;
+  b.addEventListener('click',()=>{scelta=i;disegnaMissioni()});box.appendChild(b)});
+ const m=MISSIONI[scelta],r=record[scelta],ob=[];
+ if(m.camini)ob.push(`🎁 ${m.camini} camini`);if(m.atterra)ob.push(`🟢 ${m.atterra} consegn${m.atterra>1?'e':'a'} a mano`);if(m.stelle)ob.push(`⭐ ${m.stelle} stelle`);if(m.anelli)ob.push(`🔔 ${m.anelli} anelli`);
+ $('#mInfo').innerHTML=`<b>Missione ${scelta+1}: ${m.nome}</b><br>${m.desc}<br>🎯 ${ob.join(' · ')} · ⏱ ${tempoTxt(m.tempo)} · poi atterra al Polo Nord`+(r?`<br>🏆 Il tuo record: ${r.punti} punti <span class="stelle">${stelleTxt(r.stelle)}</span>`:'')}
+const tempoTxt=t=>{t=Math.max(0,Math.round(t));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
+
+/* oggetti della missione */
+const missG=new THREE.Group();scene.add(missG);
+let OBI=[],STELLE=[],ANELLI=[],BUFERE=[],STORMI=[],PACCHI=[];
+const geoRaggio=new THREE.CylinderGeometry(1.3,1.3,110,10,1,true);geoRaggio.translate(0,55,0);
+const matRaggioOro=new THREE.MeshBasicMaterial({color:0xffd040,transparent:true,opacity:.28,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+const matRaggioVerde=new THREE.MeshBasicMaterial({color:0x50ff80,transparent:true,opacity:.28,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+const geoAnelloBersaglio=new THREE.TorusGeometry(4.5,.35,8,28);geoAnelloBersaglio.rotateX(Math.PI/2);
+const matFumo=new THREE.MeshLambertMaterial({color:0xc8ccd8,transparent:true,opacity:.45,depthWrite:false});
+const geoFumo=new THREE.SphereGeometry(1,8,6);
+const geoCampanella=unisci([[T_(new THREE.ConeGeometry(.9,1.3,10,1,true),0,-.2,0),0xffd040],[T_(new THREE.SphereGeometry(.55,10,6,0,6.3,0,1.6),0,.35,0),0xffd040],[T_(new THREE.SphereGeometry(.22,6,4),0,-.95,0),0xb07800]]);
+const geoAnelloCampane=new THREE.TorusGeometry(9,.7,8,30);
+const matAnelloC=new THREE.MeshLambertMaterial({color:0xd8283a,emissive:0x5a0810});
+const mirino=new THREE.Mesh(new THREE.TorusGeometry(2.2,.25,6,24),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.8,depthWrite:false}));mirino.rotation.x=Math.PI/2;mirino.visible=false;scene.add(mirino);
+function svuotaMissione(){while(missG.children.length)missG.remove(missG.children[0]);for(const p of PACCHI)scene.remove(p.m);OBI=[];STELLE=[];ANELLI=[];BUFERE=[];STORMI=[];PACCHI=[]}
+function preparaMissione(mi){svuotaMissione();const m=MISSIONI[mi];
+ // bersagli: case dei paesi della missione, in ordine fisso; le consegne a mano sulle case esterne
+ const pool=[];m.vil.forEach(v=>{const cs=CASE.filter(c=>c.vi===v);pool.push(cs)});
+ const scelte=[];let nA=m.atterra,nC=m.camini,giro=0;
+ for(let k=pool.length-1;nA>0&&k>=0;k--){const c=pool[k].find(c=>c.esterna&&!scelte.some(s=>s.casa===c));if(c){scelte.push({casa:c,tipo:'atterra'});nA--}}
+ while(nC>0&&giro<40){for(const cs of pool){if(nC<=0)break;
+  if(nC>0){const libere=cs.filter(c=>!scelte.some(s=>s.casa===c));if(libere.length){const c=libere[(giro*3+mi)%libere.length];scelte.push({casa:c,tipo:'camino'});nC--}}}giro++}
+ for(const o of scelte){const c=o.casa;o.fatto=false;
+  if(o.tipo==='camino'){o.raggio=new THREE.Mesh(geoRaggio,matRaggioOro);o.raggio.position.set(c.camino.x,c.camino.y+1,c.camino.z);missG.add(o.raggio);
+   o.anello=new THREE.Mesh(geoAnelloBersaglio,new THREE.MeshBasicMaterial({color:0xffe060}));o.anello.position.set(c.camino.x,c.camino.y+2.5,c.camino.z);missG.add(o.anello);
+   o.fumo=[];for(let k=0;k<6;k++){const f=new THREE.Mesh(geoFumo,matFumo);missG.add(f);o.fumo.push(f)}o.x=c.camino.x;o.z=c.camino.z;o.y=c.camino.y}
+  else{o.raggio=new THREE.Mesh(geoRaggio,matRaggioVerde);o.raggio.position.set(c.pad.x,c.y,c.pad.z);missG.add(o.raggio);
+   [[11,0x2e9b4f],[7.5,0xffffff],[4,0x2e9b4f]].forEach(([r,col],i)=>{const d=new THREE.Mesh(new THREE.CircleGeometry(r,32),M_(col));d.rotation.x=-Math.PI/2;d.position.set(c.pad.x,c.y+.15+i*.04,c.pad.z);missG.add(d)});
+   o.x=c.pad.x;o.z=c.pad.z;o.y=c.y}
+  OBI.push(o)}
+ // percorso: Polo Nord → paesi → Polo Nord (stelle, anelli, bufere lungo il tragitto)
+ const wp=[{x:0,z:0}];m.vil.forEach(v=>wp.push({x:VILLAGGI[v].x,z:VILLAGGI[v].z}));wp.push({x:0,z:0});
+ const lungo=(k,n,f)=>{const tot=wp.length-1,u=(k+.5)/n*tot,s=Math.min(tot-1,Math.floor(u)),t=u-s;const a=wp[s],b=wp[s+1];
+  const dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz)||1;let tt=clamp(t,.2,.8);const lat=(hash(mi*13+k,f)-.5)*90;
+  return {x:a.x+dx*tt-dz/l*lat,z:a.z+dz*tt+dx/l*lat,dir:Math.atan2(dx,-dz)}};
+ const nS=m.stelle?m.stelle+3:4;
+ for(let k=0;k<nS;k++){const p=lungo(k,nS,1),y=quota(p.x,p.z)+45+hash(mi,k+5)*70;const st=new THREE.Mesh(geoStella,matStella);st.position.set(p.x,y,p.z);missG.add(st);STELLE.push({x:p.x,y,z:p.z,m:st,preso:false})}
+ const nA2=m.anelli?m.anelli+2:0;
+ for(let k=0;k<nA2;k++){const p=lungo(k,nA2,2),y=quota(p.x,p.z)+40+hash(mi,k+9)*50;const g=new THREE.Group();g.position.set(p.x,y,p.z);g.rotation.y=-p.dir;
+  g.add(new THREE.Mesh(geoAnelloCampane,matAnelloC));for(let b=0;b<4;b++){const cb=new THREE.Mesh(geoCampanella,matVC);const a=b/4*Math.PI*2+Math.PI/4;cb.position.set(Math.cos(a)*9,Math.sin(a)*9,0);g.add(cb)}
+  missG.add(g);ANELLI.push({x:p.x,y,z:p.z,m:g,preso:false})}
+ for(let k=0;k<(m.bufere||0);k++){const p=lungo(k,m.bufere,3);const b={x:p.x,z:p.z,r:110,g:new THREE.Group()};
+  const n=700,pos=new Float32Array(n*3);for(let i=0;i<n;i++){const a=Math.random()*6.28,r=Math.sqrt(Math.random())*b.r;pos[i*3]=Math.cos(a)*r;pos[i*3+1]=Math.random()*260;pos[i*3+2]=Math.sin(a)*r}
+  const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.BufferAttribute(pos,3));b.g.add(new THREE.Points(gg,new THREE.PointsMaterial({color:0xe8eeff,size:2.2,map:TEX_PUNTO,transparent:true,depthWrite:false,opacity:.85})));
+  const cil=new THREE.Mesh(new THREE.CylinderGeometry(b.r,b.r*1.15,280,24,1,true),new THREE.MeshBasicMaterial({color:0xdde6f5,transparent:true,opacity:.16,depthWrite:false,side:THREE.DoubleSide}));cil.position.y=140;b.g.add(cil);
+  b.g.position.set(p.x,quota(p.x,p.z)-10,p.z);missG.add(b.g);BUFERE.push(b)}
+ for(let k=0;k<(m.uccelli||0);k++){const v=VILLAGGI[m.vil[k%m.vil.length]],dir=Math.atan2(v.x,-v.z),d=Math.hypot(v.x,v.z)*(.55+k*.2);
+  const c={cx:Math.sin(dir)*d+(k?60:-60),cz:-Math.cos(dir)*d,y:quota(Math.sin(dir)*d,-Math.cos(dir)*d)+55+k*15,a:k*2,g:new THREE.Group(),uc:[],cd:0};
+  for(let i=0;i<9;i++){const b=new THREE.Group(),mat=M_(0x2a2a3a);const corpo=new THREE.Mesh(new THREE.ConeGeometry(.35,1.6,6),mat);corpo.rotation.x=-Math.PI/2;b.add(corpo);
+   const ali=[];for(const s of [-1,1]){const w=new THREE.Mesh(new THREE.BoxGeometry(1.8,.06,.7),mat);w.geometry.translate(.9*s,0,0);b.add(w);ali.push(w)}
+   b.position.set(((i%3)-1)*4+(Math.random()-.5)*2,(Math.random()-.5)*3,Math.floor(i/3)*3.5);c.g.add(b);c.uc.push({b,ali,ph:Math.random()*6})}
+  missG.add(c.g);STORMI.push(c)}}
+
+/* ======================= COMANDI ======================= */
+const K={su:false,giu:false,sx:false,dx:false};
+const J={on:false,id:null,x0:0,y0:0,ix:0,iy:0};
+const BO={tasto:false,dito:null};const turboVoluto=()=>BO.tasto||BO.dito!==null;
+const IN_GIOCO=['conto','terra','volo','consegna'];
+function turboPremuto(){if(S&&(S.stato==='volo'||S.stato==='terra')&&!pausaOn&&S.carica>.05){whoosh();suono(1200,2400,.25,'triangle',.06)}}
+addEventListener('keydown',e=>{const c=e.code;
+ if((c==='Escape'||c==='KeyP')&&!e.repeat){if(S&&IN_GIOCO.includes(S.stato)){pausa(!pausaOn);e.preventDefault();return}}
+ if(pausaOn)return;
+ if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(c))e.preventDefault();
+ if(c==='ArrowUp'||c==='KeyW')K.su=true;else if(c==='ArrowDown'||c==='KeyS')K.giu=true;
+ else if(c==='ArrowLeft'||c==='KeyA')K.sx=true;else if(c==='ArrowRight'||c==='KeyD')K.dx=true;
+ else if(c==='ShiftLeft'||c==='ShiftRight'||c==='KeyB'){if(!e.repeat&&!turboVoluto()){BO.tasto=true;turboPremuto()}BO.tasto=true}
+ else if(c==='KeyC'||c==='KeyV'){if(!e.repeat&&S&&IN_GIOCO.includes(S.stato))cambiaVista()}
+ else if(c==='KeyM'){if(!e.repeat)cambiaMusica()}
+ else if((c==='Space'||c==='Enter')&&!e.repeat){if(S&&S.stato==='volo'&&c==='Space')lancia();else if(!$('#menu').classList.contains('hidden'))parti();else if(!$('#fine').classList.contains('hidden'))$('#ancora').click()}});
+addEventListener('keyup',e=>{const c=e.code;
+ if(c==='ArrowUp'||c==='KeyW')K.su=false;else if(c==='ArrowDown'||c==='KeyS')K.giu=false;
+ else if(c==='ArrowLeft'||c==='KeyA')K.sx=false;else if(c==='ArrowRight'||c==='KeyD')K.dx=false;
+ else if(c==='ShiftLeft'||c==='ShiftRight'||c==='KeyB')BO.tasto=false});
+addEventListener('blur',()=>{K.su=K.giu=K.sx=K.dx=false;BO.tasto=false;BO.dito=null;J.on=false;$('#joy').style.display='none'});
+const RJ=62;
+cv.addEventListener('pointerdown',e=>{audio();if(AC&&AC.state==='suspended')AC.resume();if(J.on)return;J.on=true;J.id=e.pointerId;J.x0=e.clientX;J.y0=e.clientY;J.ix=J.iy=0;
+ const j=$('#joy');j.style.left=e.clientX+'px';j.style.top=e.clientY+'px';j.style.display=e.pointerType==='mouse'?'none':'block';$('#knob').style.transform='';try{cv.setPointerCapture(e.pointerId)}catch(_){}});
+cv.addEventListener('pointermove',e=>{if(!J.on||e.pointerId!==J.id)return;let dx=e.clientX-J.x0,dy=e.clientY-J.y0;const l=Math.hypot(dx,dy);if(l>RJ){dx*=RJ/l;dy*=RJ/l}
+ J.ix=dx/RJ;J.iy=dy/RJ;$('#knob').style.transform=`translate(${dx}px,${dy}px)`});
+function fineJ(e){if(e.pointerId!==J.id)return;J.on=false;J.ix=J.iy=0;$('#joy').style.display='none'}
+cv.addEventListener('pointerup',fineJ);cv.addEventListener('pointercancel',fineJ);
+$('#regalo').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();audio();lancia()});
+$('#regalo').addEventListener('contextmenu',e=>e.preventDefault());
+{const b=$('#turbo');
+ b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();audio();if(BO.dito!==null)return;BO.dito=e.pointerId;try{b.setPointerCapture(e.pointerId)}catch(_){}turboPremuto()});
+ const su=e=>{if(e.pointerId===BO.dito)BO.dito=null};
+ b.addEventListener('pointerup',su);b.addEventListener('pointercancel',su);b.addEventListener('lostpointercapture',su);b.addEventListener('contextmenu',e=>e.preventDefault())}
+let vista=0;try{vista=+localStorage.getItem('slittaVista')===1?1:0}catch(e){}
+function cambiaVista(v){vista=v===undefined?1-vista:v;document.body.classList.toggle('cab',vista===1&&S&&IN_GIOCO.includes(S.stato));
+ const el=$('#elfo');if(vista===1)$('#cruscotto').appendChild(el);else document.body.appendChild(el);ridimensiona();
+ try{localStorage.setItem('slittaVista',vista)}catch(e){}if(S&&IN_GIOCO.includes(S.stato))messaggio(vista?'🎥 Posto di guida':'🎥 Vista da dietro',1)}
+$('#vista').addEventListener('click',()=>cambiaVista());
+
+/* ======================= STATO E FISICA ======================= */
+const V_CROCIERA=24,V_DECOLLO=14,V_ATT=30,V_STALLO=11,Y_MAX=560,GR=14,R_CAMINO=7.5;
+let S=null,MIS=MISSIONI[0];
+let msgT=0;
+function messaggio(t,dur){const m=$('#msg');m.textContent=t;m.style.opacity=1;msgT=dur||1.6}
+function nuovo(mi,inMenu){MIS=MISSIONI[mi];
+ applicaMeteo(inMenu?METEI[0]:MIS.meteo?METEI.find(m=>m.id===MIS.meteo):METEI[Math.floor(Math.random()*METEI.length)]);
+ aggiornaChunk(0,10,true);preparaMissione(mi);
+ const tot=OBI.length,wa=Math.random()*6.28;
+ S={stato:'pronto',mi,t:0,tt:0,x:0,y:BASE.h,z:10,V:0,gam:0,psi:0,phi:0,turbo:0,carica:1,regali:tot+3,consegnati:0,tot,stelle:0,anelli:0,urti:0,mancati:0,inv:0,
+  wx:0,wz:0,wa,raff:0,punti:0,volato:false,fermoOk:false,cdLancio:0,zoccT:0,sonT:0,hintT:12,stallo:false,ritorno:false,inBufera:false,avvisi:{},atterrato:false,cT:0,tempoFinito:false};
+ camInit=false}
+function parti(){audio();if(AC&&AC.state==='suspended')AC.resume();
+ ['#menu','#fine','#pausa'].forEach(s=>$(s).classList.add('hidden'));$('#hud').classList.remove('hidden');$('#mappa').classList.remove('hidden');$('#elfo').classList.remove('hidden');
+ nuovo(scelta);S.stato='conto';pausaOn=false;$('#pausaBtn').style.display='block';$('#vista').style.display='block';$('#hAnelli').style.display=MIS.anelli?'':'none';
+ cambiaVista(vista);$('#msg').style.opacity=0;
+ const m=MIS;elfo(`Missione ${S.mi+1}: <b>${m.nome}</b>! ${m.desc}`,null,0,6)}
+function finiti(){return S.consegnati>=S.tot&&S.stelle>=MIS.stelle&&S.anelli>=MIS.anelli}
+function mancaTxt(){const p=[];if(S.consegnati<S.tot)p.push(`${S.tot-S.consegnati} regal${S.tot-S.consegnati>1?'i':'o'}`);
+ if(S.stelle<MIS.stelle)p.push(`${MIS.stelle-S.stelle} stell${MIS.stelle-S.stelle>1?'e':'a'} ⭐`);if(S.anelli<MIS.anelli)p.push(`${MIS.anelli-S.anelli} anell${MIS.anelli-S.anelli>1?'i':'o'} 🔔`);return p.join(', ')}
+
+function fisica(dt){
+ const s=S;
+ let pitch=clamp((K.su?1:0)-(K.giu?1:0)-J.iy,-1,1),roll=clamp((K.dx?1:0)-(K.sx?1:0)+J.ix,-1,1);
+ const tu=s.turbo;
+ if(s.stato==='terra'){
+  const vuole=pitch>.15||tu>.2;
+  if(vuole){const vt=tu>.2?36:V_CROCIERA;s.V+=(vt-s.V)*Math.min(1,dt*(tu>.2?1.4:.8))}else s.V=Math.max(0,s.V-(s.V>12?9:6)*dt);
+  s.psi+=roll*1.1*dt*Math.min(1,s.V/4);s.phi+=(roll*.1*Math.min(1,s.V/10)-s.phi)*Math.min(1,dt*4);s.gam=0;
+  s.x+=s.V*Math.sin(s.psi)*dt;s.z-=s.V*Math.cos(s.psi)*dt;s.y=suolo(s.x,s.z);
+  if(s.V>=V_DECOLLO&&(pitch>.15||tu>.2)){s.stato='volo';s.gam=12*DEG;s.y+=.5;s.volato=true;s.fermoOk=false;messaggio('Si vola! 🛷✨',1.3);suono(520,1040,.35,'triangle',.12);sonagli(AC?AC.currentTime:0,.08)}
+  return}
+ // in volo: vento e bufere scuotono un po' la slitta
+ const tb=(METEO.vento||0)*.12+(s.inBufera?.45:0);
+ if(tb){s.raff+=((Math.random()-.5)*2*tb-s.raff*.8)*dt*3;roll=clamp(roll+s.raff,-1,1);pitch+=s.raff*.3}
+ const agl=s.y-suolo(s.x,s.z);
+ let target=pitch>=0?pitch*26*DEG:pitch*32*DEG;
+ if(s.V<V_STALLO&&s.turbo<.3){if(!s.stallo){s.stallo=true;messaggio('Le renne sono stanche!',1.6);elfo('Le renne sono stanche! <b>Scendi un po\'</b> per riprendere velocità.','stallo',6);suono(300,200,.3,'square',.06)}}
+ else if(s.V>15)s.stallo=false;
+ if(s.stallo)target=-14*DEG;
+ if(agl<8&&pitch<=.1&&target<-6*DEG)target=-6*DEG; // appoggio dolce vicino a terra
+ if(s.y>Y_MAX-60)target=Math.min(target,-((s.y-(Y_MAX-60))/60)*10*DEG);
+ const aut=clamp(.4+s.V/V_CROCIERA,.4,1.3);
+ s.gam+=(target-s.gam)*Math.min(1,dt*1.8*aut);
+ const phiT=roll*40*DEG*(s.stallo?.4:1)*(agl<7?.35:1);s.phi+=(phiT-s.phi)*Math.min(1,dt*2.8);
+ const vc=V_CROCIERA+24*tu-(s.inBufera?7:0),k=.35+.6*tu;
+ s.V+=((vc-s.V)*k-G*Math.sin(s.gam))*dt;s.V=clamp(s.V,4,52);
+ s.psi+=G*Math.tan(s.phi)/Math.max(12,s.V)*1.4*dt;
+ const ch=Math.cos(s.gam);
+ s.x+=(s.V*ch*Math.sin(s.psi)+s.wx)*dt;s.z+=(-s.V*ch*Math.cos(s.psi)+s.wz)*dt;s.y+=s.V*Math.sin(s.gam)*dt;
+ if(s.y>Y_MAX)s.y=Y_MAX}
+
+function urto(nx,nz,perche){const s=S;if(s.inv>0)return;s.urti++;s.t+=3;s.inv=1.6;s.punti=Math.max(0,s.punti-50);
+ const l=Math.hypot(nx,nz)||1;s.x+=nx/l*4;s.z+=nz/l*4;s.V=Math.max(10,s.V*.6);s.gam=10*DEG;s.y+=1.5;
+ boing();messaggio('Bonk! +3 s',1.2);elfo(perche||'Ahi! Attento, Federico!','urto',4)}
+function contatto(terra){const s=S,pend=pendenza(s.x,s.z);
+ const ok=s.V<V_ATT&&s.gam>-17*DEG&&Math.abs(s.phi)<42*DEG&&pend<.5;
+ if(ok){s.stato='terra';s.y=terra;s.gam=0;s.phi*=.3;zoccolo(AC?AC.currentTime:0);soffio(600,200,.4,.25,'lowpass');messaggio(inLago(s.x,s.z)?'Atterraggio sul ghiaccio! ⛸️':'Atterraggio morbido! ❄️',1.4);
+  emetti(s.x,s.y+.3,s.z,25,3,0,2,0);if(!s.avvisi.atterra){s.avvisi.atterra=true;elfo('Bell\'atterraggio! Per ripartire tieni premuto <b>↑</b> (o trascina il dito in su).','atterra',10)}return}
+ // rimbalzo morbido
+ const gx=suolo(s.x+3,s.z)-suolo(s.x-3,s.z),gz=suolo(s.x,s.z+3)-suolo(s.x,s.z-3);
+ s.y=terra+1.6;s.gam=14*DEG;s.V=Math.max(14,s.V*.7);s.x-=gx*.6;s.z-=gz*.6;emetti(s.x,s.y,s.z,30,4,0,4,0);
+ if(s.inv<=0){s.urti++;s.t+=3;s.inv=1.2;boing();messaggio('Boing! +3 s',1.2);
+  elfo(pend>=.5?'Qui è troppo ripido! Atterra su un prato di neve <b>liscio</b>.':s.V>=V_ATT?'Troppo veloce! <b>Rallenta</b> (niente turbo) e scendi piano.':'Scendi più <b>piano e dritto</b> per atterrare.','rimb',5)}}
+
+function lancia(){const s=S;if(!s||s.stato!=='volo'||pausaOn||s.cdLancio>0)return;
+ if(s.regali<=0){elfo('Il sacco è vuoto! Torniamo al <b>Polo Nord</b> a riempirlo.','vuoto',5);suono(220,180,.2,'square',.05);return}
+ s.regali--;s.cdLancio=.45;const p=SL.g.localToWorld(V3(0,1.6,.9));const ch=Math.cos(s.gam);
+ const m=new THREE.Mesh(geoPacco[Math.floor(Math.random()*5)],matVC);m.scale.setScalar(1.3);m.position.copy(p);scene.add(m);
+ PACCHI.push({m,x:p.x,y:p.y,z:p.z,vx:s.V*ch*Math.sin(s.psi)+s.wx,vy:s.V*Math.sin(s.gam)+1.5,vz:-s.V*ch*Math.cos(s.psi)+s.wz,vita:0,fermo:false,rx:Math.random()*4,ry:Math.random()*4});
+ pop();$('#regalo').classList.add('on');setTimeout(()=>$('#regalo').classList.remove('on'),120)}
+function consegna(o,comeTxt){const s=S;o.fatto=true;s.consegnati++;s.punti+=300;
+ if(o.raggio)o.raggio.visible=false;if(o.anello)o.anello.visible=false;if(o.fumo)o.fumo.forEach(f=>f.visible=false);
+ emetti(o.x,o.y+2,o.z,60,4,0,6,0);campanello();messaggio('🎁 Consegnato! +300',1.5);
+ const bravo=['Bravissimo Federico!','Che mira!','Evviva, un bambino felice!','Perfetto, dritto nel camino!','Fantastico!'];
+ if(finiti()){s.ritorno=true;elfo(`${comeTxt||bravo[s.consegnati%bravo.length]} Tutto fatto: ora <b>torniamo al Polo Nord</b> e atterriamo sul cerchio rosso e bianco!`,null,0,6);messaggio('🏠 Torna al Polo Nord!',2.2)}
+ else if(s.consegnati>=s.tot)elfo(`Tutti i regali consegnati! Ci mancano ancora: <b>${mancaTxt()}</b>.`,null,0,5);
+ else elfo(`${comeTxt||bravo[s.consegnati%bravo.length]} ${s.tot-s.consegnati>1?'Ne mancano '+(s.tot-s.consegnati):'Ne manca ancora uno'}.`,null,0,3.5)}
+function aggiornaPacchi(dt){for(const p of PACCHI){p.vita+=dt;
+ if(p.fermo){if(p.vita>4){scene.remove(p.m);p.via=true}continue}
+ const y0=p.y;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vy-=GR*dt;p.m.position.set(p.x,p.y,p.z);p.m.rotation.x+=p.rx*dt;p.m.rotation.y+=p.ry*dt;
+ let preso=false;for(const o of OBI){if(o.fatto||o.tipo!=='camino')continue;if(y0>=o.y&&p.y<o.y+.5&&Math.hypot(p.x-o.x,p.z-o.z)<R_CAMINO){consegna(o);preso=true;break}}
+ if(preso){scene.remove(p.m);p.via=true;continue}
+ const t=suolo(p.x,p.z);if(p.y<=t+.5){p.y=t+.5;p.m.position.y=p.y;p.fermo=true;p.vita=0;S.mancati++;soffio(500,200,.2,.15,'lowpass');
+  let vicino=null;for(const o of OBI)if(!o.fatto&&o.tipo==='camino'&&Math.hypot(p.x-o.x,p.z-o.z)<60)vicino=o;
+  if(vicino){messaggio('Mancato!',1);elfo(['Quasi! Lancia quando il <b>cerchio bianco</b> diventa <b>verde</b> sopra il camino.','Ops, nella neve! Vola sopra il camino col fumo e riprova.'][S.mancati%2],'manc',4)}}}
+ PACCHI=PACCHI.filter(p=>!p.via)}
+// dove cadrebbe il regalo adesso: mirino verde se finisce nel camino
+function prevedi(){const s=S;if(s.stato!=='volo'||s.regali<=0){mirino.visible=false;return}
+ const p=SL.g.localToWorld(V3(0,1.6,.9)),ch=Math.cos(s.gam),vx=s.V*ch*Math.sin(s.psi)+s.wx,vy=s.V*Math.sin(s.gam)+1.5,vz=-s.V*ch*Math.cos(s.psi)+s.wz;
+ let best=null,bd=1e9;for(const o of OBI){if(o.fatto||o.tipo!=='camino')continue;const d=Math.hypot(o.x-s.x,o.z-s.z);if(d<bd){bd=d;best=o}}
+ let x,y,z,ok=false;
+ if(best&&bd<170&&p.y>best.y+1){const t=(vy+Math.sqrt(vy*vy+2*GR*(p.y-best.y)))/GR;x=p.x+vx*t;z=p.z+vz*t;y=best.y+.3;
+  const dd=Math.hypot(x-best.x,z-best.z);ok=dd<R_CAMINO;if(dd>40){best=null}}
+ else best=null;
+ if(!best){let t=0,yy=p.y,vyy=vy;x=p.x;z=p.z;for(let i=0;i<120;i++){t+=.05;x+=vx*.05;z+=vz*.05;yy+=vyy*.05;vyy-=GR*.05;const g=suolo(x,z);if(yy<=g+.2){y=g+.3;break}y=yy}
+  if(s.y-suolo(s.x,s.z)>160){mirino.visible=false;return}}
+ mirino.visible=true;mirino.position.set(x,y,z);mirino.material.color.setHex(ok?0x40ff70:0xffffff);mirino.scale.setScalar(ok?1.3:1);
+ if(ok&&!s.avvisi.verde){s.avvisi.verde=true;elfo('Il cerchio è <b>verde</b>: premi 🎁 adesso!','verde',8,3)}}
+
+function arrivoBase(){const s=S;s.fermoOk=true;s.volato=false;
+ if(finiti()){completa();return}
+ const resto=s.tot-s.consegnati;
+ if(s.regali<resto){s.regali=resto+3;campanello();messaggio('🎁 Sacco pieno!',1.6);elfo(`Ho riempito il sacco: ${s.regali} regali! Ora ripartiamo: mancano <b>${mancaTxt()}</b>.`,null,0,5)}
+ else elfo(`Siamo a casa, ma mancano ancora <b>${mancaTxt()}</b>. Segui le luci sulla mappa!`,null,0,5)}
+function consegnaAMano(o){const s=S;s.stato='consegna';s.cT=1.8;s.V=0;s.regali=Math.max(0,s.regali-1);s.consegnaO=o;
+ const m=new THREE.Mesh(geoPacco[2],matVC);m.scale.setScalar(2.2);const d=o.casa.loc(0,-5);m.position.set(d.x,o.y+1,d.z);missG.add(m);o.paccoPorta=m;
+ suono(660,990,.2,'triangle',.1);messaggio('🎁 Consegna a mano!',1.6)}
+
+function aggiorna(dt){
+ const s=S;s.tt+=dt;
+ if(s.stato==='conto'){const n=3-Math.floor(s.tt-1.4);
+  if(s.tt<1.4){if($('#msg').textContent!==METEO.nome){messaggio(METEO.nome,1.3);$('#hint').textContent=METEO.hint}}
+  else if(n>0){if($('#msg').textContent!==String(n)){messaggio(String(n),.9);suono(440,440,.12,'sine',.12);sonagli(AC?AC.currentTime:0,.05)}}
+  else{s.stato='terra';$('#hint').textContent='Tieni premuto ↑ (o trascina il dito in su) per correre e decollare!';messaggio('Via! 🛷',1.2);suono(660,990,.25,'sine',.15)}
+  return}
+ aggiornaStormi(dt);aggiornaFunivia(dt);
+ if(s.stato==='fine')return;
+ if(s.stato==='consegna'){s.cT-=dt;const o=s.consegnaO;if(o.paccoPorta)o.paccoPorta.position.y=o.y+1+Math.abs(Math.sin(s.cT*8))*.8;
+  if(s.cT<=0){s.stato='terra';if(o.paccoPorta){missG.remove(o.paccoPorta);o.paccoPorta=null}consegna(o,'Consegna a mano perfetta!');s.fermoOk=true}return}
+ s.t+=dt;s.inv=Math.max(0,s.inv-dt);s.cdLancio=Math.max(0,s.cdLancio-dt);
+ if(!s.tempoFinito&&s.t>MIS.tempo){s.tempoFinito=true;elfo('Il tempo è finito, ma non importa: <b>finiamo le consegne!</b>',null,0,4)}
+ // turbo cometa: si scarica tenendolo premuto, si ricarica da solo e con le stelle
+ const vuole=turboVoluto()&&s.carica>0&&(s.stato==='volo'||s.stato==='terra');
+ if(vuole){s.carica=Math.max(0,s.carica-.2*dt);if(s.carica<=0){elfo('Il turbo è scarico: raccogli le <b>stelle cometa ⭐</b> per ricaricarlo!','scarico',10)}}
+ else s.carica=Math.min(1,s.carica+.03*dt);
+ s.turbo+=((vuole?1:0)-s.turbo)*Math.min(1,dt*(vuole?4:1.6));
+ // vento
+ if(METEO.vento){const g=METEO.vento*(3.5+2*Math.sin(s.tt*.4));s.wx=Math.cos(s.wa)*g;s.wz=Math.sin(s.wa)*g}else{s.wx=s.wz=0}
+ if(s.stato!=='volo'){s.wx=s.wz=0}
+ const passi=s.turbo>.05?6:3;for(let i=0;i<passi;i++)fisica(dt/passi);s.psi=wrapA(s.psi);
+ aggiornaChunk(s.x,s.z,false);
+ const terra=suolo(s.x,s.z),agl=s.y-terra;
+ if(s.stato==='volo'&&s.y<=terra+.05)contatto(terra);
+ // confini del mondo
+ const dc=Math.hypot(s.x-CENTRO_MONDO.x,s.z-CENTRO_MONDO.z);
+ if(dc>R_MONDO-200&&s.stato==='volo'){const want=Math.atan2(CENTRO_MONDO.x-s.x,-(CENTRO_MONDO.z-s.z));s.psi+=wrapA(want-s.psi)*Math.min(1,dt*.8);elfo('Torniamo indietro: laggiù non ci sono case!','confine',8)}
+ // ostacoli
+ if(s.stato==='volo'&&s.inv<=0){const py=s.y+1;
+  for(const o of OST){const dx=s.x-o.x,dz=s.z-o.z;if(Math.abs(dx)>o.r+3||Math.abs(dz)>o.r+3)continue;if(py>o.top||py<o.y0-2)continue;if(Math.hypot(dx,dz)<o.r+1.4){urto(dx,dz,'Ahi! Vola più in alto sopra case e campanili!');break}}
+  if(agl<24&&s.inv<=0){const ic=Math.floor(s.x/C),jc=Math.floor(s.z/C);
+   esci:for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const ch=chunks.get((ic+a)+','+(jc+b));if(!ch)continue;const A=ch.alberi;
+    for(let i=0;i<A.length;i+=5){const dx=s.x-A[i],dz=s.z-A[i+1];if(Math.abs(dx)>4||Math.abs(dz)>4)continue;if(py>A[i+3])continue;
+     const r=A[i+4]*(1-(py-A[i+2])/(A[i+3]-A[i+2]))+1.2;if(Math.hypot(dx,dz)<r){urto(dx,dz,'Ahi! Gli abeti alti! Vola un po\' più su.');break esci}}}}
+  for(const sg of funivia.seg){if(s.inv>0)break;const a=sg[0],b=sg[1],ab=V3().subVectors(b,a),ap=V3(s.x-a.x,py-a.y,s.z-a.z),t=clamp(ap.dot(ab)/ab.lengthSq(),0,1);
+   const q=V3().copy(a).addScaledVector(ab,t);const d=Math.hypot(s.x-q.x,py-q.y,s.z-q.z);if(d<2.6){urto(s.x-q.x+.01,s.z-q.z,'Attento ai cavi della funivia!')}}
+  for(const c of funivia.cab){if(s.inv>0)break;const p=c.g.position;if(Math.hypot(s.x-p.x,py-(p.y-3.4),s.z-p.z)<4)urto(s.x-p.x,s.z-p.z,'Attento alla cabina della funivia!')}
+  for(const st of STORMI){if(s.inv>0)break;const p=st.g.position;if(Math.hypot(s.x-p.x,py-p.y,s.z-p.z)<9&&st.cd<=0){st.cd=4;urto(s.x-p.x,s.z-p.z,'Attento agli uccellini! Passa più in alto o più in basso.')}}}
+ if(s.stato==='volo')for(const st of STORMI){const p=st.g.position;if(Math.hypot(s.x-p.x,s.y-p.y,s.z-p.z)<90)elfo('Uno stormo di uccellini! <b>Giraci intorno</b>.','stormo',20,3)}
+ // bufere
+ s.inBufera=false;for(const b of BUFERE){const d=Math.hypot(s.x-b.x,s.z-b.z);if(d<b.r&&s.y<b.g.position.y+270){s.inBufera=true;break}if(d<b.r+150&&s.stato==='volo')elfo('Una nuvola di bufera! <b>Girale intorno</b>, dentro si va piano e si balla.','bufera',15)}
+ // stelle e anelli
+ for(const st of STELLE){if(st.preso)continue;if(Math.hypot(s.x-st.x,s.y+1-st.y,s.z-st.z)<8){st.preso=true;st.m.visible=false;s.stelle++;s.punti+=50;s.carica=Math.min(1,s.carica+.35);
+  emetti(st.x,st.y,st.z,40,3,0,1,0);suono(1046,1568,.25,'triangle',.15);suono(1568,2093,.2,'triangle',.08,.08);messaggio('⭐ +50 · turbo ☄️',1.1);
+  if(MIS.stelle&&s.stelle===MIS.stelle)elfo('Tutte le stelle che servivano! ⭐',null,0,3);controllaRitorno()}}
+ for(const a of ANELLI){if(a.preso)continue;if(Math.hypot(s.x-a.x,s.y+1-a.y,s.z-a.z)<9.5){a.preso=true;a.m.children[0].material=matPresa;s.anelli++;s.punti+=100;
+  if(AC){for(let k=0;k<4;k++)sonagli(AC.currentTime+k*.07,.09)}suono(880,1320,.25,'triangle',.12);messaggio('🔔 +100',1.1);emetti(a.x,a.y,a.z,30,8,0,1,0);
+  if(MIS.anelli&&s.anelli===MIS.anelli)elfo('Hai suonato tutte le campanelle che servivano! 🔔',null,0,3);controllaRitorno()}}
+ aggiornaPacchi(dt);
+ if(s.stato==='volo')s.punti+=dt*2;
+ if(!s.ritorno&&finiti()&&s.tot===0)s.ritorno=true;
+ // a terra e quasi fermo: consegne a mano e Polo Nord
+ if(s.stato==='terra'){
+  for(const o of OST){const dx=s.x-o.x,dz=s.z-o.z,d=Math.hypot(dx,dz);if(d<o.r+1.5&&s.y<o.top){const nx=dx/(d||1),nz=dz/(d||1);s.x=o.x+nx*(o.r+1.6);s.z=o.z+nz*(o.r+1.6);const t1=Math.atan2(-nz,-nx),t2=t1+Math.PI;s.psi=Math.abs(wrapA(t1-s.psi))<Math.abs(wrapA(t2-s.psi))?t1:t2;s.V*=.5}}
+  if(!s.fermoOk)for(const o of OBI){if(o.fatto||o.tipo!=='atterra')continue;if(Math.hypot(s.x-o.x,s.z-o.z)<40){if(s.regali>0){consegnaAMano(o);return}else{elfo('Il sacco è vuoto! Andiamo al Polo Nord a prendere altri regali.','vuoto',5);s.fermoOk=true}}}
+  if(!s.fermoOk&&s.volato&&Math.hypot(s.x-BASE.x,s.z-BASE.z)<60){arrivoBase();if(S.stato==='fine')return}
+  if(s.V>5)s.fermoOk=false;
+  if(s.V<.5&&s.volato&&!s.fermoOk)elfo('Per ripartire tieni premuto <b>↑</b> o trascina il dito in su!','riparti',12)}
+ // avvisi e consigli dell'elfo
+ if(s.stato==='volo'){
+  if(s.y>Y_MAX-40)elfo('Più in alto non si può: fa troppo freddo per le renne! 🥶','alto',12);
+  let best=null,bd=1e9;for(const o of OBI){if(o.fatto)continue;const d=Math.hypot(o.x-s.x,o.z-s.z);if(d<bd){bd=d;best=o}}
+  if(best&&bd<180){if(best.tipo==='camino')elfo('Ecco la casa! Vola <b>basso</b> sopra il camino che fuma e premi 🎁 quando il cerchio è <b>verde</b>.','vicinoC',25,4);
+   else elfo('Questa consegna è a mano: <b>atterra piano</b> vicino al cerchio verde!','vicinoA',25,4)}
+  if(s.regali<=0&&s.consegnati<s.tot)elfo('Il sacco è vuoto! Torniamo al <b>Polo Nord</b> a riempirlo.','vuoto',12);
+  if(s.ritorno&&Math.hypot(s.x,s.z)<260)elfo('Eccoci a casa! <b>Scendi piano</b> e atterra sul cerchio rosso e bianco.','casa',20,4)}
+ s.hintT-=dt;if(s.hintT<=0&&(s.stato==='volo')){s.hintT=24;consiglio()}
+ // suoni: zoccoli a terra, sonagli in volo veloce
+ if(AC&&!muto){if(s.stato==='terra'&&s.V>1.5){s.zoccT-=dt;if(s.zoccT<=0){const t=AC.currentTime;zoccolo(t);zoccolo(t+.07);zoccolo(t+.16);s.zoccT=clamp(.55-s.V*.016,.18,.55);if(Math.random()<.5)sonagli(t+.05,.03)}}
+  if(s.stato==='volo'){s.sonT-=dt;if(s.sonT<=0){s.sonT=s.V>34?.16:.5;sonagli(AC.currentTime,s.V>34?.05:.025)}
+   if(s.turbo>.3&&Math.random()<dt*14)suono(1800+Math.random()*1800,2600+Math.random()*1600,.08,'sine',.03)}}
+ // scie di scintille
+ if(s.stato==='volo'){const p=SL.g.localToWorld(V3(0,.3,1.4)),fw=V3(Math.sin(s.psi),0,-Math.cos(s.psi));
+  emetti(p.x,p.y,p.z,s.turbo>.2?3:(Math.random()<.4?1:0),.6,-fw.x*2,-.6,-fw.z*2,0,.3);if(s.turbo>.2){const c=SL.g.localToWorld(V3(0,2,-8.8));emetti(c.x,c.y,c.z,3,.6,-fw.x*4,0,-fw.z*4,0,.3)}}}
+function controllaRitorno(){const s=S;if(!s.ritorno&&finiti()){s.ritorno=true;elfo('Tutto fatto: ora <b>torniamo al Polo Nord</b> e atterriamo sul cerchio rosso e bianco!',null,0,5);messaggio('🏠 Torna al Polo Nord!',2.2)}}
+function consiglio(){const s=S;let best=null,bd=1e9;for(const o of OBI){if(o.fatto)continue;const d=Math.hypot(o.x-s.x,o.z-s.z);if(d<bd){bd=d;best=o}}
+ if(!best){if(s.ritorno)elfo('Torniamo al <b>Polo Nord</b>: segui la luce dorata sulla mappa!',null,0,4);else if(s.stelle<MIS.stelle)elfo('Ci mancano delle <b>stelle cometa ⭐</b>: guarda la mappa!',null,0,4);else if(s.anelli<MIS.anelli)elfo('Ci mancano degli <b>anelli con le campanelle 🔔</b>: guarda la mappa!',null,0,4);return}
+ const rel=wrapA(Math.atan2(best.x-s.x,-(best.z-s.z))-s.psi),dir=Math.abs(rel)<.4?'è proprio davanti a te':Math.abs(rel)>2.4?'è dietro di te: fai una curva':rel>0?'gira a <b>destra</b>':'gira a <b>sinistra</b>';
+ const c=best.casa,v=VILLAGGI[c.vi];
+ if(best.tipo==='camino')elfo(`Il prossimo regalo va alla casa col <b>tetto ${c.tetto[0]}</b> a ${v.nome}: ${dir}! Segui la luce dorata.`,null,0,4.5);
+ else elfo(`La consegna a mano è alla casa col <b>tetto ${c.tetto[0]}</b> a ${v.nome}: ${dir}! Cerca la luce verde.`,null,0,4.5)}
+function completa(){const s=S;s.stato='fine';s.V=0;$('#hint').textContent='';
+ const m=MIS;let stelle=1;if(s.t<=m.tempo)stelle=2;if(s.t<=m.tempo&&s.urti<=1&&s.mancati<=2)stelle=3;
+ s.punti=Math.round(s.punti+Math.max(0,m.tempo-s.t)*10+stelle*200);s.voto=stelle;
+ const prima=record[s.mi];let nuovoRec=false;if(!prima||s.punti>prima.punti||stelle>prima.stelle){record[s.mi]={punti:Math.max(s.punti,prima?prima.punti:0),stelle:Math.max(stelle,prima?prima.stelle:0)};nuovoRec=!prima||s.punti>prima.punti}
+ s.sblocco=false;if(s.mi===sbloccate-1&&sbloccate<MISSIONI.length){sbloccate++;s.sblocco=true}
+ try{localStorage.setItem('slittaRecord',JSON.stringify(record));localStorage.setItem('slittaLivello',sbloccate)}catch(e){}
+ s.nuovoRec=nuovoRec;campanello();setTimeout(()=>campanello(),400);emetti(s.x,s.y+3,s.z,120,8,0,6,0);messaggio('🎉 Missione compiuta!',2);
+ elfo('Evviva! Missione compiuta, Federico! 🎄',null,0,4);setTimeout(finePartita,1700)}
+function finePartita(){const s=S;if(!s||s.stato!=='fine')return;
+ $('#fTitolo').textContent=s.mi===MISSIONI.length-1?'🏆 Buon Natale, campione!':'🎉 Missione compiuta!';$('#fStelle').textContent=stelleTxt(s.voto);
+ $('#fSub').innerHTML=(s.voto===3?'Perfetto: in tempo, senza urti e con ottima mira!':s.voto===2?'In tempo! Per la terza stella: meno urti e meno regali nella neve.':'Ce l\'hai fatta! Per più stelle cerca di finire entro il tempo.')+(s.sblocco?`<br>🔓 Hai sbloccato la missione ${s.mi+2}: <b>${MISSIONI[s.mi+1].nome}</b>!`:'');
+ $('#fRegali').textContent=s.consegnati+' / '+s.tot;$('#fTempo').textContent=tempoTxt(s.t);$('#fStelline').textContent=s.stelle;$('#fAnelli').textContent=s.anelli;$('#fUrti').textContent=s.urti;$('#fPunti').textContent=s.punti;
+ $('#fRecord').textContent=s.nuovoRec?'🏆 Nuovo record!':`🏆 Record: ${record[s.mi].punti} punti`;
+ const prossima=s.mi+1<MISSIONI.length&&s.mi+1<sbloccate;$('#ancora').textContent=prossima?'Prossima missione ▶':'Rifai la missione ↺';$('#ancora').dataset.next=prossima?s.mi+1:s.mi;
+ $('#fine').classList.remove('hidden');nascondiGioco()}
+function nascondiGioco(){$('#hud').classList.add('hidden');$('#mappa').classList.add('hidden');$('#pausaBtn').style.display='none';$('#vista').style.display='none';$('#turbo').style.display='none';$('#regalo').style.display='none';
+ $('#hint').textContent='';$('#elfo').classList.add('hidden');document.body.classList.remove('cab');document.body.appendChild($('#elfo'));mirino.visible=false;$('#turboFx').style.opacity=0}
+function alMenu(){pausaOn=false;['#pausa','#fine'].forEach(s=>$(s).classList.add('hidden'));nascondiGioco();nuovo(scelta,true);S.stato='menu';disegnaMissioni();$('#menu').classList.remove('hidden');if(ventoG&&AC)ventoG.gain.setTargetAtTime(0,AC.currentTime,.05)}
+
+/* ======================= STORMI E FUNIVIA ======================= */
+function aggiornaStormi(dt){for(const c of STORMI){c.a+=dt*.3;c.cd=Math.max(0,c.cd-dt);const x=c.cx+Math.cos(c.a)*70,z=c.cz+Math.sin(c.a)*70;
+ c.g.position.set(x,c.y+Math.sin(c.a*2)*6,z);c.g.rotation.y=-c.a;
+ for(const u of c.uc){u.ph+=dt*12;const f=Math.sin(u.ph)*.7;u.ali[0].rotation.z=f;u.ali[1].rotation.z=-f}}}
+function aggiornaFunivia(dt){for(const c of funivia.cab){c.u=(c.u+dt*.025)%2;const u=c.u<1?c.u:2-c.u;c.g.position.copy(puntoCavo(u))}}
+
+/* ======================= MAPPA ======================= */
+const mc=$('#mappa'),mx=mc.getContext('2d');
+function disegnaMappa(s){const W=mc.width,H=mc.height,R=W/2,sc=.12;
+ mx.clearRect(0,0,W,H);mx.save();mx.beginPath();mx.arc(R,R,R-2,0,7);mx.clip();mx.fillStyle='rgba(20,40,80,.55)';mx.fillRect(0,0,W,H);
+ const X=x=>R+(x-s.x)*sc,Y=z=>R+(z-s.z)*sc;
+ mx.fillStyle='rgba(150,210,255,.5)';for(const l of LAGHI){mx.beginPath();mx.arc(X(l.x),Y(l.z),l.r*sc,0,7);mx.fill()}
+ mx.fillStyle='rgba(255,255,255,.18)';for(const v of VILLAGGI){mx.beginPath();mx.arc(X(v.x),Y(v.z),(v.r+15)*sc,0,7);mx.fill()}
+ mx.fillStyle='rgba(220,230,255,.25)';for(const b of BUFERE){mx.beginPath();mx.arc(X(b.x),Y(b.z),b.r*sc,0,7);mx.fill()}
+ mx.strokeStyle='rgba(40,40,40,.8)';mx.lineWidth=2;mx.beginPath();mx.moveTo(X(funivia.pt[0].x),Y(funivia.pt[0].z));mx.lineTo(X(funivia.pt[1].x),Y(funivia.pt[1].z));mx.lineTo(X(funivia.pt[2].x),Y(funivia.pt[2].z));mx.stroke();
+ for(const st of STELLE){if(st.preso)continue;mx.fillStyle='#ffd23a';mx.beginPath();mx.arc(X(st.x),Y(st.z),4,0,7);mx.fill()}
+ for(const a of ANELLI){if(a.preso)continue;mx.strokeStyle='#ff5060';mx.lineWidth=3;mx.beginPath();mx.arc(X(a.x),Y(a.z),5,0,7);mx.stroke()}
+ for(const c of STORMI){mx.fillStyle='#222';mx.font='16px serif';mx.textAlign='center';mx.textBaseline='middle';mx.fillText('🐦',X(c.g.position.x),Y(c.g.position.z))}
+ mx.restore();
+ // bersagli e Polo Nord: sul bordo se lontani
+ const segno=(x,z,col,ico,big)=>{let px=X(x)-R,py=Y(z)-R;const d=Math.hypot(px,py),lim=R-14;let fuori=false;if(d>lim){px*=lim/d;py*=lim/d;fuori=true}
+  mx.fillStyle=col;mx.strokeStyle='#fff';mx.lineWidth=2.5;mx.beginPath();mx.arc(R+px,R+py,fuori?8:big?10:7,0,7);mx.fill();mx.stroke();
+  if(ico){mx.font=(big?18:14)+'px serif';mx.textAlign='center';mx.textBaseline='middle';mx.fillText(ico,R+px,R+py+1)}};
+ const pulse=.5+.5*Math.sin(performance.now()/200);
+ segno(BASE.x,BASE.z,s.ritorno?`rgba(255,${120+pulse*100|0},60,1)`:'#d81b2a','🏠',s.ritorno);
+ for(const o of OBI){if(o.fatto)continue;segno(o.x,o.z,o.tipo==='camino'?'#ffb000':'#2ecc60',o.tipo==='camino'?'':'')}
+ mx.save();mx.translate(R,R);mx.rotate(s.psi);mx.fillStyle='#ff3b5c';mx.strokeStyle='#fff';mx.lineWidth=2.5;
+ mx.beginPath();mx.moveTo(0,-14);mx.lineTo(10,10);mx.lineTo(0,5);mx.lineTo(-10,10);mx.closePath();mx.fill();mx.stroke();mx.restore();
+ mx.fillStyle='#fff';mx.font='bold 18px sans-serif';mx.textAlign='center';mx.fillText('N',R,16)}
+
+/* ======================= CRUSCOTTO ======================= */
+const cru=$('#cru'),cx=cru.getContext('2d');
+function quadrante(x,y,r,v,max,etich,unita,col){cx.save();cx.translate(x,y);
+ cx.fillStyle='#fdf6e3';cx.strokeStyle='#e2b13c';cx.lineWidth=r*.12;cx.beginPath();cx.arc(0,0,r,0,7);cx.fill();cx.stroke();
+ const a0=Math.PI*.75,a1=Math.PI*2.25;cx.strokeStyle='#5e3519';cx.lineWidth=r*.04;
+ for(let i=0;i<=10;i++){const a=a0+(a1-a0)*i/10;cx.beginPath();cx.moveTo(Math.cos(a)*r*.78,Math.sin(a)*r*.78);cx.lineTo(Math.cos(a)*r*.92,Math.sin(a)*r*.92);cx.stroke()}
+ const a=a0+(a1-a0)*clamp(v/max,0,1);cx.strokeStyle=col;cx.lineWidth=r*.09;cx.lineCap='round';cx.beginPath();cx.moveTo(0,0);cx.lineTo(Math.cos(a)*r*.75,Math.sin(a)*r*.75);cx.stroke();
+ cx.fillStyle='#5e3519';cx.beginPath();cx.arc(0,0,r*.1,0,7);cx.fill();
+ cx.font=`bold ${r*.3}px "Baloo 2",sans-serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText(Math.round(v),0,r*.45);cx.font=`${r*.2}px "Baloo 2",sans-serif`;cx.fillText(unita,0,r*.7);
+ cx.fillStyle='#fff';cx.font=`bold ${r*.24}px "Baloo 2",sans-serif`;cx.fillText(etich,0,-r-r*.2);cx.restore()}
+function disegnaCruscotto(s,agl){const W=cru.width,H=cru.height;cx.clearRect(0,0,W,H);
+ cx.strokeStyle='rgba(60,30,10,.35)';cx.lineWidth=2;for(let i=0;i<6;i++){cx.beginPath();cx.moveTo(0,H*(.15+i*.15));cx.bezierCurveTo(W*.3,H*(.1+i*.15),W*.6,H*(.22+i*.15),W,H*(.14+i*.15));cx.stroke()}
+ const r=Math.min(H*.36,W*.12),y=H*.58;
+ quadrante(W*.2,y,r,s.V*3.6,180,'VELOCITÀ','km/h','#c62f3a');quadrante(W*.8,y,r,agl,500,'QUOTA','m','#1e6fd9');
+ // bussola con freccia verso il prossimo obiettivo
+ cx.save();cx.translate(W*.5,y);cx.fillStyle='#1d2b4a';cx.strokeStyle='#e2b13c';cx.lineWidth=r*.12;cx.beginPath();cx.arc(0,0,r,0,7);cx.fill();cx.stroke();
+ cx.rotate(-s.psi);cx.fillStyle='#fff';cx.font=`bold ${r*.28}px sans-serif`;cx.textAlign='center';cx.textBaseline='middle';
+ [['N',0],['E',Math.PI/2],['S',Math.PI],['O',-Math.PI/2]].forEach(([t,a])=>{cx.fillStyle=t==='N'?'#ff5060':'#fff';cx.fillText(t,Math.sin(a)*r*.72,-Math.cos(a)*r*.72)});cx.restore();
+ let tx=BASE.x,tz=BASE.z,col='#ff8040';let bd=1e9;for(const o of OBI){if(o.fatto)continue;const d=Math.hypot(o.x-s.x,o.z-s.z);if(d<bd){bd=d;tx=o.x;tz=o.z;col=o.tipo==='camino'?'#ffd040':'#40e070'}}
+ const rel=Math.atan2(tx-s.x,-(tz-s.z))-s.psi;cx.save();cx.translate(W*.5,y);cx.rotate(rel);cx.fillStyle=col;cx.strokeStyle='#000';cx.lineWidth=2;
+ cx.beginPath();cx.moveTo(0,-r*.62);cx.lineTo(r*.22,r*.2);cx.lineTo(0,r*.05);cx.lineTo(-r*.22,r*.2);cx.closePath();cx.fill();cx.stroke();cx.restore();
+ cx.fillStyle='#fff';cx.font=`bold ${r*.24}px "Baloo 2",sans-serif`;cx.textAlign='center';cx.fillText('BUSSOLA',W*.5,y-r-r*.2);
+ // barra del turbo
+ const bw=W*.18,bx=W*.5-bw/2,by=H-9;cx.fillStyle='rgba(0,0,0,.4)';cx.fillRect(bx,by,bw,6);cx.fillStyle='#ffd84a';cx.fillRect(bx,by,bw*s.carica,6)}
+
+/* ======================= PAUSA ======================= */
+let pausaOn=false;
+function pausa(on){if(!S||!IN_GIOCO.includes(S.stato))return;pausaOn=on;$('#pausa').classList.toggle('hidden',!on);
+ K.su=K.giu=K.sx=K.dx=false;J.on=false;J.ix=J.iy=0;$('#joy').style.display='none';if(ventoG&&AC)ventoG.gain.setTargetAtTime(0,AC.currentTime,.05);BO.tasto=false;BO.dito=null}
+$('#pausaBtn').addEventListener('click',()=>pausa(!pausaOn));
+$('#riprendi').addEventListener('click',()=>pausa(false));
+$('#rifai').addEventListener('click',()=>{pausa(false);parti()});
+$('#alMenu').addEventListener('click',e=>{e.preventDefault();alMenu()});
+$('#fMenu').addEventListener('click',e=>{e.preventDefault();alMenu()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&!(window.SLITTA&&SLITTA.test)&&S&&['terra','volo'].includes(S.stato))pausa(true)});
+
+/* ======================= CAMERA, MODELLI, HUD ======================= */
+const camPos=new THREE.Vector3(),camLook=new THREE.Vector3();let camInit=false,menuT=0;
+const qTmp=new THREE.Quaternion(),qGiu=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-.1);
+const _txt={};function setT(id,t,cls){const e=document.getElementById(id);if(_txt[id]!==t){e.textContent=t;_txt[id]=t}if(cls!==undefined&&e.className!==cls)e.className=cls}
+function disegna(dt){
+ const s=S,t=performance.now()/1000;
+ // slitta
+ let pitchVis=s.gam;if(s.stato==='terra'||s.stato==='consegna'||s.stato==='fine'||s.stato==='menu'||s.stato==='conto'){const fx=Math.sin(s.psi)*2.5,fz=-Math.cos(s.psi)*2.5;pitchVis=Math.atan2(suolo(s.x+fx,s.z+fz)-suolo(s.x-fx,s.z-fz),5)}
+ SL.g.position.set(s.x,s.y,s.z);SL.g.rotation.set(pitchVis,-s.psi,-s.phi);SL.g.updateMatrixWorld();
+ const ag=Math.max(0,s.y-suolo(s.x,s.z));SL.omb.position.set(s.x,suolo(s.x,s.z)+.15,s.z);SL.omb.rotation.z=-s.psi;SL.omb.material.opacity=.28*Math.max(0,1-ag/60);SL.omb.visible=ag<60;
+ SL.regali.forEach((m,i)=>m.visible=i<Math.min(8,s.regali));
+ SL.fede.visible=vista===0||!IN_GIOCO.includes(s.stato);
+ // renne: galoppo a terra, galoppo "volante" in aria
+ const inAria=s.stato==='volo',vel=s.stato==='terra'?s.V:inAria?20:0;s.galop=(s.galop||0)+dt*(inAria?11+s.turbo*6:vel*.75);
+ SL.renne.forEach((r,i)=>{const ph=s.galop+i*.6;
+  if(vel>.5||inAria){const amp=inAria?.85:.65;for(const g of r.gambe){const a=Math.sin(ph+g.ph);g.su.rotation.x=a*amp*(g.dietro?-1:1);g.gi.rotation.x=(g.dietro?1:-1)*Math.max(0,Math.cos(ph+g.ph))*1.0}
+   r.corpo.position.y=Math.abs(Math.sin(ph))*(inAria?.12:.08);r.testa.rotation.x=Math.sin(ph*2)*.08}
+  else{for(const g of r.gambe){g.su.rotation.x*=.85;g.gi.rotation.x*=.85}r.corpo.position.y=0;r.testa.rotation.x=Math.sin(t*1.5+i)*.12-.05}});
+ SL.elfo.rotation.y=Math.sin(t*1.3)*.3;SL.elfo.position.y=.86+(inAria?Math.abs(Math.sin(t*5))*.03:0);
+ SL.cometa.visible=s.turbo>.1;if(SL.cometa.visible){SL.cometa.rotation.z+=dt*5;SL.cometa.scale.setScalar(.32*(1+.2*Math.sin(t*20)))}
+ // bersagli: anelli pulsanti e fumo dei camini
+ for(const o of OBI){if(o.fatto)continue;if(o.anello){o.anello.scale.setScalar(1+.12*Math.sin(t*4));o.anello.rotation.y+=dt}
+  if(o.fumo)o.fumo.forEach((f,k)=>{const u=((t*.35+k/6)%1);f.position.set(o.x+Math.sin(u*5+k)*1.2,o.y+1+u*14,o.z+Math.cos(u*4)*1.2);f.scale.setScalar(.6+u*2.2)})}
+ for(const st of STELLE)if(!st.preso){st.m.rotation.y+=dt*2;st.m.position.y=st.y+Math.sin(t*2+st.x)*.6}
+ for(const b of BUFERE)b.g.rotation.y+=dt*.6;
+ luciNatale.forEach((p,i)=>p.material.opacity=.45+.55*(Math.sin(t*3+i*2.1)>0?1:.3));
+ luciPista.material.opacity=.5+.5*Math.sin(t*6);
+ baseRaggio.material.opacity=s.ritorno?.35+.15*Math.sin(t*4):.1;
+ // camera
+ const pos=V3(s.x,s.y,s.z),hf=V3(Math.sin(s.psi),0,-Math.cos(s.psi)),fw=V3(Math.sin(s.psi)*Math.cos(s.gam),Math.sin(s.gam),-Math.cos(s.psi)*Math.cos(s.gam));
+ if(s.stato==='menu'){menuT+=dt;const a=menuT*.12;camera.position.set(s.x+Math.sin(a)*22,s.y+7,s.z+Math.cos(a)*22);camera.lookAt(s.x,s.y+1.5,s.z-3);camera.near=.5;camera.fov=60;camera.updateProjectionMatrix()}
+ else if(vista===1&&IN_GIOCO.includes(s.stato)){SL.g.updateMatrixWorld();camera.position.copy(SL.g.localToWorld(V3(0,1.95,-.3)));SL.g.getWorldQuaternion(qTmp);camera.quaternion.copy(qTmp).multiply(qGiu);
+  camera.near=.1;camera.fov+=((72+s.turbo*10)-camera.fov)*Math.min(1,dt*2);camera.updateProjectionMatrix();camInit=false}
+ else{const want=pos.clone().addScaledVector(hf,-10.5-s.turbo*1.5).add(V3(0,4.2-fw.y*3,0));const tc=suolo(want.x,want.z);if(want.y<tc+2)want.y=tc+2;
+  const look=pos.clone().addScaledVector(fw,9).add(V3(0,1.6,0));
+  if(!camInit){camPos.copy(want);camLook.copy(look);camInit=true}
+  camPos.lerp(want,Math.min(1,dt*11));camLook.lerp(look,Math.min(1,dt*12));camera.position.copy(camPos);camera.lookAt(camLook);camera.rotateZ(-s.phi*.3);
+  camera.near=.5;camera.fov+=((58+Math.min(8,Math.max(0,s.V-24)*.4)+5*s.turbo)-camera.fov)*Math.min(1,dt*2);camera.updateProjectionMatrix()}
+ cielo.position.copy(camera.position);aggiornaNeve(dt);aggiornaScintille(dt);
+ if(IN_GIOCO.includes(s.stato))prevedi();else mirino.visible=false;
+ if(!(window.SLITTA&&SLITTA.noRender))renderer.render(scene,camera);
+ // HUD e pulsanti
+ const gioco=IN_GIOCO.includes(s.stato)&&s.stato!=='conto';
+ $('#turboFx').style.opacity=(s.turbo*.5).toFixed(2);
+ $('#turbo').style.display=gioco?'block':'none';$('#regalo').style.display=gioco&&s.stato==='volo'?'block':'none';
+ if(gioco){$('#turbo').classList.toggle('on',turboVoluto()&&s.carica>0);$('#turbo').style.background=`conic-gradient(#ffd84a ${s.carica*360}deg,rgba(0,0,0,.35) ${s.carica*360}deg)`;$('#regalo').classList.toggle('vuoto',s.regali<=0);
+  setT('hRegali','🎁 '+s.regali,'pill'+(s.regali<=0&&s.consegnati<s.tot?' warn':''));setT('hCase','🏠 '+s.consegnati+'/'+s.tot,'pill'+(s.consegnati>=s.tot?' ok':''));
+  const rest=MIS.tempo-s.t;setT('hTempo',rest>=0?'⏱ '+tempoTxt(rest):'⏱ +'+tempoTxt(-rest),'pill'+(rest<0?' warn':rest<30?' hot':''));
+  setT('hVel','💨 '+Math.round(s.V*3.6)+' km/h');setT('hAlt','⬆ '+Math.round(ag)+' m','pill'+(ag<10&&s.stato==='volo'?' warn':''));
+  setT('hTurbo','☄️ '+Math.round(s.carica*100)+'%','pill'+(s.turbo>.3?' hot':''));setT('hStelle','⭐ '+s.stelle+(MIS.stelle?'/'+MIS.stelle:''),'pill'+(MIS.stelle&&s.stelle>=MIS.stelle?' ok':''));
+  setT('hAnelli','🔔 '+s.anelli+'/'+MIS.anelli,'pill'+(MIS.anelli&&s.anelli>=MIS.anelli?' ok':''))}
+ if(IN_GIOCO.includes(s.stato)){disegnaMappa(s);if(vista===1)disegnaCruscotto(s,ag)}
+ if(gioco&&s.stato==='volo'&&$('#hint').textContent&&s.t>4)$('#hint').textContent='';
+ if(ventoG&&AC){const v=s.stato==='volo'?s.V+(s.inBufera?25:0)+(METEO.vento||0)*12:0;ventoG.gain.setTargetAtTime(muto||pausaOn?0:Math.min(.4,v/120),AC.currentTime,.1);ventoF.frequency.setTargetAtTime(250+v*16,AC.currentTime,.1)}}
+
+function ridimensiona(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+ const r=cru.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);if(r.width){cru.width=Math.round(r.width*d);cru.height=Math.round(r.height*d)}}
+addEventListener('resize',ridimensiona);ridimensiona();
+
+// scena di sfondo nel menu: la slitta al Polo Nord
+nuovo(scelta,true);S.stato='menu';disegnaMissioni();
+let last=performance.now();
+function passo(dt){if(window.SLITTA&&SLITTA.congela)return;if(msgT>0){msgT-=dt;if(msgT<=0)$('#msg').style.opacity=0}
+ aggiornaElfo(dt);musicaTick();
+ if(S.stato!=='menu'&&!pausaOn)aggiorna(dt);
+ disegna(pausaOn?0:dt)}
+function loop(now){const dt=clamp((now-last)/1000,0,.05);last=Math.max(last,now);passo(dt);requestAnimationFrame(loop)}
+$('#via').addEventListener('click',parti);
+$('#ancora').addEventListener('click',()=>{scelta=+($('#ancora').dataset.next||scelta);parti()});
+requestAnimationFrame(loop);
+// per i test automatici
+window.SLITTA={get S(){return S},passo,aggiorna,disegna,parti,lancia,consegna,completa,cambiaVista,get OBI(){return OBI},get STELLE(){return STELLE},get ANELLI(){return ANELLI},K,J,BO,MISSIONI,mirino,camera,SL,VILLAGGI,suolo,
+ set scelta(v){scelta=v},get scelta(){return scelta},alMenu};
+</script>
+</body>
+</html>

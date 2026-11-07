@@ -330,6 +330,11 @@ const D={on:false,id:null,x0:0,y0:0,ix:0,iy:0},KS={sx:false,dx:false,su:false,gi
 cv.addEventListener('pointerdown',e=>{e.preventDefault();if(S.fase==='volo'){audio();D.on=true;D.id=e.pointerId;D.x0=e.clientX;D.y0=e.clientY;D.ix=D.iy=0;try{cv.setPointerCapture(e.pointerId)}catch(_){}}else tocca()});
 cv.addEventListener('pointermove',e=>{if(!D.on||e.pointerId!==D.id)return;D.ix=Math.max(-1,Math.min(1,(e.clientX-D.x0)/70));D.iy=Math.max(-1,Math.min(1,(e.clientY-D.y0)/70))});
 const fineD=e=>{if(e.pointerId===D.id){D.on=false;D.ix=D.iy=0}};cv.addEventListener('pointerup',fineD);cv.addEventListener('pointercancel',fineD);
+// il dito che guida si sblocca anche se il rilascio arriva solo alla finestra o se la pagina va in secondo piano
+const sbloccaD=()=>{D.on=false;D.id=null;D.ix=D.iy=0};
+['pointerup','pointercancel'].forEach(ev=>addEventListener(ev,fineD,true));cv.addEventListener('lostpointercapture',fineD);
+addEventListener('touchend',e=>{if(!e.touches||e.touches.length===0)sbloccaD()},true);addEventListener('touchcancel',sbloccaD,true);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)sbloccaD()});addEventListener('blur',sbloccaD);
 addEventListener('keydown',e=>{const c=e.code;
  if(S.fase==='mira'&&c.startsWith('Arrow')){const el=$(c==='ArrowUp'||c==='ArrowDown'?'#rAng':'#rPot'),d=(c==='ArrowUp'||c==='ArrowRight')?1:-1;el.value=+el.value+d*(e.shiftKey?5:1);leggiMira();e.preventDefault();return}
  if(c==='ArrowLeft')KS.sx=true;else if(c==='ArrowRight')KS.dx=true;else if(c==='ArrowUp')KS.su=true;else if(c==='ArrowDown')KS.giu=true;else return;e.preventDefault()});

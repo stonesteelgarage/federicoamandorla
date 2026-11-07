@@ -448,12 +448,20 @@ addEventListener('keyup',e=>{const c=e.code;
  else if(c==='ShiftLeft'||c==='ShiftRight'||c==='KeyB')BO.tasto=false});
 addEventListener('blur',()=>{K.su=K.giu=K.sx=K.dx=false;BO.tasto=false;BO.dito=null;J.on=false;$('#joy').style.display='none'});
 const R=62;
-cv.addEventListener('pointerdown',e=>{audio();if(J.on)return;J.on=true;J.id=e.pointerId;J.x0=e.clientX;J.y0=e.clientY;J.ix=J.iy=0;
+// un tocco nuovo prende sempre il comando: se un vecchio dito era rimasto «appeso» (pointerup perso), non blocca più la guida
+cv.addEventListener('pointerdown',e=>{audio();if(J.on&&J.id!==e.pointerId){try{cv.releasePointerCapture(J.id)}catch(_){}}J.on=true;J.id=e.pointerId;J.x0=e.clientX;J.y0=e.clientY;J.ix=J.iy=0;
  const j=$('#joy');j.style.left=e.clientX+'px';j.style.top=e.clientY+'px';j.style.display=e.pointerType==='mouse'?'none':'block';$('#knob').style.transform='';try{cv.setPointerCapture(e.pointerId)}catch(_){}});
 cv.addEventListener('pointermove',e=>{if(!J.on||e.pointerId!==J.id)return;let dx=e.clientX-J.x0,dy=e.clientY-J.y0;const l=Math.hypot(dx,dy);if(l>R){dx*=R/l;dy*=R/l}
  J.ix=dx/R;J.iy=dy/R;$('#knob').style.transform=`translate(${dx}px,${dy}px)`});
 function fineJ(e){if(e.pointerId!==J.id)return;J.on=false;J.ix=J.iy=0;$('#joy').style.display='none'}
-cv.addEventListener('pointerup',fineJ);cv.addEventListener('pointercancel',fineJ);
+cv.addEventListener('pointerup',fineJ);cv.addEventListener('pointercancel',fineJ);cv.addEventListener('lostpointercapture',fineJ);
+// su alcuni tablet il rilascio arriva solo alla finestra: ascoltiamo anche lì, e sblocchiamo tutto se la pagina va in secondo piano
+function sbloccaTouch(){J.on=false;J.id=null;J.ix=J.iy=0;$('#joy').style.display='none';BO.dito=null}
+['pointerup','pointercancel'].forEach(ev=>addEventListener(ev,e=>{fineJ(e);if(e.pointerId===BO.dito)BO.dito=null},true));
+addEventListener('touchend',e=>{if(!e.touches||e.touches.length===0)sbloccaTouch()},true);
+addEventListener('touchcancel',sbloccaTouch,true);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)sbloccaTouch()});
+addEventListener('pagehide',sbloccaTouch);
 $('#chute').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();audio();apri()});
 // boost: si tiene premuto col dito (funziona insieme al dito che guida: multitouch)
 {const b=$('#boost');
