@@ -68,7 +68,7 @@ h1 span{color:#e8437a}
   <span class="pill" id="hAlt">0 m</span>
   <span class="pill" id="hDist">0 m</span>
   <span class="pill" id="hPunti">⭐ 0</span>
-  <span class="pill" id="hAnelli">💛 0</span>
+  <span class="pill" id="hAnelli">💛 Anelli 0 / 0</span>
   <span class="pill" id="hAerei" style="display:none">✈️ 0</span>
   <span class="pill" id="hMeteo">☀️</span>
   <span class="pill hot" id="hBoost" style="display:none">🚀 BOOST</span>
@@ -239,6 +239,8 @@ const geoAnello=new THREE.TorusGeometry(13,1,8,30);
 const L=300,W=1800,SX=90,SZ=30;
 const chunks=new Map();
 let guglie=[],anelli=[];
+// quanti anelli ci sono prima del campo base (stesse regole della creazione degli anelli qui sotto)
+function contaAnelli(){let n=0;for(let k=1;k*L+L*.55<CAMPO;k++){const d=k*L+L*.55;if(!CRESTE.some(r=>Math.abs(r.d-d)<90)&&Math.abs(d-CAMPO)>200)n++}return n}
 function colore(x,d,h,out,i){
  const rel=h-base(d),n=hash(Math.floor(x/9)+500,Math.floor(d/9)),m=fbm(x*.03,d*.03);
  let r,g,b;
@@ -274,7 +276,7 @@ function creaChunk(k){
    const alt=70+hash(k,50+j)*110,rag=9+hash(k,60+j)*9;
    const gm=new THREE.Mesh(new THREE.ConeGeometry(rag,alt,7),matRoccia);gm.position.set(x,y0+alt/2,-d);gm.rotation.y=hash(k,70+j)*6;grp.add(gm);
    const g={x,d,y0,alt,rag,mesh:gm};ch.guglie.push(g);guglie.push(g)}}
- // un anello per chunk
+ // un anello per chunk (contaAnelli ripete le stesse regole per sapere quanti ce ne sono prima del campo base)
  // quote alternate: basso (sopra il terreno), medio, alto, altissimo (sopra la linea di planata)
  if(k>=1){const d=k*L+L*.55;if(!CRESTE.some(r=>Math.abs(r.d-d)<90)&&Math.abs(d-CAMPO)>200){
   const x=centro(d)+(hash(k,80)-.5)*largh(d)*.6,sm=Math.floor(SEME*1000);
@@ -488,7 +490,7 @@ function nuovo(caso){
  aggiornaChunk(0,true);creaCampo();
  const x0=centro(4);
  S={stato:'pronto',t:0,x:x0,y:START_Y+.1,d:4,V:3,gam:0,psi:Math.atan2(centro(40)-centro(4),36),phi:0,
-   punti:0,vicino:0,anelli:0,vmax:0,stallo:false,aperto:0,crash:false,fine:false,yApertura:0,suggerito:false,dPrima:4,prossimoAereo:9+Math.random()*4,schivati:0,boost:0,av1:false,av2:false,av3:false};
+   punti:0,vicino:0,anelli:0,vmax:0,stallo:false,aperto:0,crash:false,fine:false,yApertura:0,suggerito:false,dPrima:4,prossimoAereo:9+Math.random()*4,schivati:0,boost:0,av1:false,av2:false,av3:false,totAnelli:contaAnelli()};
  P.g.visible=true;P.vela.visible=false;
 }
 function parti(){audio();if(AC&&AC.state==='suspended')AC.resume();
@@ -523,7 +525,7 @@ function finePartita(){
  const p=Math.round(S.punti);
  $('#fTitolo').textContent=S.crash?'💥 Schianto!':S.titolo;
  $('#fSub').textContent=S.crash&&S.aereo?'Ti sei scontrato con un aereo! Quando senti il motore, spostati di lato o cambia quota.':S.crash?'Hai toccato la montagna. Tieniti un po\' più alto e apri il paracadute prima di arrivare a terra!':S.sub;
- $('#fDist').textContent=distanza(S.d);$('#fAnelli').textContent=S.anelli;$('#fVmax').textContent=Math.round(S.vmax*3.6)+' km/h';$('#fPunti').textContent=p;$('#fAerei').textContent=S.schivati||0;$('#fMeteo').textContent=METEO.nome;
+ $('#fDist').textContent=distanza(S.d);$('#fAnelli').textContent=S.anelli+' su '+S.totAnelli;$('#fVmax').textContent=Math.round(S.vmax*3.6)+' km/h';$('#fPunti').textContent=p;$('#fAerei').textContent=S.schivati||0;$('#fMeteo').textContent=METEO.nome;
  let nuovoRec=false;if(p>record){record=p;nuovoRec=true;try{localStorage.setItem('tutaRecord',p)}catch(e){}}
  $('#fRecord').textContent=nuovoRec?'🏆 Nuovo record!':`🏆 Record: ${record} punti`;mostraRecord();
  if(S.sblocco){$('#fSub').innerHTML=`Hai sbloccato: <b>${S.sblocco.nome}</b>! <span class="stelle">${stelle(S.sblocco)}</span><br>${S.sblocco.info}`}
@@ -755,7 +757,7 @@ function disegna(dt){
   const ha=$('#hAlt');ha.textContent='⬇ '+Math.round(agl)+' m';ha.className='pill'+(agl<30&&s.stato==='volo'?' warn':'');
   const rem=CAMPO-s.d;$('#hDist').textContent=Math.abs(rem)<130?'⛺ sei qui!':rem>0?'⛺ '+distanza(rem):'⛺ superato!';
   const hp=$('#hPunti');hp.textContent='⭐ '+Math.round(s.punti)+(s.vicino>.05?' 🔥':'');hp.className='pill'+(s.vicino>.05?' hot':'');
-  $('#hAnelli').textContent='💛 '+s.anelli;const ha2=$('#hAerei');ha2.style.display=s.schivati?'':'none';ha2.textContent='✈️ '+s.schivati}
+  $('#hAnelli').textContent='💛 Anelli '+s.anelli+' / '+s.totAnelli;const ha2=$('#hAerei');ha2.style.display=s.schivati?'':'none';ha2.textContent='✈️ '+s.schivati}
  if(s.stato==='volo'||s.stato==='para'||s.stato==='conto')disegnaMappa(s);
  if(ventoG&&AC){const v=(s.stato==='volo'?s.V:s.stato==='para'?s.V*.5:0);ventoG.gain.setTargetAtTime(muto?0:Math.min(.5,v/110),AC.currentTime,.1);ventoF.frequency.setTargetAtTime(250+v*16,AC.currentTime,.1)}
  if(pioggiaG&&AC)pioggiaG.gain.setTargetAtTime(!muto&&!pausaOn&&METEO.pioggia&&['conto','volo','para'].includes(s.stato)?.07:0,AC.currentTime,.2);
