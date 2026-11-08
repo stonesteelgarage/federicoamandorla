@@ -152,6 +152,7 @@ document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&["+",
     </div>
     <div class="center" style="margin-top:8px">
       <button class="btn verde" id="parti">🪖 Arruolati e parti!</button><br>
+      <button class="btn ghost hidden" id="da1">🔁 Ricomincia dal livello 1</button>
       <div id="confBox" class="hidden"><span id="confTxt"></span><br>
         <button class="btn small" id="confSi" style="box-shadow:0 4px 0 #9e2219">✔ Sì, nuova partita</button>
         <button class="btn ghost small" id="confNo">✖ No, torna indietro</button></div>
@@ -168,6 +169,7 @@ document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&["+",
     <p class="sub">Il soldato riposa un attimo…</p>
     <button class="btn verde" id="riprendi">▶ Riprendi</button><br>
     <button class="btn ghost" id="salvaEsci">💾 Salva ed esci</button><br>
+    <button class="btn ghost" id="pDa1">🔁 Ricomincia dal livello 1</button><br>
     <button class="btn ghost" id="cambiaSold">🪖 Cambia soldato</button><br>
     <a class="btn ghost" href="index.html">🏠 Torna ai giochi</a>
   </div>
@@ -330,6 +332,8 @@ const GRADI=[{n:'Recluta',k:0},{n:'Soldato',k:5},{n:'Caporale',k:12},{n:'Caporal
 const ARMI=[
  {id:'pistola',n:'Pistola',em:'🔫',dmg:2,cd:.36,vel:900,col:'#4a4a4a',len:22,bul:'#ffd54a',kill:0},
  {id:'fucile',n:'Fucile',em:'🎯',dmg:3,cd:.32,vel:1000,col:'#6b4a2b',len:40,bul:'#ffca28',kill:8},
+ // fucile laser blu: contro i boss ogni colpo toglie 5 vite
+ {id:'laserblu',n:'Fucile Laser Blu',em:'💙',dmg:4,cd:.3,vel:1400,col:'#1565c0',len:46,bul:'#2979ff',kill:12,tipo:'laser',bossDmg:5},
  {id:'mitra',n:'Mitragliatore',em:'⚡',dmg:3,cd:.11,vel:1100,col:'#2f2f2f',len:36,bul:'#ffe082',kill:20},
  // pallini: 5 alla volta, a ventaglio, portata corta (da vicino colpiscono quasi tutti: molti = moltiplicatore medio)
  {id:'pompa',n:'Fucile a Pompa',em:'💨',dmg:2,cd:.55,vel:950,col:'#5d4037',len:38,bul:'#ffb74d',kill:30,tipo:'pompa',pallini:5,vita:.42,molti:3,bossDmg:.25},
@@ -371,7 +375,7 @@ const SCHEGGIA={id:'scheggia',n:'Scheggia',dmg:6,vel:700,col:'#80deea',len:0,bul
 const ARMA=Object.fromEntries(ARMI.map(a=>[a.id,a]));
 const N_SEGRETE=ARMI.filter(a=>a.segreta).length;
 const colpi=w=>Math.ceil(6/(w.dmg*(w.molti||1)));
-const testoColpi=w=>colpi(w)===1?'1 colpo per mostro':colpi(w)+' colpi per mostro';
+const testoColpi=w=>(colpi(w)===1?'1 colpo per mostro':colpi(w)+' colpi per mostro')+(w.bossDmg>1?` · toglie ${w.bossDmg} vite al boss`:'');
 
 const TIPI={
  slime:{hp:6,vel:70,w:62,h:56,punti:10,col:'#6ccf4a'},
@@ -2074,7 +2078,7 @@ function colpisci(m,dmg,dir,w){
  if(m.morto)return;
  if(w&&w.gelo)m.gelo=w.gelo;
  if(m.tipo==='boss'){const bd=(w&&w.bossDmg)||1;m.hp=Math.max(0,m.hp-bd);m.flash=.08;particelle(m.x+dir*-40,GROUND-120,bd<1?2:5,'#fff59d','scintilla',200);SFX.bossColpo(m.liv);
-  if(bd>=1||Math.random()<bd)testoVol(m.x+(Math.random()-.5)*60,m.y-m.h-10,'-1','#ffcdd2');if(m.hp<=0)bossSconfitto(m);return}m.hp-=dmg;m.flash=.09;m.x+=dir*8;
+  if(bd>1)particelle(m.x+dir*-40,GROUND-120,10,'#2979ff','scintilla',260);if(bd>=1||Math.random()<bd)testoVol(m.x+(Math.random()-.5)*60,m.y-m.h-10,'-'+Math.max(1,Math.round(bd)),bd>1?'#82b1ff':'#ffcdd2');if(m.hp<=0)bossSconfitto(m);return}m.hp-=dmg;m.flash=.09;m.x+=dir*8;
  particelle(m.x,m.y-m.h/2,4,w&&w.gelo?'#e1f5fe':'#fff59d','scintilla',180);
  const v=VOCI[m.tipo];if(v&&ogni('h'+m.tipo,.05))suono(v.h[0]*(.9+Math.random()*.2),.06,v.h[1],.03,v.h[0]*.6);
  if(m.hp<=0)uccidi(m);
@@ -2584,7 +2588,7 @@ function disegnaProjNuovo(q,r){const t=q.tipo,Pe=PROJ[t];
  else if(t==='uovo'){ctx.rotate(q.ang*.5);ctx.fillStyle='#fff8e1';ell(ctx,0,0,r*.85,r*1.1);ctx.fillStyle='#81c784';cerchio(ctx,-r*.3,-r*.3,r*.22);cerchio(ctx,r*.3,r*.3,r*.28)}
  else return false;return true}
 function disegnaProiettile(b){const w=b.w,s=Math.sign(b.vx);ctx.save();
- if(w.tipo==='laser'){ctx.strokeStyle=w.bul;ctx.lineWidth=5;ctx.shadowColor=w.bul;ctx.shadowBlur=12;ctx.beginPath();ctx.moveTo(b.x-s*34,b.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+ if(w.tipo==='laser'){ctx.strokeStyle=w.bul;ctx.lineWidth=w.bossDmg>1?8:5;ctx.shadowColor=w.bul;ctx.shadowBlur=12;ctx.beginPath();ctx.moveTo(b.x-s*34,b.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
  else if(w.tipo==='plasma'){ctx.shadowColor=w.bul;ctx.shadowBlur=20;ctx.fillStyle=w.bul;cerchio(ctx,b.x,b.y,12);ctx.fillStyle='#fff';cerchio(ctx,b.x,b.y,5)}
  else if(w.tipo==='razzo'){ctx.translate(b.x,b.y);ctx.scale(s,1);ctx.fillStyle='#ff9800';ell(ctx,-20,0,10+Math.random()*4,4);ctx.fillStyle='#cfd8dc';rr(ctx,-16,-5,22,10,4);ctx.fill();ctx.fillStyle='#e53935';ctx.beginPath();ctx.moveTo(6,-5);ctx.lineTo(14,0);ctx.lineTo(6,5);ctx.fill()}
  else if(w.tipo==='pompa'){ctx.fillStyle=w.bul;cerchio(ctx,b.x,b.y,4);ctx.fillStyle='rgba(255,183,77,.35)';cerchio(ctx,b.x-s*7,b.y,3)}
@@ -2747,7 +2751,7 @@ function salvaProg(l){if(!S||l<2||l>BOSS.length)return;const P=caricaProg(),d=S.
 function kitLivello(l){if(l<=1)return null;const P=caricaProg(),pr=[DIFF];
  for(const d of pr){const s2=P[d]&&P[d].s&&P[d].s[l];if(s2&&Array.isArray(s2.a))return{k:+s2.k||0,a:s2.a.filter(id=>ARMA[id]),p:+s2.p||0}}
  const k=(l-1)*18;return{k,a:ARMI.filter(a=>!a.segreta&&a.kill<=k).map(a=>a.id),p:0}}
-const testoColpiF=w=>{const n=Math.max(1,Math.ceil(6*S.forza/(w.dmg*(w.molti||1))));return n===1?'1 colpo per mostro':n+' colpi per mostro'};
+const testoColpiF=w=>{const n=Math.max(1,Math.ceil(6*S.forza/(w.dmg*(w.molti||1))));return (n===1?'1 colpo per mostro':n+' colpi per mostro')+(w.bossDmg>1?` · boss -${w.bossDmg}`:'')};
 let DIFF=load('fs_diff','facile');if(DIFF!=='difficile')DIFF='facile';
 let LIVSEL=0;   // livello di partenza scelto nel menu (0 = il più lontano raggiunto)
 // i 50 livelli in pagine (la Valle, poi le stagioni dei mondi nuovi): su telefono non serve scorrere tanto
@@ -2764,7 +2768,8 @@ function preparaLivelli(){const max=livRaggiunto(DIFF);if(!LIVSEL||LIVSEL>max)LI
  if(st){const z2=ZONE[st.liv];$('#continua').textContent=`▶ Continua la partita (Livello ${st.liv+1}, ⭐ ${st.punti})`;
   $('#contInfo').textContent=`${z2.em} ${z2.nome} · ${st.diff==='facile'?'🙂 Facile':'💪 Difficile'} · ${'❤️'.repeat(st.vita)}`;
   $('#livTit').textContent='Oppure nuova partita dal livello:';$('#parti').textContent=`🆕 Nuova partita dal livello ${LIVSEL}`}
- else{$('#livTit').textContent='Parti dal livello:';$('#parti').textContent=LIVSEL>1?`▶ Parti dal livello ${LIVSEL}!`:'🪖 Arruolati e parti!'}}
+ else{$('#livTit').textContent='Parti dal livello:';$('#parti').textContent=LIVSEL>1?`▶ Parti dal livello ${LIVSEL}!`:'🪖 Arruolati e parti!'}
+ $('#da1').classList.toggle('hidden',!(st||LIVSEL>1))}
 function preparaDiff(){document.querySelectorAll('#diffBox [data-d]').forEach(b=>{b.classList.toggle('on',b.dataset.d===DIFF);b.onclick=()=>{DIFF=b.dataset.d;save('fs_diff',DIFF);LIVSEL=0;LIVPAG=-1;preparaDiff()}});
  preparaLivelli();
  $('#diffInfo').innerHTML=DIFF==='facile'?'Quando perdi tutti i cuori <b>riparti dallo stesso punto</b> con <b>tutte le tue armi</b>, e ogni volta i mostri diventano <b>più facili</b> da abbattere.'
@@ -2782,7 +2787,7 @@ function fineGioco(vinto=false){
   $('#fRecord').textContent=nuovo?'🏆 NUOVO RECORD!':'Record: '+rec+' punti';
   ['#topbtn','#armaBox','#touch'].forEach(s=>$(s).classList.add('hidden'));$('#fine').classList.remove('hidden')},vinto?0:1400);
 }
-function pausa(on){if(!S||S.fine)return;if(on)salvaPartita();giocando=!on;$('#pausa').classList.toggle('hidden',!on);K.sx=K.dx=K.fuoco=false}
+function pausa(on){if(!S||S.fine)return;if(on)salvaPartita();pDa1Sicuro=false;$('#pDa1').textContent=TXT_PDA1;giocando=!on;$('#pausa').classList.toggle('hidden',!on);K.sx=K.dx=K.fuoco=false}
 function avvia(st){
  audio();if(st)riprendiPartita(st);else{cancellaPartita();nuovaPartita((LIVSEL||1)-1)}giocando=true;document.body.classList.add('ingioco');
  ['#reg','#fine','#pausa'].forEach(s=>$(s).classList.add('hidden'));
@@ -2814,11 +2819,20 @@ $('#fotoIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)retur
 $('#togliFoto').onclick=()=>{prof.foto=null;fotoOk=false;$('#togliFoto').classList.add('hidden')};
 function salvaProfilo(){prof.nome=$('#nome').value.trim()||'Federico';if(!save('fs_profilo',prof)){const p2=Object.assign({},prof,{foto:null});save('fs_profilo',p2)}}
 // «Nuova partita»: se c'è una partita salvata chiede prima conferma (la nuova la sostituisce)
-$('#parti').onclick=()=>{salvaProfilo();const st=leggiPartita();
+let DA1=false;
+// «Ricomincia dal livello 1»: nuova partita dal primo livello (chiede conferma se c'è una partita salvata)
+$('#da1').onclick=()=>{salvaProfilo();const st=leggiPartita();
+ if(st){DA1=true;$('#confTxt').textContent=`Vuoi ricominciare dal livello 1? La partita salvata (Livello ${st.liv+1}, ⭐ ${st.punti}) verrà cancellata.`;$('#confBox').classList.remove('hidden');$('#confBox').scrollIntoView({block:'nearest'});return}
+ LIVSEL=1;LIVPAG=-1;avvia()};
+$('#parti').onclick=()=>{DA1=false;salvaProfilo();const st=leggiPartita();
  if(st){$('#confTxt').textContent=`Vuoi iniziare una nuova partita? La partita salvata (Livello ${st.liv+1}, ⭐ ${st.punti}) verrà cancellata.`;$('#confBox').classList.remove('hidden');$('#confBox').scrollIntoView({block:'nearest'});return}
  avvia()};
-$('#confSi').onclick=()=>{$('#confBox').classList.add('hidden');avvia()};
-$('#confNo').onclick=()=>$('#confBox').classList.add('hidden');
+$('#confSi').onclick=()=>{$('#confBox').classList.add('hidden');if(DA1){LIVSEL=1;LIVPAG=-1}DA1=false;avvia()};
+$('#confNo').onclick=()=>{DA1=false;$('#confBox').classList.add('hidden')};
+// in pausa: due tocchi (il secondo conferma), poi nuova partita dal livello 1
+const TXT_PDA1='🔁 Ricomincia dal livello 1';let pDa1Sicuro=false;
+$('#pDa1').onclick=()=>{if(!pDa1Sicuro){pDa1Sicuro=true;$('#pDa1').textContent='⚠️ Sicuro? Tocca ancora: si perde la partita';return}
+ pDa1Sicuro=false;$('#pDa1').textContent=TXT_PDA1;cancellaPartita();LIVSEL=1;LIVPAG=-1;avvia()};
 $('#continua').onclick=()=>{salvaProfilo();const st=leggiPartita();if(st)avvia(st);else preparaReg()};
 $('#salvaEsci').onclick=()=>{salvaPartita();apriReg()};
 $('#ancora').onclick=()=>avvia();$('#riprendi').onclick=()=>pausa(false);
