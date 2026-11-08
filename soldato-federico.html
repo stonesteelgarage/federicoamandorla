@@ -230,6 +230,7 @@ const SFX={
  salto:()=>suono(380,.15,'square',.035,620),
  doppio:()=>{suono(300,.25,'sine',.06,900);suono(600,.18,'triangle',.03,1300,.04)},
  atterra:()=>{rumore(.08,.05,400);suono(120,.07,'sine',.04,70)},
+ jet:()=>{rumore(.35,.05,900,'lowpass',200);suono(110,.3,'sawtooth',.03,70)},
  molla:()=>{for(let i=0;i<3;i++)suono(260+i*90,.12,'sine',.06,700+i*200,i*.09);melodia([1047,1568],.12,.1,'triangle',.05)},
  cuore:()=>melodia([660,880,1175],.16,.09,'sine',.07),
  stelle:()=>melodia([1319,1568,2093,1568,2093],.1,.06,'triangle',.045),
@@ -507,6 +508,8 @@ const BOSS=[
  {n:'Re dei Mostri',gate:60000,hp:125,pelle:'#7e57c2',scuro:'#4527a0',vestito:'#c62828',arma:'scettroRe',testa:'coronaRe',proj:['fuoco','stellina','meteora','caramella'],pp:'meteora',pr:'raggio',vel:104,punti:15000,mosse:['lancio','pioggia','raffica','salto','carica','teletrasporto']}
 ];
 // scarpe a molla = salto doppio per 20 secondi (due per ogni mondo nuovo)
+// bombolette del jetpack: due in ogni livello (anche nel primo), in alto: si prendono saltando
+const BOMBOLE=Array.from({length:50},(_,z)=>[z*3000+1350,z*3000+2380]).flat();
 const MOLLE=[1100,2550,3900,5450,6900,8150,9800,11000,12700,13900,15700,16900].concat(Array.from({length:14},(_,i)=>[(i+6)*3000+780,(i+6)*3000+1820]).flat());
 const RAGGIO={roccia:95,albero:75,cespuglio:75,tronco:95,grotta:125,cactus:75,igloo:110,cristallo:80,conchiglia:75,scrigno:75,scatola:80,barattolo:70,cratere:110,uovo:70,nuvolone:100,cassa:80};
 const ALTEZZA={roccia:95,albero:215,cespuglio:80,tronco:42,grotta:235,cactus:160,igloo:105,cristallo:145,conchiglia:72,scrigno:72,scatola:100,barattolo:120,cratere:44,uovo:112,nuvolone:92,cassa:92};
@@ -783,6 +786,28 @@ function disegnaArma(c,w,rin){
  c.fillStyle=w.bul;c.fillRect(w.len-2,-3,3,6);
  c.restore();
 }
+// bomboletta rossa del jetpack (oggetto da prendere saltando)
+function disegnaBomboletta(c,x,y){c.save();c.translate(x,y);
+ c.fillStyle='rgba(255,82,82,.28)';cerchio(c,0,0,32+Math.sin(S.t*6)*3);c.fillStyle='rgba(255,255,255,.55)';cerchio(c,0,0,24);
+ const g=c.createLinearGradient(-11,0,11,0);g.addColorStop(0,'#8e0000');g.addColorStop(.35,'#ff5252');g.addColorStop(.6,'#e53935');g.addColorStop(1,'#7f0000');
+ c.fillStyle=g;rr(c,-11,-14,22,34,7);c.fill();
+ c.fillStyle='#b0bec5';rr(c,-6,-22,12,9,3);c.fill();c.fillStyle='#78909c';rr(c,-3,-27,6,6,2);c.fill();
+ c.fillStyle='rgba(255,255,255,.55)';rr(c,-7,-10,4,24,2);c.fill();
+ c.fillStyle='#fff';rr(c,-9,0,18,9,3);c.fill();c.fillStyle='#c62828';c.font='900 8px "Baloo 2",sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('JET',0,5);
+ c.restore()}
+// jetpack sulla schiena: due serbatoi argentati, cinghie, ugelli e (in volo) un getto di fuoco sotto
+function disegnaJetpack(c,x,y,dir,vola,spinta){c.save();c.translate(x,y);c.scale(dir,1);
+ if(vola){const L=(spinta?78:40)+Math.random()*(spinta?26:12);
+  for(const nx of [-31,-19]){const g=c.createLinearGradient(0,-40,0,-40+L);g.addColorStop(0,'rgba(255,255,255,.95)');g.addColorStop(.18,'rgba(255,235,59,.95)');g.addColorStop(.55,'rgba(255,111,0,.85)');g.addColorStop(1,'rgba(213,0,0,0)');
+   c.fillStyle=g;c.beginPath();c.moveTo(nx-6,-40);c.quadraticCurveTo(nx-9,-40+L*.45,nx,-40+L);c.quadraticCurveTo(nx+9,-40+L*.45,nx+6,-40);c.closePath();c.fill()}
+  c.globalAlpha=.35;c.fillStyle='#ffab40';cerchio(c,-25,-36,14);c.globalAlpha=1}
+ c.fillStyle='#455a64';rr(c,-20,-74,6,30,2);c.fill();
+ for(const nx of [-31,-19]){const g=c.createLinearGradient(nx-7,0,nx+7,0);g.addColorStop(0,'#607d8b');g.addColorStop(.4,'#eceff1');g.addColorStop(1,'#78909c');
+  c.fillStyle=g;rr(c,nx-7,-86,14,44,7);c.fill();c.fillStyle='#c62828';rr(c,nx-7,-88,14,8,4);c.fill();
+  c.fillStyle='#37474f';c.beginPath();c.moveTo(nx-5,-43);c.lineTo(nx+5,-43);c.lineTo(nx+7,-36);c.lineTo(nx-7,-36);c.closePath();c.fill()}
+ c.fillStyle='#ffca28';cerchio(c,-25,-64,3);
+ c.strokeStyle='#263238';c.lineWidth=4;c.beginPath();c.moveTo(-16,-76);c.lineTo(10,-60);c.moveTo(-16,-50);c.lineTo(10,-44);c.stroke();
+ c.restore()}
 function soldato(c,x,y,dir,t,moving,p,w,rin,sc=1,aria=null){
  c.save();c.translate(x,y);c.scale(dir*sc,sc);
  const d=DIVISE[p.divisa]||DIVISE[0],pelle=PELLI[p.pelle]||PELLI[0],cap=CAPELLI[p.capelli]||CAPELLI[0],occ=OCCHI[p.occhi]||OCCHI[0];
@@ -1996,13 +2021,13 @@ function terreno(cam){
 
 // ======================= STATO PARTITA =======================
 let S=null,giocando=false,menuCam=0;
-const K={sx:false,dx:false,fuoco:false};
+const K={sx:false,dx:false,fuoco:false,salta:false};
 function nuovaPartita(L=0){
  L=clamp(L|0,0,BOSS.length-1);const kit=kitLivello(L+1);
  S={t:0,punti:0,uccisi:0,grado:0,shake:0,zona:L,
-  p:{x:L?BOSS[L-1].gate+120:260,y:GROUND,vx:0,vy:0,terra:true,doppio:0,salti:0,dir:1,vita:5,max:5,inv:0,cd:0,walk:0,rin:0,morto:false,lento:0,su:null},
+  p:{x:L?BOSS[L-1].gate+120:260,y:GROUND,vx:0,vy:0,terra:true,doppio:0,salti:0,dir:1,vita:5,max:5,inv:0,cd:0,walk:0,rin:0,morto:false,lento:0,su:null,jet:0,haJet:false,jetRic:0},
   armi:['pistola'],arma:'pistola',morti:0,base:0,forza:1,diff:DIFF,proiettili:[],mostri:[],part:[],cuori:[],lampi:[],
-  coda:[],msg:null,avviso:null,spawn:2,livello:0,combo:0,molle:MOLLE.map(x=>({x,preso:false})),boss:null,bproj:[],onde:[],vinto:false,chiusura:false,
+  coda:[],msg:null,avviso:null,spawn:2,livello:0,combo:0,molle:MOLLE.map(x=>({x,preso:false})),bombole:BOMBOLE.map(x=>({x,preso:false})),boss:null,bproj:[],onde:[],vinto:false,chiusura:false,
   nasc:NASCONDIGLI.map(n=>Object.assign({},n,{cercato:false,anim:0,icona:''})),zonaMax:L,cam:0,
   piat:PIATTAFORME.map(o=>Object.assign({},o,{stella:true})),vento:{t:6,g:0,dir:1},titolo:{i:L,t:3.2}};
  S.livello=L;
@@ -2037,8 +2062,13 @@ function cambiaArma(){if(!S||S.armi.length<2)return;const i=S.armi.indexOf(S.arm
 // ======================= AZIONI =======================
 const zonaDi=x=>ZONE[zonaIdx(x)];
 function salta(){if(!S||!giocando)return;const p=S.p,js=zonaDi(p.x).salto||1;
+ if(p.jet>0&&!p.morto){p.vy=Math.min(p.vy,-520);p.terra=false;p.su=null;p.salti=1;if(ogni('jetv',.25))SFX.jet();return}
  if(p.terra){p.vy=-780*js;p.terra=false;p.su=null;p.salti=1;SFX.salto()}
  else if(p.doppio>0&&p.salti<2){p.vy=-740*js;p.salti=2;particelle(p.x,p.y,10,'#ffeb3b','scintilla',220);S.part.push({x:p.x,y:p.y,vx:0,vy:0,vita:.4,col:'#fff',tipo:'anello',grav:0});SFX.doppio()}}
+const JET_MAX=12,JET_RICARICA=5;// secondi di volo per carica; secondi per ricaricarsi da solo quando è scarico
+function prendiBomboletta(o){const p=S.p;o.preso=true;const prima=p.haJet;p.haJet=true;p.jet=JET_MAX;p.jetRic=0;S.punti+=40;
+ particelle(o.x,GROUND-120,16,'#ff5252');particelle(o.x,GROUND-120,10,'#ffd54a','scintilla',240);
+ if(!prima)mostra('HAI IL JETPACK! 🚀',(TOUCH?'Tieni premuto ⬆ per volare':'Tieni premuto ↑ per volare')+' · quando si scarica si ricarica da solo in 5 secondi','#c62828');else avviso('🚀 Jetpack ricaricato!',2);SFX.molla();SFX.jet()}
 function prendiMolla(o){const p=S.p;o.preso=true;p.doppio=Math.min(40,p.doppio+20);S.punti+=25;
  particelle(o.x,GROUND-115,14,'#ffeb3b');mostra('SALTO DOPPIO! 👟','Premi salta due volte: funziona per 20 secondi','#f57f17');SFX.molla()}
 function spara(){
@@ -2470,7 +2500,7 @@ const indici=(a,f)=>{const r=[];a.forEach((o,i)=>{if(f(o))r.push(i)});return r};
 function statoPartita(){if(!S||S.fine||S.vinto||S.chiusura||S.p.morto)return null;const p=S.p;
  return{v:1,t:Date.now(),diff:S.diff,liv:S.livello,zonaMax:S.zonaMax,x:Math.round(p.x),vita:Math.max(1,p.vita),max:p.max,doppio:Math.round(p.doppio*10)/10,dir:p.dir,
   armi:S.armi.slice(),arma:S.arma,punti:S.punti,uccisi:S.uccisi,grado:S.grado,morti:S.morti,base:S.base,forza:S.forza,
-  nasc:indici(S.nasc,n=>n.cercato),molle:indici(S.molle,o=>o.preso),stelle:indici(S.piat,o=>!o.stella),ora:MET.ora,tempo:MET.tempo,boss:S.boss&&!S.boss.morto?Math.ceil(S.boss.hp):0}}
+  nasc:indici(S.nasc,n=>n.cercato),molle:indici(S.molle,o=>o.preso),bombole:indici(S.bombole,o=>o.preso),haJet:!!S.p.haJet,jet:Math.round(S.p.jet*10)/10,stelle:indici(S.piat,o=>!o.stella),ora:MET.ora,tempo:MET.tempo,boss:S.boss&&!S.boss.morto?Math.ceil(S.boss.hp):0}}
 function salvaPartita(){const st=statoPartita();if(st)save(PARTITA,st)}
 function cancellaPartita(){try{localStorage.removeItem(PARTITA)}catch(e){}}
 function leggiPartita(){let o;try{o=JSON.parse(localStorage.getItem(PARTITA)||'null')}catch(e){return null}
@@ -2483,13 +2513,13 @@ function leggiPartita(){let o;try{o=JSON.parse(localStorage.getItem(PARTITA)||'n
  return{diff:o.diff,liv:L,zonaMax:num(o.zonaMax,0,ZONE.length-1)?Math.floor(o.zonaMax):L,x:clamp(o.x,lo+40,hi-40),vita:Math.round(o.vita),max:Math.round(o.max),doppio:num(o.doppio,0,40)?o.doppio:0,dir:o.dir===-1?-1:1,
   armi,arma:armi.includes(o.arma)?o.arma:armi[armi.length-1],punti:Math.round(o.punti),uccisi:Math.round(o.uccisi),grado:num(o.grado,0,GRADI.length-1)?Math.floor(o.grado):0,
   morti:num(o.morti,0,1e6)?Math.floor(o.morti):0,base:num(o.base,0,1e7)?o.base:0,forza:num(o.forza,.1,1)?o.forza:1,
-  nasc:lista(o.nasc,NASCONDIGLI.length),molle:lista(o.molle,MOLLE.length),stelle:lista(o.stelle,PIATTAFORME.length),
+  nasc:lista(o.nasc,NASCONDIGLI.length),molle:lista(o.molle,MOLLE.length),bombole:lista(o.bombole,BOMBOLE.length),haJet:o.haJet===true,jet:num(o.jet,0,30)?o.jet:0,stelle:lista(o.stelle,PIATTAFORME.length),
   ora:ORE[o.ora]?o.ora:null,tempo:TEMPI[o.tempo]?o.tempo:null,boss:num(o.boss,1,1e4)?Math.ceil(o.boss):0}}
 function riprendiPartita(st){DIFF=st.diff;save('fs_diff',DIFF);nuovaPartita(st.liv);const p=S.p;
  Object.assign(S,{punti:st.punti,uccisi:st.uccisi,grado:st.grado,morti:st.morti,base:st.base,forza:st.forza,armi:st.armi,arma:st.arma,zonaMax:Math.max(st.zonaMax,st.liv),bossHp:st.boss});
  GRADI.forEach((r,i)=>{if(S.uccisi>=r.k&&i>S.grado)S.grado=i});S.armi=(S.armi||['pistola']).slice();armiLivello(false);
  Object.assign(p,{x:st.x,y:GROUND,vita:st.vita,max:st.max,doppio:st.doppio,dir:st.dir});
- st.nasc.forEach(i=>{S.nasc[i].cercato=true});st.molle.forEach(i=>{S.molle[i].preso=true});st.stelle.forEach(i=>{S.piat[i].stella=false});
+ st.nasc.forEach(i=>{S.nasc[i].cercato=true});st.molle.forEach(i=>{S.molle[i].preso=true});st.bombole.forEach(i=>{S.bombole[i].preso=true});p.haJet=!!st.haJet;p.jet=p.haJet?(st.jet>0?Math.min(st.jet,JET_MAX):JET_MAX):0;st.stelle.forEach(i=>{S.piat[i].stella=false});
  S.zona=zonaIdx(p.x);if(S.zona>S.zonaMax)S.zonaMax=S.zona;S.titolo={i:S.zona,t:3.2};S.cam=clamp(p.x-VW*.4,0,Math.max(0,WORLD_W-VW));
  if(st.ora)MET.ora=st.ora;if(st.tempo)MET.tempo=st.tempo;MET.zona=S.zona;MET.cambio=-1;meteoSubito();MET.txt=`${ORE[MET.ora].e} ${ORE[MET.ora].n} · ${iconaTempo()} ${nomeTempo()}`;MET.banner=4.5}
 // ======================= UPDATE =======================
@@ -2501,7 +2531,7 @@ function aggiorna(dt){
   // solo in difficile: sul terreno bagnato si scivola un pochino (si parte e ci si ferma con un attimo di ritardo); sul cristallo si scivola sempre un po'
   if(p.terra&&Z.scivolo)p.vx+=(vt-p.vx)*Math.min(1,dt*(S.diff==='difficile'?4:7));
   else if(p.terra&&MET.wet>.5&&S.diff==='difficile')p.vx+=(vt-p.vx)*Math.min(1,dt*9);else p.vx=vt;if(ax)p.dir=ax;
-  p.x=clamp(p.x+p.vx*dt,40,gate-40);if(ax)p.walk+=dt;
+  p.x=clamp(p.x+p.vx*(p.jet>0&&!p.terra?1.45:1)*dt,40,gate-40);if(ax)p.walk+=dt;
  }
  // raffiche di vento (nuvole, pianeta rosso): spingono piano, in facile ancora più piano
  const V=S.vento;if(Z.vento&&!p.morto){if(V.g>0){V.g-=dt;p.x=clamp(p.x+V.dir*(S.diff==='facile'?50:90)*dt,40,gate-40)}
@@ -2509,13 +2539,24 @@ function aggiorna(dt){
  // gravità della zona e nuvole su cui salire
  if(p.su&&Math.abs(p.x-p.su.x)>p.su.w/2+6){p.su=null;p.terra=false}
  if(p.su){p.y=p.su.y;p.vy=0}
- else{const y0=p.y;p.vy+=1900*(Z.grav||1)*dt;p.y+=p.vy*dt;
+ else{const y0=p.y;
+  if(p.jet>0&&!p.terra&&!p.morto){// jetpack: tenendo premuto salta si sale, se no si plana piano
+   if(K.salta){p.vy-=2700*dt;if(p.vy<-430)p.vy=-430}else{p.vy+=700*(Z.grav||1)*dt;if(p.vy>260)p.vy=260}
+   if(p.y<130&&p.vy<0){p.vy=0;p.y=130}
+   if(Math.random()<.85)S.part.push({x:p.x-p.dir*25+(Math.random()-.5)*8,y:p.y-30,vx:(Math.random()-.5)*40,vy:240+Math.random()*160,vita:.25+Math.random()*.2,col:Math.random()<.5?'#ff9800':'#ffeb3b',tipo:'scintilla',r:4,grav:0});
+   if(K.salta&&ogni('jetr',.22))rumore(.25,.025,700,'lowpass',180)}
+  else p.vy+=1900*(Z.grav||1)*dt;
+  p.y+=p.vy*dt;
   if(p.vy>0&&!p.morto)for(const o of S.piat){if(y0<=o.y+1&&p.y>=o.y&&Math.abs(p.x-o.x)<o.w/2+4){p.y=o.y;p.vy=0;p.terra=true;p.su=o;S.combo=0;p.salti=0;break}}
   if(p.y>=GROUND){if(!p.terra&&p.vy>350&&!p.morto)SFX.atterra();p.y=GROUND;p.vy=0;p.terra=true;S.combo=0;p.salti=0}}
  for(const o of S.piat)if(o.stella&&Math.abs(o.x-p.x)<40&&Math.abs((o.y-44)-(p.y-50))<55){o.stella=false;S.punti+=25;testoVol(o.x,o.y-60,'+25 ⭐','#fff176');particelle(o.x,o.y-44,8,'#ffeb3b');SFX.stelle()}
  if(p.lento>0)p.lento-=dt;
  if(p.doppio>0){p.doppio-=dt;if(p.doppio<=0){p.doppio=0;avviso('Le scarpe a molla si sono scaricate 👟')}}
  for(const o of S.molle){if(!o.preso&&Math.abs(o.x-p.x)<42&&Math.abs((GROUND-115)-(p.y-55))<75)prendiMolla(o)}
+ // jetpack: una volta preso resta; la carica si consuma solo in volo e, quando finisce, torna piena da sola dopo 5 secondi
+ if(p.haJet){if(p.jetRic>0){p.jetRic-=dt;if(p.jetRic<=0){p.jetRic=0;p.jet=JET_MAX;avviso('🚀 Jetpack ricaricato!',2);SFX.molla()}}
+  else if(!p.terra&&p.jet>0){p.jet-=dt;if(p.jet<=0){p.jet=0;p.jetRic=JET_RICARICA;avviso('🚀 Jetpack scarico: si ricarica in 5 secondi',2.5)}}}
+ for(const o of S.bombole){if(!o.preso&&Math.abs(o.x-p.x)<42&&Math.abs((GROUND-125)-(p.y-55))<70)prendiBomboletta(o)}
  p.inv=Math.max(0,p.inv-dt);p.cd-=dt;p.rin=Math.max(0,p.rin-dt*50);S.shake=Math.max(0,S.shake-dt*40);
  if(K.fuoco&&p.cd<=0&&!p.morto)spara();
  S.cam=clamp(p.x-VW*.4,0,Math.max(0,WORLD_W-VW));
@@ -2666,7 +2707,7 @@ function disegna(){
  if(S){
   const dmg=ARMA[S.arma].dmg;S.mostri.forEach(m=>m.tipo==='boss'?disegnaBoss(ctx,m):disegnaMostro(ctx,m,S.p.x,dmg));
   S.onde.forEach(o=>{ctx.strokeStyle=`rgba(255,255,255,${1-o.t/.6})`;ctx.lineWidth=6;ctx.beginPath();ctx.ellipse(o.x,GROUND-4,40+o.t*400,10+o.t*20,0,0,Math.PI*2);ctx.stroke()});
-  const p=S.p;CASCO=!!zonaDi(p.x).casco;if(!p.morto&&!(p.inv>0&&Math.floor(S.t*14)%2))soldato(ctx,p.x,p.y,p.dir,p.walk,(K.sx||K.dx)&&p.terra,prof,ARMA[S.arma],p.rin,1,p.terra?null:p.vy);
+  const p=S.p;CASCO=!!zonaDi(p.x).casco;if(p.haJet&&!p.morto&&!(p.inv>0&&Math.floor(S.t*14)%2))disegnaJetpack(ctx,p.x,p.y,p.dir,!p.terra&&p.jet>0,K.salta);if(!p.morto&&!(p.inv>0&&Math.floor(S.t*14)%2))soldato(ctx,p.x,p.y,p.dir,p.walk,(K.sx||K.dx)&&p.terra,prof,ARMA[S.arma],p.rin,1,p.terra?null:p.vy);
  }
  ctx.restore();
  // tramonto, nuvole, sabbia, buio della notte
@@ -2679,6 +2720,7 @@ function disegna(){
    ctx.fillStyle='rgba(255,235,59,.35)';cerchio(ctx,o.x,yy,30+Math.sin(S.t*6)*3);ctx.fillStyle='rgba(255,255,255,.6)';cerchio(ctx,o.x,yy,22);
    ctx.font='32px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('👟',o.x,yy);
    ctx.font='800 15px "Baloo 2",sans-serif';ctx.fillStyle='#e65100';ctx.fillText('x2',o.x+22,yy-20)});
+  S.bombole.forEach(o=>{if(o.preso||o.x<cam-60||o.x>cam+VW+60)return;disegnaBomboletta(ctx,o.x,GROUND-125+Math.sin(S.t*3+o.x)*8)});
   S.cuori.forEach(c=>{ctx.font='30px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('❤️',c.x,c.y+Math.sin(c.t*5)*4)});
   S.bproj.forEach(q=>{if(q.attesa>0)return;
    if(q.ombra&&q.y<GROUND-30){ctx.fillStyle='rgba(0,0,0,'+(.12+.28*clamp(q.y/GROUND,0,1))+')';ell(ctx,q.x,GROUND+2,q.r*1.5,5)}
@@ -2726,6 +2768,10 @@ function hud(){
  ctx.font='20px serif';const yc=70+(righe.length-1)*22;for(let i=0;i<p.max;i++)ctx.fillText(i<p.vita?'❤️':'🤍',24+i*27,yc);
  if(p.doppio>0){const w=178;ctx.fillStyle=p.doppio<5&&Math.floor(S.t*6)%2?'rgba(245,127,23,.6)':'rgba(245,127,23,.92)';rr(ctx,VW-w-12,64,w,30,12);ctx.fill();
   ctx.fillStyle='#fff';ctx.font='800 16px "Baloo 2",sans-serif';ctx.textAlign='left';ctx.fillText(`👟 Salto doppio ${Math.ceil(p.doppio)}s`,VW-w,85)}
+ if(p.haJet){const w=178,yy=p.doppio>0?98:64,ric=p.jetRic>0,f=ric?1-p.jetRic/JET_RICARICA:p.jet/JET_MAX;
+  ctx.fillStyle=ric?'rgba(96,125,139,.9)':p.jet<3&&!p.terra&&Math.floor(S.t*6)%2?'rgba(198,40,40,.55)':'rgba(198,40,40,.92)';rr(ctx,VW-w-12,yy,w,30,12);ctx.fill();
+  ctx.fillStyle=ric?'rgba(255,213,79,.8)':'rgba(255,255,255,.45)';rr(ctx,VW-w-6,yy+22,(w-12)*clamp(f,0,1),5,2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='800 16px "Baloo 2",sans-serif';ctx.textAlign='left';ctx.fillText(ric?`🚀 Ricarica… ${Math.ceil(p.jetRic)}s`:`🚀 Jetpack ${Math.ceil(p.jet)}s`,VW-w,yy+19)}
  // punti
  ctx.textAlign='center';testoBordo('⭐ '+S.punti,VW/2,42,32,'#e23b2e');testoBordo('👾 '+S.uccisi+' mostri · Livello '+Math.min(S.livello+1,BOSS.length)+'/'+BOSS.length+(S.diff==='facile'?' · 🙂 Facile':' · 💪 Difficile'),VW/2,66,18,'#2e5d2e');
  // mappa
@@ -2853,7 +2899,7 @@ function preparaReg(){
  swatch('#swPelle',PELLI,'pelle');swatch('#swCapelli',CAPELLI,'capelli');swatch('#swOcchi',OCCHI,'occhi');swatch('#swDivisa',DIVISE,'divisa',true);
  $('#togliFoto').classList.toggle('hidden',!prof.foto);
  $('#comandi').innerHTML=(TOUCH?'<b>Comandi:</b> ◀ ▶ cammina · ⬆ salta · 💥 spara · 🔍 cerca · tocca l\'arma in basso per cambiarla':'<b>Comandi:</b> ← → cammina · ↑ salta · SPAZIO spara · E cerca · Q cambia arma · P pausa')+
-  `<br><b>Missione:</b> la pistola abbatte un mostro in 3 colpi. Più mostri sconfiggi, più sali di grado e ricevi armi più potenti. Cerca dietro rocce, alberi, cactus, igloo, grotte, conchiglie, scrigni, barattoli e crateri: ci sono ${N_SEGRETE} armi segrete! Puoi anche <b>saltare sopra i mostri</b> per schiacciarli, come Super Mario! Prendi le <b>scarpe a molla 👟</b> per avere il salto doppio. Attraversa ${BOSS.length} mondi tutti diversi: dal prato al vulcano, poi spiaggia, fondo del mare, giungla, castello, Luna, dinosauri e la fortezza del Re dei Mostri; e poi i Mondi Antichi, i Mondi della Natura, i Mondi Fantastici, i Mondi del Futuro e i Mondi Finali, fino al Trono del Re dei Re dei Mostri, ogni volta con un tempo diverso. Alla fine di ognuno ti aspetta un <b>boss gigante</b> (lui non si schiaccia), e ogni boss è più forte del precedente. I livelli raggiunti restano salvati e la partita si salva da sola: puoi continuare da dove eri rimasto!`;
+  `<br><b>Missione:</b> la pistola abbatte un mostro in 3 colpi. Più mostri sconfiggi, più sali di grado e ricevi armi più potenti. Cerca dietro rocce, alberi, cactus, igloo, grotte, conchiglie, scrigni, barattoli e crateri: ci sono ${N_SEGRETE} armi segrete! Puoi anche <b>saltare sopra i mostri</b> per schiacciarli, come Super Mario! Prendi le <b>scarpe a molla 👟</b> per avere il salto doppio. Salta per prendere la <b>bomboletta rossa 🚀</b>: avrai il <b>jetpack</b> per sempre! Tieni premuto salta per volare; quando la carica finisce, si ricarica da sola in 5 secondi. Attraversa ${BOSS.length} mondi tutti diversi: dal prato al vulcano, poi spiaggia, fondo del mare, giungla, castello, Luna, dinosauri e la fortezza del Re dei Mostri; e poi i Mondi Antichi, i Mondi della Natura, i Mondi Fantastici, i Mondi del Futuro e i Mondi Finali, fino al Trono del Re dei Re dei Mostri, ogni volta con un tempo diverso. Alla fine di ognuno ti aspetta un <b>boss gigante</b> (lui non si schiaccia), e ogni boss è più forte del precedente. I livelli raggiunti restano salvati e la partita si salva da sola: puoi continuare da dove eri rimasto!`;
 }
 $('#nome').addEventListener('input',e=>{prof.nome=e.target.value.trim()||'Federico';$('#titNome').textContent=prof.nome});
 $('#fotoIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
@@ -2897,15 +2943,15 @@ addEventListener('keydown',e=>{
  if(c==='ArrowLeft'||c==='KeyA')K.sx=true;
  else if(c==='ArrowRight'||c==='KeyD')K.dx=true;
  else if(c==='Space'||c==='KeyX'||c==='KeyJ'||c==='Enter')K.fuoco=true;
- else if(!e.repeat&&(c==='ArrowUp'||c==='KeyW'))salta();
+ else if(c==='ArrowUp'||c==='KeyW'){K.salta=true;if(!e.repeat)salta()}
  else if(!e.repeat&&(c==='KeyE'||c==='ArrowDown'||c==='KeyS'))cerca();
  else if(!e.repeat&&(c==='KeyQ'||c==='Tab')){e.preventDefault();cambiaArma()}
  else if(c==='KeyP'||c==='Escape')pausa(true);
  else if(/^Digit[0-9]$/.test(c)){const i=c==='Digit0'?9:+c.slice(5)-1;if(S.armi[i])scegliArma(S.armi[i])}
 });
 addEventListener('keyup',e=>{const c=e.code;
- if(c==='ArrowLeft'||c==='KeyA')K.sx=false;else if(c==='ArrowRight'||c==='KeyD')K.dx=false;else if(c==='Space'||c==='KeyX'||c==='KeyJ'||c==='Enter')K.fuoco=false});
-addEventListener('blur',()=>{K.sx=K.dx=K.fuoco=false;if(typeof rilasciaTutti==='function')rilasciaTutti()});
+ if(c==='ArrowLeft'||c==='KeyA')K.sx=false;else if(c==='ArrowRight'||c==='KeyD')K.dx=false;else if(c==='Space'||c==='KeyX'||c==='KeyJ'||c==='Enter')K.fuoco=false;else if(c==='ArrowUp'||c==='KeyW')K.salta=false});
+addEventListener('blur',()=>{K.sx=K.dx=K.fuoco=K.salta=false;if(typeof rilasciaTutti==='function')rilasciaTutti()});
 cv.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&giocando){audio();K.fuoco=true}});
 addEventListener('pointerup',e=>{if(e.pointerType==='mouse')K.fuoco=false});
 // Pulsanti touch: ogni pulsante ricorda quale dito lo tiene premuto. Su alcuni tablet il «pointerup» arriva
@@ -2914,10 +2960,10 @@ addEventListener('pointerup',e=>{if(e.pointerType==='mouse')K.fuoco=false});
 const TASTI=new Map();// pointerId -> {b,k}
 function rilascia(id){const t=TASTI.get(id);if(!t)return;TASTI.delete(id);
  if(![...TASTI.values()].some(o=>o.b===t.b)){t.b.classList.remove('on');if(t.k in K)K[t.k]=false}}
-function rilasciaTutti(){for(const id of [...TASTI.keys()])rilascia(id);document.querySelectorAll('#touch [data-k].on').forEach(b=>b.classList.remove('on'));K.sx=K.dx=K.fuoco=false}
+function rilasciaTutti(){for(const id of [...TASTI.keys()])rilascia(id);document.querySelectorAll('#touch [data-k].on').forEach(b=>b.classList.remove('on'));K.sx=K.dx=K.fuoco=K.salta=false}
 document.querySelectorAll('#touch [data-k]').forEach(b=>{const k=b.dataset.k;
  b.addEventListener('pointerdown',e=>{e.preventDefault();audio();try{b.setPointerCapture(e.pointerId)}catch(_){}
-  TASTI.set(e.pointerId,{b,k});b.classList.add('on');if(k==='salta')salta();else if(k==='cerca')cerca();else K[k]=true});
+  TASTI.set(e.pointerId,{b,k});b.classList.add('on');if(k==='salta'){K.salta=true;salta()}else if(k==='cerca')cerca();else K[k]=true});
  ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,e=>rilascia(e.pointerId)));
  b.addEventListener('contextmenu',e=>e.preventDefault());
 });
