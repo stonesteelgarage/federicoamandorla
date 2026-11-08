@@ -253,6 +253,7 @@ const SFX={
 // suono di ogni arma
 const SPARO={
  pistola:()=>suono(520,.07,'square',.035,180),
+ mine:()=>{suono(300,.12,'triangle',.05,520);rumore(.06,.03,1800)},
  laserblu:()=>{suono(1800,.45,'sawtooth',.03,90);suono(240,.5,'square',.025,60);rumore(.35,.03,5000,'highpass')},
  fucile:()=>{suono(320,.1,'square',.035,90);rumore(.07,.035,2200)},
  mitra:()=>{suono(720,.04,'square',.022,300);rumore(.03,.02,3000)},
@@ -336,6 +337,8 @@ const ARMI=[
  // fucile laser blu: arriva dopo il boss del livello 4 (liv:4); spara un raggio istantaneo che attraversa tutto lo schermo, contro i boss ogni colpo toglie 5 vite
  {id:'laserblu',n:'Fucile Laser Blu',em:'💙',dmg:12,cd:.5,vel:0,col:'#1565c0',len:54,bul:'#2979ff',liv:4,tipo:'raggioblu',bossDmg:5,portata:1300},
  {id:'mitra',n:'Mitragliatore',em:'⚡',dmg:3,cd:.11,vel:1100,col:'#2f2f2f',len:36,bul:'#ffe082',kill:20},
+ // mine: la mina vola ad arco, si appoggia a terra e esplode quando arriva un mostro (o dopo 5 s): fa saltare fino a 3 mostri insieme
+ {id:'mine',n:'Lancia Mine',em:'💣',dmg:18,cd:.7,vel:430,col:'#455a64',len:36,bul:'#ff5252',kill:25,tipo:'mina',vita:5.5,bossDmg:3},
  // pallini: 5 alla volta, a ventaglio, portata corta (da vicino colpiscono quasi tutti: molti = moltiplicatore medio)
  {id:'pompa',n:'Fucile a Pompa',em:'💨',dmg:2,cd:.55,vel:950,col:'#5d4037',len:38,bul:'#ffb74d',kill:30,tipo:'pompa',pallini:5,vita:.42,molti:3,bossDmg:.25},
  {id:'laser',n:'Fucile Laser',em:'🔵',dmg:6,cd:.24,vel:1300,col:'#1e88e5',len:42,bul:'#40c4ff',kill:40,tipo:'laser'},
@@ -754,6 +757,7 @@ function disegnaArma(c,w,rin){
  c.fillStyle='#222';rr(c,3,2,7,12,2);c.fill();
  if(w.len>30){c.fillStyle=w.tipo?'#333':'#5a3a1d';rr(c,-10,-4,12,9,3);c.fill()}
  if(w.tipo==='razzo'){c.fillStyle='#1b5e20';rr(c,w.len-10,-8,12,16,4);c.fill()}
+ if(w.tipo==='mina'){c.fillStyle='#263238';rr(c,w.len-14,-10,16,20,8);c.fill();c.fillStyle='#ff5252';cerchio(c,w.len-6,-10,3)}
  if(w.tipo==='plasma'||w.tipo==='laser'||w.tipo==='raggioblu'){c.fillStyle=w.bul;cerchio(c,w.len*.55,-1,3)}
  if(w.tipo==='raggioblu'){c.fillStyle='#0d47a1';rr(c,w.len*.15,-9,w.len*.5,5,2);c.fill();c.fillStyle='#82b1ff';for(let i=0;i<3;i++){rr(c,w.len*(.22+i*.14),-4,4,8,1);c.fill()}
   c.fillStyle='#40c4ff';c.globalAlpha=.6+.4*Math.sin(Date.now()/90);cerchio(c,w.len,0,5);c.globalAlpha=1}
@@ -2044,7 +2048,7 @@ function spara(){
  if(w.pallini){for(let i=0;i<w.pallini;i++){const a=(i-(w.pallini-1)/2)*(w.spread||.07)+(Math.random()-.5)*.03;
    S.proiettili.push({x,y,vx:p.dir*w.vel*Math.cos(a),vy:w.vel*Math.sin(a),w,dmg:w.dmg,vita:w.vita,colpiti:new Set()})}}
  else if(w.tipo==='fiamma')S.proiettili.push({x,y,vx:p.dir*w.vel*(.85+Math.random()*.3),vy:(Math.random()-.5)*120,w,dmg:w.dmg,vita:w.vita,eta:0,colpiti:new Set()});
- else S.proiettili.push({x,y,vx:p.dir*w.vel,vy:w.tipo==='cocco'||w.arco?-260:w.tipo==='caramella'?(Math.random()-.5)*80:0,w,dmg:w.dmg,vita:w.vita||1.3,dir0:p.dir,colpiti:new Set(),rimb:3,col:Math.random()*4|0,eta:0});
+ else S.proiettili.push({x,y,vx:p.dir*w.vel,vy:w.tipo==='mina'?-380:w.tipo==='cocco'||w.arco?-260:w.tipo==='caramella'?(Math.random()-.5)*80:0,w,dmg:w.dmg,vita:w.vita||1.3,dir0:p.dir,colpiti:new Set(),rimb:3,col:Math.random()*4|0,eta:0});
  (SPARO[w.id]||SPARO.pistola)();
 }
 // raggio laser blu: colpisce subito tutti i mostri sulla linea di tiro (e il boss: -5 vite), si vede per un attimo
@@ -2125,6 +2129,19 @@ function ferito(m){
  SFX.ferito();particelle(p.x,p.y-60,8,'#ff5252','scintilla',200);
  if(p.vita<=0)morte();
 }
+// mina: vola, si posa, lampeggia; esplode quando un mostro le arriva vicino (o a fine tempo) e colpisce i 3 mostri più vicini
+function aggiornaMina(b,dt,grav){
+ if(!b.ferma){b.vy+=900*grav*dt;b.ang=(b.ang||0)+dt*8*Math.sign(b.vx||1);
+  if(b.y>=GROUND-8&&b.vy>0){b.y=GROUND-8;b.vx=0;b.vy=0;b.ferma=true;b.ang=0;suono(900,.06,'square',.03,1200);particelle(b.x,GROUND-4,5,'rgba(160,140,110,.8)','fumo',80)}}
+ b.lamp=(b.lamp||0)+dt;
+ const vicino=S.mostri.some(m=>!m.morto&&Math.abs(m.x-b.x)<m.w/2+(b.ferma?40:16)&&b.y>m.y-m.h-30&&b.y<m.y+30);
+ if(b.ferma&&ogni('bip'+(b.id||0),.6))suono(1400,.04,'square',.015);
+ if(vicino||b.vita<=.05)scoppiaMina(b)}
+function scoppiaMina(b){b.vita=0;const R=220;
+ const vic=S.mostri.filter(m=>!m.morto&&Math.abs(m.x-b.x)<R+m.w/2&&Math.abs((m.y-m.h/2)-b.y)<R).sort((a,c)=>Math.abs(a.x-b.x)-Math.abs(c.x-b.x)).slice(0,3);
+ vic.forEach(m=>{const d=Math.sign(m.x-b.x)||1;colpisci(m,b.dmg,d,b.w);if(!m.morto&&m.tipo!=='boss'){m.x+=d*30}});
+ particelle(b.x,b.y-20,30,'#ff9800');particelle(b.x,b.y-30,16,'#ffeb3b');particelle(b.x,b.y-10,14,'rgba(90,90,90,.75)','fumo',160);
+ S.shake=Math.max(S.shake||0,14);SFX.boom();if(vic.length>1)testoVol(b.x,b.y-90,'BOOM x'+vic.length+'!','#ffcc80')}
 function esplosione(x,y,r,dmg,dir,colpiti,w){
  particelle(x,y,18,'#ff9800');particelle(x,y,8,'rgba(120,120,120,.7)','fumo',120);S.shake=8;if(ogni('boom',.08))SFX.boom();
  S.mostri.forEach(m=>{if(!m.morto&&!colpiti.has(m)&&Math.abs(m.x-x)<r&&Math.abs((m.y-m.h/2)-y)<r){colpiti.add(m);colpisci(m,dmg,dir,w)}});
@@ -2519,6 +2536,7 @@ function aggiorna(dt){
   else if(b.w.tipo==='magia'||b.w.insegue){let best=null,bd=520;for(const m of S.mostri){if(m.morto)continue;const dd=Math.abs(m.x-b.x)+Math.abs(m.y-m.h/2-b.y);if(dd<bd){bd=dd;best=m}}
    if(best){const dx=best.x-b.x,dy=best.y-best.h/2-b.y,dl=Math.hypot(dx,dy)||1,k=Math.min(1,dt*5);b.vx+=(dx/dl*720-b.vx)*k;b.vy+=(dy/dl*720-b.vy)*k}
    if(b.w.tipo==='magia'&&Math.random()<.4)S.part.push({x:b.x,y:b.y,vx:0,vy:0,vita:.3,col:'#fff59d',tipo:'scintilla',r:3,grav:0})}
+  if(b.w.tipo==='mina'){aggiornaMina(b,dt,Z.grav||1);continue}
   if(b.w.tipo==='emoji')b.eta=(b.eta||0)+dt;
   if(b.w.tipo==='cometa'&&Math.random()<.5)S.part.push({x:b.x-Math.sign(b.vx)*18,y:b.y+(Math.random()-.5)*10,vx:0,vy:0,vita:.35,col:'#fff59d',tipo:'scintilla',r:3,grav:0});
   if(b.w.tipo==='razzo'&&Math.random()<.6)S.part.push({x:b.x-Math.sign(b.vx)*14,y:b.y,vx:0,vy:-20,vita:.5,col:'rgba(200,200,200,.7)',tipo:'fumo',r:5,grav:-40});
@@ -2605,6 +2623,9 @@ function disegnaProjNuovo(q,r){const t=q.tipo,Pe=PROJ[t];
  else return false;return true}
 function disegnaProiettile(b){const w=b.w,s=Math.sign(b.vx);ctx.save();
  if(w.tipo==='laser'){ctx.strokeStyle=w.bul;ctx.lineWidth=w.bossDmg>1?8:5;ctx.shadowColor=w.bul;ctx.shadowBlur=12;ctx.beginPath();ctx.moveTo(b.x-s*34,b.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+ else if(w.tipo==='mina'){ctx.translate(b.x,b.y);ctx.rotate(b.ang||0);ctx.fillStyle='#37474f';ell(ctx,0,0,15,8);ctx.fillStyle='#546e7a';ell(ctx,0,-4,10,5);
+  ctx.fillStyle='#263238';for(const a of [-9,0,9])rr(ctx,a-2,-11,4,5,1),ctx.fill();
+  const on=Math.sin((b.lamp||0)*(b.ferma?14:6))>0;ctx.fillStyle=on?'#ff1744':'#7f0000';if(on){ctx.shadowColor='#ff1744';ctx.shadowBlur=12}cerchio(ctx,0,-7,3)}
  else if(w.tipo==='plasma'){ctx.shadowColor=w.bul;ctx.shadowBlur=20;ctx.fillStyle=w.bul;cerchio(ctx,b.x,b.y,12);ctx.fillStyle='#fff';cerchio(ctx,b.x,b.y,5)}
  else if(w.tipo==='razzo'){ctx.translate(b.x,b.y);ctx.scale(s,1);ctx.fillStyle='#ff9800';ell(ctx,-20,0,10+Math.random()*4,4);ctx.fillStyle='#cfd8dc';rr(ctx,-16,-5,22,10,4);ctx.fill();ctx.fillStyle='#e53935';ctx.beginPath();ctx.moveTo(6,-5);ctx.lineTo(14,0);ctx.lineTo(6,5);ctx.fill()}
  else if(w.tipo==='pompa'){ctx.fillStyle=w.bul;cerchio(ctx,b.x,b.y,4);ctx.fillStyle='rgba(255,183,77,.35)';cerchio(ctx,b.x-s*7,b.y,3)}
