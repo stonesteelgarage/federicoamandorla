@@ -332,8 +332,8 @@ const GRADI=[{n:'Recluta',k:0},{n:'Soldato',k:5},{n:'Caporale',k:12},{n:'Caporal
 const ARMI=[
  {id:'pistola',n:'Pistola',em:'🔫',dmg:2,cd:.36,vel:900,col:'#4a4a4a',len:22,bul:'#ffd54a',kill:0},
  {id:'fucile',n:'Fucile',em:'🎯',dmg:3,cd:.32,vel:1000,col:'#6b4a2b',len:40,bul:'#ffca28',kill:8},
- // fucile laser blu: contro i boss ogni colpo toglie 5 vite
- {id:'laserblu',n:'Fucile Laser Blu',em:'💙',dmg:4,cd:.3,vel:1400,col:'#1565c0',len:46,bul:'#2979ff',kill:12,tipo:'laser',bossDmg:5},
+ // fucile laser blu: arriva dopo il boss del livello 4 (liv:4); contro i boss ogni colpo toglie 5 vite
+ {id:'laserblu',n:'Fucile Laser Blu',em:'💙',dmg:4,cd:.3,vel:1400,col:'#1565c0',len:46,bul:'#2979ff',liv:4,tipo:'laser',bossDmg:5},
  {id:'mitra',n:'Mitragliatore',em:'⚡',dmg:3,cd:.11,vel:1100,col:'#2f2f2f',len:36,bul:'#ffe082',kill:20},
  // pallini: 5 alla volta, a ventaglio, portata corta (da vicino colpiscono quasi tutti: molti = moltiplicatore medio)
  {id:'pompa',n:'Fucile a Pompa',em:'💨',dmg:2,cd:.55,vel:950,col:'#5d4037',len:38,bul:'#ffb74d',kill:30,tipo:'pompa',pallini:5,vita:.42,molti:3,bossDmg:.25},
@@ -2003,16 +2003,22 @@ function nuovaPartita(L=0){
   const forti=ARMI.filter(a=>!a.segreta&&S.armi.includes(a.id));S.arma=(forti[forti.length-1]||ARMA.pistola).id;
   GRADI.forEach((r,i)=>{if(S.uccisi>=r.k)S.grado=i})}
  S.cam=clamp(S.p.x-VW*.4,0,Math.max(0,WORLD_W-VW));
+ armiLivello(false);
  K.sx=K.dx=K.fuoco=false;
  scegliMeteo(L,false,true);
 }
+// armi che arrivano con il livello (liv): date dal livello giusto in poi, tolte prima
+function armiLivello(annuncia){ARMI.forEach(a=>{if(!a.liv)return;const ha=S.armi.includes(a.id);
+ if(S.livello>=a.liv&&!ha){S.armi.push(a.id);S.arma=a.id;if(annuncia){mostra('NUOVA ARMA!',`${a.em} ${a.n} · ${testoColpi(a)}`,'#1565c0');SFX.arma()}}
+ else if(S.livello<a.liv&&ha){S.armi=S.armi.filter(id=>id!==a.id);if(S.arma===a.id)S.arma=S.armi[S.armi.length-1]||'pistola'}});
+ if(annuncia&&typeof aggiornaArmaBox==='function')aggiornaArmaBox()}
 function mostra(t1,t2,col='#e23b2e'){S.coda.push({t1,t2,col,t:2.6})}
 function avviso(txt,t=2.4){S.avviso={txt,t}}
 function particelle(x,y,n,col,tipo='stella',vel=260){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=vel*(.4+Math.random()*.6);S.part.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,vita:.6+Math.random()*.5,col,tipo,r:4+Math.random()*5,grav:tipo==='fumo'?-60:600})}}
 function testoVol(x,y,txt,col='#fff'){S.part.push({x,y,vx:0,vy:-90,vita:1,col,tipo:'testo',txt,grav:0})}
 
 function aggiornaArmaBox(){
- const w=ARMA[S.arma];const prox=ARMI.find(a=>!a.segreta&&!S.armi.includes(a.id));
+ const w=ARMA[S.arma];const prox=ARMI.find(a=>!a.segreta&&!a.liv&&!S.armi.includes(a.id));
  const seg=ARMI.filter(a=>a.segreta&&S.armi.includes(a.id)).length;
  // in fila le armi possedute, nell'ordine della tabella: tocca un'icona per sceglierla
  const ico=S.armi.length>1?'<div class="ico">'+ARMI.filter(a=>S.armi.includes(a.id)).map(a=>`<span data-a="${a.id}" class="${a.id===S.arma?'on':''}" title="${a.n}">${a.em}</span>`).join('')+'</div>':'';
@@ -2094,7 +2100,7 @@ function uccidi(m){
 function progressi(){
  const p=S.p;let g=0;GRADI.forEach((r,i)=>{if(S.uccisi>=r.k)g=i});
  if(g>S.grado){S.grado=g;S.punti+=50*g;p.vita=Math.min(p.max,p.vita+1);mostra('PROMOSSO! 🎖️',`Ora sei ${GRADI[g].n} ${prof.nome}!`,'#2e7d32');SFX.grado()}
- ARMI.forEach(a=>{if(!a.segreta&&!S.armi.includes(a.id)&&S.uccisi-S.base>=(a.kill||(S.base?3:0))){S.armi.push(a.id);S.arma=a.id;mostra('NUOVA ARMA!',`${a.em} ${a.n} · ${testoColpi(a)}`,'#e23b2e');SFX.arma()}});
+ ARMI.forEach(a=>{if(!a.segreta&&!a.liv&&!S.armi.includes(a.id)&&S.uccisi-S.base>=(a.kill||(S.base?3:0))){S.armi.push(a.id);S.arma=a.id;mostra('NUOVA ARMA!',`${a.em} ${a.n} · ${testoColpi(a)}`,'#e23b2e');SFX.arma()}});
  aggiornaArmaBox();
 }
 function schiaccia(m){
@@ -2187,7 +2193,7 @@ function bossSconfitto(m){
  ['#ffd54a','#ff7043',m.col,'#ffffff'].forEach((c,i)=>particelle(m.x+(Math.random()-.5)*80,m.y-60-i*45,14,c));
  particelle(m.x,m.y-100,12,'rgba(160,160,160,.7)','fumo',220);S.shake=20;
  S.punti+=m.punti;S.uccisi++;testoVol(m.x,m.y-m.h-30,'+'+m.punti,'#fff176');
- S.livello++;p.vita=p.max;salvaLivello(S.livello+1);salvaProg(S.livello+1);
+ S.livello++;p.vita=p.max;salvaLivello(S.livello+1);salvaProg(S.livello+1);armiLivello(true);
  SFX.bossKO();setTimeout(()=>{if(S)SFX.livello()},700);
  mostra('BOSS SCONFITTO! 🏆',`${m.n} è stato battuto!`,'#2e7d32');
  if(S.livello<BOSS.length){mostra(`LIVELLO ${S.livello+1}`,`Il cancello è aperto: avanti verso ${ZONE[S.livello].n}`,'#1565c0');salvaPartita()}
@@ -2455,7 +2461,7 @@ function leggiPartita(){let o;try{o=JSON.parse(localStorage.getItem(PARTITA)||'n
   ora:ORE[o.ora]?o.ora:null,tempo:TEMPI[o.tempo]?o.tempo:null,boss:num(o.boss,1,1e4)?Math.ceil(o.boss):0}}
 function riprendiPartita(st){DIFF=st.diff;save('fs_diff',DIFF);nuovaPartita(st.liv);const p=S.p;
  Object.assign(S,{punti:st.punti,uccisi:st.uccisi,grado:st.grado,morti:st.morti,base:st.base,forza:st.forza,armi:st.armi,arma:st.arma,zonaMax:Math.max(st.zonaMax,st.liv),bossHp:st.boss});
- GRADI.forEach((r,i)=>{if(S.uccisi>=r.k&&i>S.grado)S.grado=i});
+ GRADI.forEach((r,i)=>{if(S.uccisi>=r.k&&i>S.grado)S.grado=i});S.armi=(S.armi||['pistola']).slice();armiLivello(false);
  Object.assign(p,{x:st.x,y:GROUND,vita:st.vita,max:st.max,doppio:st.doppio,dir:st.dir});
  st.nasc.forEach(i=>{S.nasc[i].cercato=true});st.molle.forEach(i=>{S.molle[i].preso=true});st.stelle.forEach(i=>{S.piat[i].stella=false});
  S.zona=zonaIdx(p.x);if(S.zona>S.zonaMax)S.zonaMax=S.zona;S.titolo={i:S.zona,t:3.2};S.cam=clamp(p.x-VW*.4,0,Math.max(0,WORLD_W-VW));
