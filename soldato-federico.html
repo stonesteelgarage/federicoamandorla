@@ -253,6 +253,7 @@ const SFX={
 // suono di ogni arma
 const SPARO={
  pistola:()=>suono(520,.07,'square',.035,180),
+ laserblu:()=>{suono(1800,.45,'sawtooth',.03,90);suono(240,.5,'square',.025,60);rumore(.35,.03,5000,'highpass')},
  fucile:()=>{suono(320,.1,'square',.035,90);rumore(.07,.035,2200)},
  mitra:()=>{suono(720,.04,'square',.022,300);rumore(.03,.02,3000)},
  pompa:()=>{rumore(.2,.07,1400,'lowpass',300);suono(130,.14,'square',.04,50);rumore(.05,.03,3000,'highpass',null,.22)},
@@ -332,8 +333,8 @@ const GRADI=[{n:'Recluta',k:0},{n:'Soldato',k:5},{n:'Caporale',k:12},{n:'Caporal
 const ARMI=[
  {id:'pistola',n:'Pistola',em:'🔫',dmg:2,cd:.36,vel:900,col:'#4a4a4a',len:22,bul:'#ffd54a',kill:0},
  {id:'fucile',n:'Fucile',em:'🎯',dmg:3,cd:.32,vel:1000,col:'#6b4a2b',len:40,bul:'#ffca28',kill:8},
- // fucile laser blu: arriva dopo il boss del livello 4 (liv:4); contro i boss ogni colpo toglie 5 vite
- {id:'laserblu',n:'Fucile Laser Blu',em:'💙',dmg:4,cd:.3,vel:1400,col:'#1565c0',len:46,bul:'#2979ff',liv:4,tipo:'laser',bossDmg:5},
+ // fucile laser blu: arriva dopo il boss del livello 4 (liv:4); spara un raggio istantaneo che attraversa tutto lo schermo, contro i boss ogni colpo toglie 5 vite
+ {id:'laserblu',n:'Fucile Laser Blu',em:'💙',dmg:12,cd:.5,vel:0,col:'#1565c0',len:54,bul:'#2979ff',liv:4,tipo:'raggioblu',bossDmg:5,portata:1300},
  {id:'mitra',n:'Mitragliatore',em:'⚡',dmg:3,cd:.11,vel:1100,col:'#2f2f2f',len:36,bul:'#ffe082',kill:20},
  // pallini: 5 alla volta, a ventaglio, portata corta (da vicino colpiscono quasi tutti: molti = moltiplicatore medio)
  {id:'pompa',n:'Fucile a Pompa',em:'💨',dmg:2,cd:.55,vel:950,col:'#5d4037',len:38,bul:'#ffb74d',kill:30,tipo:'pompa',pallini:5,vita:.42,molti:3,bossDmg:.25},
@@ -753,7 +754,9 @@ function disegnaArma(c,w,rin){
  c.fillStyle='#222';rr(c,3,2,7,12,2);c.fill();
  if(w.len>30){c.fillStyle=w.tipo?'#333':'#5a3a1d';rr(c,-10,-4,12,9,3);c.fill()}
  if(w.tipo==='razzo'){c.fillStyle='#1b5e20';rr(c,w.len-10,-8,12,16,4);c.fill()}
- if(w.tipo==='plasma'||w.tipo==='laser'){c.fillStyle=w.bul;cerchio(c,w.len*.55,-1,3)}
+ if(w.tipo==='plasma'||w.tipo==='laser'||w.tipo==='raggioblu'){c.fillStyle=w.bul;cerchio(c,w.len*.55,-1,3)}
+ if(w.tipo==='raggioblu'){c.fillStyle='#0d47a1';rr(c,w.len*.15,-9,w.len*.5,5,2);c.fill();c.fillStyle='#82b1ff';for(let i=0;i<3;i++){rr(c,w.len*(.22+i*.14),-4,4,8,1);c.fill()}
+  c.fillStyle='#40c4ff';c.globalAlpha=.6+.4*Math.sin(Date.now()/90);cerchio(c,w.len,0,5);c.globalAlpha=1}
  const L=w.len;
  if(w.tipo==='pompa'){c.fillStyle='#3e2723';c.fillRect(4,-5,L-4,3);c.fillStyle='#a1887f';rr(c,L*.45,3,16,7,3);c.fill();c.strokeStyle='#4e342e';c.lineWidth=1.5;for(let i=0;i<3;i++){c.beginPath();c.moveTo(L*.45+4+i*4,3);c.lineTo(L*.45+4+i*4,10);c.stroke()}}
  else if(w.tipo==='freccia'){c.strokeStyle='#4e342e';c.lineWidth=4;c.beginPath();c.moveTo(L-8,-18);c.quadraticCurveTo(L+4,0,L-8,18);c.stroke();
@@ -2037,12 +2040,18 @@ function prendiMolla(o){const p=S.p;o.preso=true;p.doppio=Math.min(40,p.doppio+2
 function spara(){
  const p=S.p,w=ARMA[S.arma];p.cd=w.cd;p.rin=w.tipo==='fiamma'?2:5;
  const x=p.x+p.dir*(14+w.len),y=p.y-57;
+ if(w.tipo==='raggioblu'){raggioBlu(x,y,p.dir,w);(SPARO[w.id]||SPARO.pistola)();return}
  if(w.pallini){for(let i=0;i<w.pallini;i++){const a=(i-(w.pallini-1)/2)*(w.spread||.07)+(Math.random()-.5)*.03;
    S.proiettili.push({x,y,vx:p.dir*w.vel*Math.cos(a),vy:w.vel*Math.sin(a),w,dmg:w.dmg,vita:w.vita,colpiti:new Set()})}}
  else if(w.tipo==='fiamma')S.proiettili.push({x,y,vx:p.dir*w.vel*(.85+Math.random()*.3),vy:(Math.random()-.5)*120,w,dmg:w.dmg,vita:w.vita,eta:0,colpiti:new Set()});
  else S.proiettili.push({x,y,vx:p.dir*w.vel,vy:w.tipo==='cocco'||w.arco?-260:w.tipo==='caramella'?(Math.random()-.5)*80:0,w,dmg:w.dmg,vita:w.vita||1.3,dir0:p.dir,colpiti:new Set(),rimb:3,col:Math.random()*4|0,eta:0});
  (SPARO[w.id]||SPARO.pistola)();
 }
+// raggio laser blu: colpisce subito tutti i mostri sulla linea di tiro (e il boss: -5 vite), si vede per un attimo
+function raggioBlu(x,y,dir,w){const x2=x+dir*w.portata;let fine=x2;
+ for(const m of S.mostri.slice()){if(m.morto)continue;const dx=(m.x-x)*dir;if(dx<-m.w/2||dx>w.portata)continue;if(y<m.y-m.h-25||y>m.y+25)continue;
+  colpisci(m,w.dmg,dir,w);particelle(m.x,y,8,'#82b1ff','scintilla',260)}
+ (S.raggiB||(S.raggiB=[])).push({x1:x,x2:fine,y,t:.32});S.shake=Math.max(S.shake||0,6);particelle(x,y,10,'#e3f2fd','scintilla',220)}
 // il Fulminatore salta da un mostro all'altro (non sul boss, che conta sempre 1 colpo)
 function catena(m,b){let da=m,n=b.w.catena;
  while(n-->0){let best=null,bd=260;for(const o of S.mostri){if(o.morto||o.tipo==='boss'||b.colpiti.has(o))continue;const d=Math.hypot(o.x-da.x,(o.y-o.h/2)-(da.y-da.h/2));if(d<bd){bd=d;best=o}}
@@ -2567,6 +2576,7 @@ function aggiorna(dt){
  for(const q of S.part){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=q.grav*dt;q.vita-=dt}
  S.part=S.part.filter(q=>q.vita>0);
  for(const l of S.lampi)l.t-=dt;S.lampi=S.lampi.filter(l=>l.t>0);
+ if(S.raggiB){for(const r of S.raggiB)r.t-=dt;S.raggiB=S.raggiB.filter(r=>r.t>0)}
  S.nasc.forEach(n=>{if(n.anim>0)n.anim-=dt});
  if(S.avviso){S.avviso.t-=dt;if(S.avviso.t<=0)S.avviso=null}
  if(S.msg&&!S.titolo){S.msg.t-=dt;if(S.msg.t<=0)S.msg=null}
@@ -2662,6 +2672,11 @@ function disegna(){
    ctx.restore()});
   S.proiettili.forEach(disegnaProiettile);
   // fulmini a catena
+  if(S.raggiB&&S.raggiB.length){ctx.save();ctx.lineCap='round';S.raggiB.forEach(r=>{const a=clamp(r.t/.32,0,1),tr=Math.random()*3;
+    ctx.globalAlpha=a*.45;ctx.strokeStyle='#2962ff';ctx.shadowColor='#2979ff';ctx.shadowBlur=40;ctx.lineWidth=34*a+10+tr;ctx.beginPath();ctx.moveTo(r.x1,r.y);ctx.lineTo(r.x2,r.y);ctx.stroke();
+    ctx.globalAlpha=a*.9;ctx.strokeStyle='#40c4ff';ctx.shadowBlur=24;ctx.lineWidth=16*a+5;ctx.beginPath();ctx.moveTo(r.x1,r.y);ctx.lineTo(r.x2,r.y);ctx.stroke();
+    ctx.globalAlpha=a;ctx.strokeStyle='#ffffff';ctx.shadowBlur=0;ctx.lineWidth=6*a+2;ctx.beginPath();ctx.moveTo(r.x1,r.y);ctx.lineTo(r.x2,r.y);ctx.stroke();
+    ctx.fillStyle='#e3f2fd';ctx.globalAlpha=a;ctx.beginPath();ctx.arc(r.x1,r.y,14*a+6,0,Math.PI*2);ctx.fill()});ctx.restore()}
   if(S.lampi.length){ctx.save();ctx.strokeStyle='#fff59d';ctx.lineWidth=4;ctx.shadowColor='#ffeb3b';ctx.shadowBlur=14;
    S.lampi.forEach(l=>{ctx.globalAlpha=clamp(l.t*5,0,1);ctx.beginPath();ctx.moveTo(l.x1,l.y1);for(let i=1;i<6;i++){const k=i/6;ctx.lineTo(l.x1+(l.x2-l.x1)*k+(rnd(l.s+i)-.5)*24,l.y1+(l.y2-l.y1)*k+(rnd(l.s+i*3)-.5)*30)}ctx.lineTo(l.x2,l.y2);ctx.stroke()});ctx.restore()}
   S.part.forEach(q=>{ctx.globalAlpha=clamp(q.vita*1.6,0,1);ctx.fillStyle=q.col;
@@ -2737,12 +2752,14 @@ function rinasci(){
  }else{
   // inizio del livello, una sola arma, mostri uguali
   const tieni=S.arma;S.armi=[tieni];S.base=S.uccisi;
+  // le armi premio dei livelli (il Fucile Laser Blu) restano anche quando si cade
+  ARMI.forEach(a=>{if(a.liv&&S.livello>=a.liv&&!S.armi.includes(a.id))S.armi.push(a.id)});
   p.x=S.livello===0?260:BOSS[S.livello-1].gate+120;
   S.mostri=[];S.boss=null;S.proiettili=[];S.spawn=2.5;
   const w=ARMA[tieni];
   mostra('SEI CADUTO! 💀',`Ricominci il livello ${Math.min(S.livello+1,BOSS.length)} con una sola arma: ${w.em} ${w.n}`,'#e23b2e');
  }
- p.morto=false;p.vita=p.max;p.inv=2.5;p.vy=-300;p.terra=false;p.su=null;p.lento=0;S.combo=0;S.lampi=[];
+ p.morto=false;p.vita=p.max;p.inv=2.5;p.vy=-300;p.terra=false;p.su=null;p.lento=0;S.combo=0;S.lampi=[];S.raggiB=[];
  SFX.rinasci();aggiornaArmaBox();
 }
 // livello più lontano raggiunto (nuova chiave: i salvataggi vecchi non ce l'hanno e partono da 1)
