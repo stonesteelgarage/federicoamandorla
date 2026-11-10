@@ -66,6 +66,8 @@ body.touch #armaBox .c{font-size:13px}
 #tSx{left:16px;bottom:18px;width:76px;height:76px}
 #tDx{left:104px;bottom:18px;width:76px;height:76px}
 #tCerca{right:200px;bottom:20px;width:64px;height:64px;font-size:26px}
+#tJet{right:200px;bottom:94px;width:58px;height:58px;font-size:24px}
+#touch button#tJet.acceso{background:rgba(198,40,40,.8)}
 #tSalta{right:112px;bottom:18px;width:76px;height:76px}
 #tFuoco{right:14px;bottom:30px;width:92px;height:92px;font-size:38px;background:rgba(226,59,46,.6)}
 #ruota{position:fixed;inset:0;z-index:30;background:#2e5d2e;color:#fff;display:none;align-items:center;justify-content:center;text-align:center;font-size:26px;padding:30px;font-weight:800}
@@ -110,6 +112,7 @@ document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&["+",
   <button id="tSx" data-k="sx">◀</button>
   <button id="tDx" data-k="dx">▶</button>
   <button id="tCerca" data-k="cerca">🔍</button>
+  <button id="tJet" data-k="jet" style="display:none">🚀</button>
   <button id="tSalta" data-k="salta">⬆</button>
   <button id="tFuoco" data-k="fuoco">💥</button>
 </div>
@@ -2065,10 +2068,13 @@ function salta(){if(!S||!giocando)return;const p=S.p,js=zonaDi(p.x).salto||1;
  if(p.jet>0&&!p.morto){p.vy=Math.min(p.vy,-520);p.terra=false;p.su=null;p.salti=1;if(ogni('jetv',.25))SFX.jet();return}
  if(p.terra){p.vy=-780*js;p.terra=false;p.su=null;p.salti=1;SFX.salto()}
  else if(p.doppio>0&&p.salti<2){p.vy=-740*js;p.salti=2;particelle(p.x,p.y,10,'#ffeb3b','scintilla',220);S.part.push({x:p.x,y:p.y,vx:0,vy:0,vita:.4,col:'#fff',tipo:'anello',grav:0});SFX.doppio()}}
-const JET_MAX=12,JET_RICARICA=5;// secondi di volo per carica; secondi per ricaricarsi da solo quando è scarico
-function prendiBomboletta(o){const p=S.p;o.preso=true;const prima=p.haJet;p.haJet=true;p.jet=JET_MAX;p.jetRic=0;S.punti+=40;
+// jetpack: una volta preso resta per sempre, senza carica; p.jet=1 acceso, 0 spento (si accende e spegne quando vuoi)
+function prendiBomboletta(o){const p=S.p;o.preso=true;const prima=p.haJet;p.haJet=true;if(!prima)p.jet=1;S.punti+=40;
  particelle(o.x,GROUND-120,16,'#ff5252');particelle(o.x,GROUND-120,10,'#ffd54a','scintilla',240);
- if(!prima)mostra('HAI IL JETPACK! 🚀',(TOUCH?'Tieni premuto ⬆ per volare':'Tieni premuto ↑ per volare')+' · quando si scarica si ricarica da solo in 5 secondi','#c62828');else avviso('🚀 Jetpack ricaricato!',2);SFX.molla();SFX.jet()}
+ if(!prima)mostra('HAI IL JETPACK! 🚀',(TOUCH?'Tieni premuto ⬆ per volare · 🚀 lo accende e lo spegne':'Tieni premuto ↑ per volare · F lo accende e lo spegne')+' · è tuo per sempre, non si scarica mai','#c62828');else testoVol(o.x,GROUND-150,'+40','#ff8a80');aggiornaJetBtn();SFX.molla();SFX.jet()}
+function accendiJet(){if(!S||!giocando)return;const p=S.p;if(!p.haJet||p.morto)return;p.jet=p.jet>0?0:1;
+ avviso(p.jet?'🚀 Jetpack ACCESO':'🚀 Jetpack spento',1.6);if(p.jet)SFX.jet();else SFX.cambia();aggiornaJetBtn()}
+function aggiornaJetBtn(){const b=document.getElementById('tJet');if(!b)return;const p=S&&S.p;b.style.display=p&&p.haJet?'flex':'none';b.classList.toggle('acceso',!!(p&&p.jet>0))}
 function prendiMolla(o){const p=S.p;o.preso=true;p.doppio=Math.min(40,p.doppio+20);S.punti+=25;
  particelle(o.x,GROUND-115,14,'#ffeb3b');mostra('SALTO DOPPIO! 👟','Premi salta due volte: funziona per 20 secondi','#f57f17');SFX.molla()}
 function spara(){
@@ -2519,7 +2525,7 @@ function riprendiPartita(st){DIFF=st.diff;save('fs_diff',DIFF);nuovaPartita(st.l
  Object.assign(S,{punti:st.punti,uccisi:st.uccisi,grado:st.grado,morti:st.morti,base:st.base,forza:st.forza,armi:st.armi,arma:st.arma,zonaMax:Math.max(st.zonaMax,st.liv),bossHp:st.boss});
  GRADI.forEach((r,i)=>{if(S.uccisi>=r.k&&i>S.grado)S.grado=i});S.armi=(S.armi||['pistola']).slice();armiLivello(false);
  Object.assign(p,{x:st.x,y:GROUND,vita:st.vita,max:st.max,doppio:st.doppio,dir:st.dir});
- st.nasc.forEach(i=>{S.nasc[i].cercato=true});st.molle.forEach(i=>{S.molle[i].preso=true});st.bombole.forEach(i=>{S.bombole[i].preso=true});p.haJet=!!st.haJet;p.jet=p.haJet?(st.jet>0?Math.min(st.jet,JET_MAX):JET_MAX):0;st.stelle.forEach(i=>{S.piat[i].stella=false});
+ st.nasc.forEach(i=>{S.nasc[i].cercato=true});st.molle.forEach(i=>{S.molle[i].preso=true});st.bombole.forEach(i=>{S.bombole[i].preso=true});p.haJet=!!st.haJet;p.jet=p.haJet&&st.jet>0?1:0;st.stelle.forEach(i=>{S.piat[i].stella=false});
  S.zona=zonaIdx(p.x);if(S.zona>S.zonaMax)S.zonaMax=S.zona;S.titolo={i:S.zona,t:3.2};S.cam=clamp(p.x-VW*.4,0,Math.max(0,WORLD_W-VW));
  if(st.ora)MET.ora=st.ora;if(st.tempo)MET.tempo=st.tempo;MET.zona=S.zona;MET.cambio=-1;meteoSubito();MET.txt=`${ORE[MET.ora].e} ${ORE[MET.ora].n} · ${iconaTempo()} ${nomeTempo()}`;MET.banner=4.5}
 // ======================= UPDATE =======================
@@ -2553,10 +2559,7 @@ function aggiorna(dt){
  if(p.lento>0)p.lento-=dt;
  if(p.doppio>0){p.doppio-=dt;if(p.doppio<=0){p.doppio=0;avviso('Le scarpe a molla si sono scaricate 👟')}}
  for(const o of S.molle){if(!o.preso&&Math.abs(o.x-p.x)<42&&Math.abs((GROUND-115)-(p.y-55))<75)prendiMolla(o)}
- // jetpack: una volta preso resta; la carica si consuma solo in volo e, quando finisce, torna piena da sola dopo 5 secondi
- if(p.haJet){if(p.jetRic>0){p.jetRic-=dt;if(p.jetRic<=0){p.jetRic=0;p.jet=JET_MAX;avviso('🚀 Jetpack ricaricato!',2);SFX.molla()}}
-  else if(!p.terra&&p.jet>0){p.jet-=dt;if(p.jet<=0){p.jet=0;p.jetRic=JET_RICARICA;avviso('🚀 Jetpack scarico: si ricarica in 5 secondi',2.5)}}}
- for(const o of S.bombole){if(!o.preso&&Math.abs(o.x-p.x)<42&&Math.abs((GROUND-125)-(p.y-55))<70)prendiBomboletta(o)}
+  for(const o of S.bombole){if(!o.preso&&Math.abs(o.x-p.x)<42&&Math.abs((GROUND-125)-(p.y-55))<70)prendiBomboletta(o)}
  p.inv=Math.max(0,p.inv-dt);p.cd-=dt;p.rin=Math.max(0,p.rin-dt*50);S.shake=Math.max(0,S.shake-dt*40);
  if(K.fuoco&&p.cd<=0&&!p.morto)spara();
  S.cam=clamp(p.x-VW*.4,0,Math.max(0,WORLD_W-VW));
@@ -2768,10 +2771,10 @@ function hud(){
  ctx.font='20px serif';const yc=70+(righe.length-1)*22;for(let i=0;i<p.max;i++)ctx.fillText(i<p.vita?'❤️':'🤍',24+i*27,yc);
  if(p.doppio>0){const w=178;ctx.fillStyle=p.doppio<5&&Math.floor(S.t*6)%2?'rgba(245,127,23,.6)':'rgba(245,127,23,.92)';rr(ctx,VW-w-12,64,w,30,12);ctx.fill();
   ctx.fillStyle='#fff';ctx.font='800 16px "Baloo 2",sans-serif';ctx.textAlign='left';ctx.fillText(`👟 Salto doppio ${Math.ceil(p.doppio)}s`,VW-w,85)}
- if(p.haJet){const w=178,yy=p.doppio>0?98:64,ric=p.jetRic>0,f=ric?1-p.jetRic/JET_RICARICA:p.jet/JET_MAX;
-  ctx.fillStyle=ric?'rgba(96,125,139,.9)':p.jet<3&&!p.terra&&Math.floor(S.t*6)%2?'rgba(198,40,40,.55)':'rgba(198,40,40,.92)';rr(ctx,VW-w-12,yy,w,30,12);ctx.fill();
-  ctx.fillStyle=ric?'rgba(255,213,79,.8)':'rgba(255,255,255,.45)';rr(ctx,VW-w-6,yy+22,(w-12)*clamp(f,0,1),5,2);ctx.fill();
-  ctx.fillStyle='#fff';ctx.font='800 16px "Baloo 2",sans-serif';ctx.textAlign='left';ctx.fillText(ric?`🚀 Ricarica… ${Math.ceil(p.jetRic)}s`:`🚀 Jetpack ${Math.ceil(p.jet)}s`,VW-w,yy+19)}
+ if(p.haJet){const w=178,yy=p.doppio>0?98:64,on=p.jet>0;
+  ctx.fillStyle=on?'rgba(198,40,40,.92)':'rgba(96,125,139,.85)';rr(ctx,VW-w-12,yy,w,30,12);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='800 16px "Baloo 2",sans-serif';ctx.textAlign='left';ctx.fillText(on?`🚀 Jetpack ACCESO`:`🚀 Jetpack spento`,VW-w,yy+19);
+  ctx.font='700 11px "Baloo 2",sans-serif';ctx.textAlign='right';ctx.fillText(TOUCH?'🚀':'F',VW-20,yy+19)}
  // punti
  ctx.textAlign='center';testoBordo('⭐ '+S.punti,VW/2,42,32,'#e23b2e');testoBordo('👾 '+S.uccisi+' mostri · Livello '+Math.min(S.livello+1,BOSS.length)+'/'+BOSS.length+(S.diff==='facile'?' · 🙂 Facile':' · 💪 Difficile'),VW/2,66,18,'#2e5d2e');
  // mappa
@@ -2879,7 +2882,7 @@ function fineGioco(vinto=false){
 }
 function pausa(on){if(!S||S.fine)return;if(on)salvaPartita();pDa1Sicuro=false;$('#pDa1').textContent=TXT_PDA1;giocando=!on;$('#pausa').classList.toggle('hidden',!on);K.sx=K.dx=K.fuoco=false}
 function avvia(st){
- audio();if(st)riprendiPartita(st);else{cancellaPartita();nuovaPartita((LIVSEL||1)-1)}giocando=true;document.body.classList.add('ingioco');
+ audio();if(st)riprendiPartita(st);else{cancellaPartita();nuovaPartita((LIVSEL||1)-1)}aggiornaJetBtn();giocando=true;document.body.classList.add('ingioco');
  ['#reg','#fine','#pausa'].forEach(s=>$(s).classList.add('hidden'));
  $('#topbtn').classList.remove('hidden');$('#armaBox').classList.remove('hidden');if(TOUCH)$('#touch').classList.remove('hidden');
  aggiornaArmaBox();melodia([392,523,659,784]);
@@ -2899,7 +2902,7 @@ function preparaReg(){
  swatch('#swPelle',PELLI,'pelle');swatch('#swCapelli',CAPELLI,'capelli');swatch('#swOcchi',OCCHI,'occhi');swatch('#swDivisa',DIVISE,'divisa',true);
  $('#togliFoto').classList.toggle('hidden',!prof.foto);
  $('#comandi').innerHTML=(TOUCH?'<b>Comandi:</b> ◀ ▶ cammina · ⬆ salta · 💥 spara · 🔍 cerca · tocca l\'arma in basso per cambiarla':'<b>Comandi:</b> ← → cammina · ↑ salta · SPAZIO spara · E cerca · Q cambia arma · P pausa')+
-  `<br><b>Missione:</b> la pistola abbatte un mostro in 3 colpi. Più mostri sconfiggi, più sali di grado e ricevi armi più potenti. Cerca dietro rocce, alberi, cactus, igloo, grotte, conchiglie, scrigni, barattoli e crateri: ci sono ${N_SEGRETE} armi segrete! Puoi anche <b>saltare sopra i mostri</b> per schiacciarli, come Super Mario! Prendi le <b>scarpe a molla 👟</b> per avere il salto doppio. Salta per prendere la <b>bomboletta rossa 🚀</b>: avrai il <b>jetpack</b> per sempre! Tieni premuto salta per volare; quando la carica finisce, si ricarica da sola in 5 secondi. Attraversa ${BOSS.length} mondi tutti diversi: dal prato al vulcano, poi spiaggia, fondo del mare, giungla, castello, Luna, dinosauri e la fortezza del Re dei Mostri; e poi i Mondi Antichi, i Mondi della Natura, i Mondi Fantastici, i Mondi del Futuro e i Mondi Finali, fino al Trono del Re dei Re dei Mostri, ogni volta con un tempo diverso. Alla fine di ognuno ti aspetta un <b>boss gigante</b> (lui non si schiaccia), e ogni boss è più forte del precedente. I livelli raggiunti restano salvati e la partita si salva da sola: puoi continuare da dove eri rimasto!`;
+  `<br><b>Missione:</b> la pistola abbatte un mostro in 3 colpi. Più mostri sconfiggi, più sali di grado e ricevi armi più potenti. Cerca dietro rocce, alberi, cactus, igloo, grotte, conchiglie, scrigni, barattoli e crateri: ci sono ${N_SEGRETE} armi segrete! Puoi anche <b>saltare sopra i mostri</b> per schiacciarli, come Super Mario! Prendi le <b>scarpe a molla 👟</b> per avere il salto doppio. Salta per prendere la <b>bomboletta rossa 🚀</b>: avrai il <b>jetpack</b> per sempre! Non si scarica mai: accendilo e spegnilo quando vuoi (tasto F, o 🚀 sul telefono) e, se è acceso, tieni premuto salta per volare. Attraversa ${BOSS.length} mondi tutti diversi: dal prato al vulcano, poi spiaggia, fondo del mare, giungla, castello, Luna, dinosauri e la fortezza del Re dei Mostri; e poi i Mondi Antichi, i Mondi della Natura, i Mondi Fantastici, i Mondi del Futuro e i Mondi Finali, fino al Trono del Re dei Re dei Mostri, ogni volta con un tempo diverso. Alla fine di ognuno ti aspetta un <b>boss gigante</b> (lui non si schiaccia), e ogni boss è più forte del precedente. I livelli raggiunti restano salvati e la partita si salva da sola: puoi continuare da dove eri rimasto!`;
 }
 $('#nome').addEventListener('input',e=>{prof.nome=e.target.value.trim()||'Federico';$('#titNome').textContent=prof.nome});
 $('#fotoIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
@@ -2945,6 +2948,7 @@ addEventListener('keydown',e=>{
  else if(c==='Space'||c==='KeyX'||c==='KeyJ'||c==='Enter')K.fuoco=true;
  else if(c==='ArrowUp'||c==='KeyW'){K.salta=true;if(!e.repeat)salta()}
  else if(!e.repeat&&(c==='KeyE'||c==='ArrowDown'||c==='KeyS'))cerca();
+ else if(!e.repeat&&(c==='KeyF'||c==='KeyR')){e.preventDefault();accendiJet()}
  else if(!e.repeat&&(c==='KeyQ'||c==='Tab')){e.preventDefault();cambiaArma()}
  else if(c==='KeyP'||c==='Escape')pausa(true);
  else if(/^Digit[0-9]$/.test(c)){const i=c==='Digit0'?9:+c.slice(5)-1;if(S.armi[i])scegliArma(S.armi[i])}
@@ -2963,7 +2967,7 @@ function rilascia(id){const t=TASTI.get(id);if(!t)return;TASTI.delete(id);
 function rilasciaTutti(){for(const id of [...TASTI.keys()])rilascia(id);document.querySelectorAll('#touch [data-k].on').forEach(b=>b.classList.remove('on'));K.sx=K.dx=K.fuoco=K.salta=false}
 document.querySelectorAll('#touch [data-k]').forEach(b=>{const k=b.dataset.k;
  b.addEventListener('pointerdown',e=>{e.preventDefault();audio();try{b.setPointerCapture(e.pointerId)}catch(_){}
-  TASTI.set(e.pointerId,{b,k});b.classList.add('on');if(k==='salta'){K.salta=true;salta()}else if(k==='cerca')cerca();else K[k]=true});
+  TASTI.set(e.pointerId,{b,k});b.classList.add('on');if(k==='salta'){K.salta=true;salta()}else if(k==='cerca')cerca();else if(k==='jet')accendiJet();else K[k]=true});
  ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,e=>rilascia(e.pointerId)));
  b.addEventListener('contextmenu',e=>e.preventDefault());
 });
